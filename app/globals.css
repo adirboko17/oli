@@ -1,0 +1,37 @@
+html, body {
+  margin: 0;
+  background: #fbf5ef;
+  color: #3a2826;
+  font-family: "Google Sans", "Heebo", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Keep route changes from pinning the footer in view. */
+  overflow-anchor: none;
+}
+
+* { box-sizing: border-box; }
+
+a { color: #3a2826; text-decoration: none; }
+a:hover { color: #a85a3a; }
+
+button { font-family: inherit; cursor: pointer; }
+
+h1, h2, h3, h4, p { margin: 0; }
+
+@keyframes oliMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.no-scroll { scrollbar-width: none; }
+.no-scroll::-webkit-scrollbar { display: none; }
+
+input, select, textarea { font-family: inherit; }
+
+.gift-go {
+  transition: background .25s ease, color .25s ease, transform .25s ease;
+}
+.gift-card:hover .gift-go {
+  background: #3a2826;
+  color: #fbf5ef;
+  transform: translateX(-4px);
+}

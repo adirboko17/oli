@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#FBF5EF;color:#3A2826;font-family:'Google Sans','Heebo',sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#3A2826;text-decoration:none}a:hover{color:#A85A3A}
+button{font-family:inherit;cursor:pointer}
+h1,h2,h3,h4,p{margin:0}
+@keyframes oliMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
+<script src="./podcast-data.js"></script>
+</helmet>
+<div dir="rtl" style="min-height:100vh;display:flex;flex-direction:column">
+
+<sc-if value="{{ showPromo }}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<div style="background:#3A2826;color:#F6E6DA;font-size:13px;letter-spacing:.04em;display:flex;justify-content:center;gap:28px;padding:9px 16px;flex-wrap:wrap">
+<span>משלוח חינם בהזמנה מעל 250 ש״ח</span><span style="opacity:.5">·</span><span>5% הנחה בהזמנה הראשונה לנרשמות</span>
+</div>
+</sc-if>
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+<div style="background:#3A2826;color:#F6E6DA;font-size:13px;letter-spacing:.04em;overflow:hidden;height:36px;display:flex;align-items:center;direction:ltr;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)">{{ promoMarquee }}</div>
+</sc-if>
+</sc-if>
+
+<header ref="{{ headerRef }}" style="position:sticky;top:0;z-index:20;background:rgba(251,245,239,.92);backdrop-filter:blur(10px);border-bottom:1px solid #EADBCF">
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:1320px;margin:0 auto;padding:12px clamp(16px,4.5vw,32px);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px">
+<nav style="display:flex;gap:clamp(12px,1.8vw,26px);font-size:15px;white-space:nowrap;overflow:hidden">
+<a href="#" onClick="{{ goHome }}" style="{{ navHomeStyle }}">דף הבית</a>
+<a href="#" onClick="{{ goCategory }}" style="{{ navProdStyle }}">המוצרים של Oli</a>
+<a href="#" onClick="{{ goGifts }}">מתנות ליולדת</a>
+<a href="#" onClick="{{ goStores }}" style="{{ navStoresStyle }}">Oli בחנויות</a>
+<a href="#" onClick="{{ goPodcast }}" style="{{ navPodStyle }}">פודקאסט</a>
+</nav>
+<a href="#" onClick="{{ goHome }}" style="display:flex;align-items:center"><img src="assets/logo-brown.png" alt="Oli Safe Care" style="height:46px;display:block"></a>
+<div style="display:flex;gap:clamp(10px,1.4vw,18px);justify-content:flex-end;align-items:center;font-size:14px;white-space:nowrap">
+<a href="#" onClick="{{ openSearch }}" style="display:flex;align-items:center;gap:7px;height:40px;padding:0 10px;border-radius:999px;color:#3A2826" style-hover="background:#F3E2D5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span>חיפוש</span></a>
+<a href="#" onClick="{{ openAccount }}" style="display:flex;align-items:center;gap:7px;height:40px;padding:0 10px;border-radius:999px;color:#3A2826" style-hover="background:#F3E2D5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"></path></svg><span>החשבון שלי</span></a>
+<button onClick="{{ openCart }}" aria-label="סל קניות" style="position:relative;display:flex;align-items:center;gap:8px;height:42px;padding:0 18px 0 16px;border:0;border-radius:999px;background:#3A2826;color:#FBF5EF;font-size:14px;font-weight:600" style-hover="background:#A85A3A"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z"></path><path d="M9 8V6.5a3 3 0 0 1 6 0V8"></path></svg><span>סל</span><span style="background:#F3D9C6;color:#3A2826;border-radius:999px;min-width:22px;height:22px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ cartCount }}</span></button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 16px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px">
+<button onClick="{{ toggleMenu }}" aria-label="תפריט" style="{{ burgerBtn }}"><span style="{{ bar1 }}"></span><span style="{{ bar2 }}"></span></button>
+<a href="#" onClick="{{ goHome }}" style="display:flex;align-items:center"><img src="assets/logo-brown.png" alt="Oli Safe Care" style="height:46px;display:block"></a>
+<div style="justify-self:end;display:flex;gap:6px;align-items:center">
+<a href="#" onClick="{{ openSearch }}" aria-label="חיפוש" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#3A2826"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></a>
+<button onClick="{{ openCart }}" aria-label="סל קניות" style="position:relative;width:44px;height:44px;border:0;border-radius:999px;background:#3A2826;color:#FBF5EF;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z"></path><path d="M9 8V6.5a3 3 0 0 1 6 0V8"></path></svg><span style="position:absolute;top:-4px;left:-4px;background:#A85A3A;color:#FBF5EF;border-radius:999px;min-width:19px;height:19px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #FBF5EF">{{ cartCount }}</span></button>
+</div>
+</div>
+<div style="{{ menuPanel }}">
+<nav style="display:flex;flex-direction:column;padding:16px 24px 0">
+<sc-for list="{{ menuLinks }}" as="l" hint-placeholder-count="5">
+<a href="#" onClick="{{ l.go }}" style="{{ l.style }}"><span style="font-size:13px;color:#C9A08A;font-weight:500;letter-spacing:.06em;min-width:26px">{{ l.n }}</span><span style="flex:1">{{ l.label }}</span><span style="font-size:20px;color:#C9A08A">←</span></a>
+</sc-for>
+</nav>
+<div style="{{ menuFoot }}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<a href="#" onClick="{{ openSearch }}" style="display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-radius:14px;background:#4A3532;color:#C9B2A6;font-size:15px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="flex:1">חיפוש מוצרים, מאמרים…</span>
+</a>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<a href="#" onClick="{{ openAccount }}" style="display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:16px;border-radius:14px;border:1px solid #5A4340;color:#FBF5EF;min-height:96px">
+<span style="width:36px;height:36px;border-radius:50%;background:#4A3532;display:flex;align-items:center;justify-content:center;color:#F3D9C6"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"></path></svg></span>
+<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">החשבון שלי</span><span style="font-size:12px;color:#C9B2A6">הזמנות ופרטים</span></span>
+</a>
+<a href="#" style="display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:16px;border-radius:14px;background:#F3D9C6;color:#3A2826;min-height:96px">
+<span style="width:36px;height:36px;border-radius:50%;background:#3A2826;display:flex;align-items:center;justify-content:center;color:#F3D9C6"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.5-4.3A8.5 8.5 0 1 1 20.5 11.6z"></path><path d="M9 9.2c.2 2.6 2.6 5 5.2 5.4l1.2-1.3-1.8-.9-.8.8c-1-.4-1.9-1.3-2.3-2.3l.8-.8-.9-1.8z"></path></svg></span>
+<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">WhatsApp</span><span style="font-size:12px;color:#6E5650">דברי איתנו</span></span>
+</a>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:#C9B2A6;gap:12px;flex-wrap:wrap"><span>משלוח חינם בהזמנה מעל 250 ש״ח</span><span style="display:flex;gap:14px"><a href="#" style="color:#C9B2A6">Instagram</a><a href="#" style="color:#C9B2A6">Spotify</a></span></div>
+</div>
+</div>
+</sc-if>
+</header>
+
+<!-- ============ HOME ============ -->
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<main data-screen-label="01 Home">
+
+<sc-if value="{{ heroSplit }}" hint-placeholder-val="{{ false }}">
+<section style="max-width:1320px;margin:0 auto;padding:clamp(31px,9vw,56px) clamp(16px,4.5vw,32px) clamp(40px,9vw,72px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:clamp(28px,6vw,56px);align-items:center">
+<div style="display:flex;flex-direction:column;gap:26px;max-width:560px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">ELEVATE YOUR SAFE CARE</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(40px,5vw,68px);line-height:1.08;text-wrap:balance">טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
+<p style="font-size:19px;line-height:1.65;color:#5E4844;text-wrap:pretty">פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<button onClick="{{ goCategory }}" style="background:#3A2826;color:#FBF5EF;border:0;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#A85A3A">למוצרים של Oli</button>
+<button onClick="{{ goGifts }}" style="background:transparent;color:#3A2826;border:1px solid #3A2826;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#F3E2D5">מתנות ליולדת</button>
+</div>
+<div style="display:flex;gap:22px;flex-wrap:wrap;padding-top:18px;border-top:1px solid #EADBCF;font-size:14px;color:#5E4844">
+<span>✦ באישור משרד הבריאות</span><span>✦ מבוסס מחקרים מדעיים</span><span>✦ לא נוסה על בעלי חיים</span>
+</div>
+</div>
+<div style="position:relative;aspect-ratio:1/1.02;border-radius:340px 340px 24px 24px;overflow:hidden;background:#F4DECF">
+<img src="https://static.wixstatic.com/media/db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg/v1/fill/w_1600,h_1600,al_c,q_85,enc_auto/file.jpg" alt="מוצרי Oli" style="width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block">
+<div style="position:absolute;bottom:20px;right:20px;background:#FBF5EF;padding:14px 18px;border-radius:14px;display:flex;flex-direction:column;gap:2px;box-shadow:0 10px 30px rgba(58,40,38,.12)">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:22px">5.0 ★★★★★</span>
+<span style="font-size:13px;color:#5E4844">44 ביקורות על Olilastic</span>
+</div>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{ heroProduct }}" hint-placeholder-val="{{ false }}">
+<section style="position:relative;overflow:hidden;background:#FBF5EF">
+<div style="position:relative;max-width:1320px;margin:0 auto;padding:clamp(32px,6vw,64px) clamp(16px,4.5vw,32px) clamp(48px,8vw,88px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:clamp(24px,5vw,56px);align-items:center">
+<div style="display:flex;flex-direction:column;gap:clamp(18px,3vw,26px);max-width:560px;order:{{ heroTextOrder }}">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">ELEVATE YOUR SAFE CARE</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.02em;font-size:clamp(38px,5.6vw,76px);line-height:1.04;text-wrap:balance">טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
+<p style="font-size:clamp(16px,2.2vw,19px);line-height:1.65;color:#5E4844;text-wrap:pretty">פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<button onClick="{{ goCategory }}" style="background:#3A2826;color:#FBF5EF;border:0;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#A85A3A">למוצרים של Oli</button>
+<button onClick="{{ goGifts }}" style="background:transparent;color:#3A2826;border:1px solid #3A2826;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#F3E2D5">מתנות ליולדת</button>
+</div>
+</div>
+<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:clamp(220px,48vw,600px)">
+<img src="assets/olineum-hero.png" alt="Olineum שמן עיסוי להריון" style="position:relative;width:min(100%,600px,72vw);height:auto;mix-blend-mode:multiply;filter:drop-shadow(0 30px 30px rgba(58,40,38,.18))">
+<a href="#" onClick="{{ goProduct }}" style="position:absolute;bottom:6%;right:4%;background:#FBF5EF;padding:12px 16px;border-radius:14px;display:flex;flex-direction:column;gap:2px;box-shadow:0 10px 30px rgba(58,40,38,.12)">
+<span style="font-weight:600;font-size:15px">Olineum · ₪89</span>
+<span style="font-size:13px;color:#5E4844">שמן עיסוי להריון · 5.0 ★</span>
+</a>
+</div>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{ heroFull }}" hint-placeholder-val="{{ false }}">
+<section style="position:relative;min-height:640px;display:flex;align-items:flex-end;overflow:hidden">
+<img src="https://static.wixstatic.com/media/db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg/v1/fill/w_1600,h_1600,al_c,q_85,enc_auto/file.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+<div style="position:absolute;inset:0;background:linear-gradient(to left,rgba(251,245,239,.96) 0%,rgba(251,245,239,.75) 42%,rgba(251,245,239,0) 70%)"></div>
+<div style="position:relative;max-width:1320px;width:100%;margin:0 auto;padding:clamp(44px,9vw,80px) clamp(16px,4.5vw,32px);display:flex;flex-direction:column;gap:24px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">ELEVATE YOUR SAFE CARE</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(40px,5.4vw,76px);line-height:1.05;max-width:620px">טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
+<p style="font-size:19px;line-height:1.65;color:#5E4844;max-width:520px">פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+<div><button onClick="{{ goCategory }}" style="background:#3A2826;color:#FBF5EF;border:0;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600">SHOP NOW</button></div>
+</div>
+</section>
+</sc-if>
+
+<section style="max-width:1320px;margin:0 auto;padding:24px clamp(16px,4.5vw,32px) clamp(48px,9vw,88px)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:clamp(20px,4vw,28px);gap:16px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,40px)">לכל שלב במסע</h2>
+<p style="font-size:clamp(15px,2vw,17px);line-height:1.6;color:#5E4844;max-width:520px;text-wrap:pretty">מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב.</p>
+</div>
+<a href="#" onClick="{{ goCategory }}" style="font-size:15px;border-bottom:1px solid currentColor">לכל המוצרים</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:clamp(10px,2vw,20px)">
+<sc-for list="{{ stages }}" as="s" hint-placeholder-count="3">
+<a href="#" onClick="{{ s.go }}" style="{{ stageCard }}" style-hover="transform:translateY(-4px)">
+<div style="{{ s.bgStyle }}"></div>
+<sc-if value="{{ s.img }}" hint-placeholder-val="{{ false }}"><div style="{{ s.imgStyle }}"></div></sc-if>
+<span style="position:relative;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(15px,3.6vw,22px);color:#A85A3A">{{ s.en }}</span>
+<div style="{{ s.textStyle }}">
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(26px,6vw,34px)">{{ s.title }}</h3>
+<p style="font-size:clamp(14px,3.6vw,16px);line-height:1.5;color:#5E4844;max-width:300px">{{ s.desc }}</p>
+<span style="font-size:14px;font-weight:600;margin-top:clamp(4px,1.5vw,10px)">{{ s.count }} ←</span>
+</div>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(24px,5vw,48px) clamp(16px,4.5vw,32px) clamp(56px,9vw,96px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(28px,6vw,56px);align-items:center">
+<div style="display:flex;flex-direction:column;gap:22px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">הריונית יקרה, אולי כאן בשבילך</span>
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,44px);line-height:1.1">מי אנחנו</h2>
+<p style="font-size:18px;line-height:1.8;color:#5E4844;text-wrap:pretty">אולי סייף קר הוקמה על ידי אופיר וליאור, בנותיו של גניקולוג, בעלות מחויבות איתנה לבריאות האישה. המודעות הגוברת שלהן למחסור במוצרים להריון ובמוצרי טיפוח ללידה, בטוחים וטבעיים, הובילה אותן ליצור את אולי.</p>
+<p style="font-size:18px;line-height:1.8;color:#5E4844;text-wrap:pretty">על ידי מינוף המומחיות הרפואית של אביהן והתשוקה שלהן למוצרים בעלי רכיבים טבעיים- Oli שואפת לספק מוצרי טיפוח אישי בטוחים, יעילים ומפנקים הנותנים מענה לצרכיהן של נשים במהלך ההריון ולאחריו.</p>
+</div>
+<div style="position:relative;aspect-ratio:16/9;width:100%;border-radius:24px;overflow:hidden;background:#EBD3C4">
+<video ref="{{ aboutVid }}" src="assets/about-video.mp4" autoplay="" muted="" loop="" playsinline="" preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block"></video>
+</div>
+</section>
+
+<section style="background:#3A2826;color:#F6E6DA">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:clamp(28px,6vw,64px);align-items:center">
+<div style="{{ flagBox }}">
+<img src="https://static.wixstatic.com/media/db159b_c6044a549cea41979a5612ff7b19c347~mv2.jpeg/v1/fill/w_1000,h_1250,al_c,q_85,enc_auto/file.jpg" alt="Olilastic" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.06)">
+</div>
+<div style="display:flex;flex-direction:column;gap:24px">
+<span style="font-size:13px;letter-spacing:.14em;color:#E3A783;font-weight:600">מוצר הדגל</span>
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(34px,4vw,52px);line-height:1.12;text-wrap:balance">טיפול בסימני מתיחה בהריון, זאת המומחיות שלנו</h2>
+<p style="font-size:18px;line-height:1.7;color:#E6D2C6;text-wrap:pretty">חמאת גוף שמשפרת את האלסטיות של העור, מסייעת במניעת סימני מתיחה ובהפחתת נראות של סימני מתיחה קיימים. תרכובת של שמן חוחובה, שמן שקדים ושמן זית.</p>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#5A4340;border-radius:14px;overflow:hidden">
+<div style="background:#3A2826;padding:clamp(12px,3vw,18px);display:flex;flex-direction:column;gap:4px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(20px,5vw,30px)">שבוע 12</span><span style="font-size:13px;color:#C9B2A6">מומלץ להתחיל</span></div>
+<div style="background:#3A2826;padding:clamp(12px,3vw,18px);display:flex;flex-direction:column;gap:4px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(20px,5vw,30px)">×2</span><span style="font-size:13px;color:#C9B2A6">ביום, בוקר וערב</span></div>
+<div style="background:#3A2826;padding:clamp(12px,3vw,18px);display:flex;flex-direction:column;gap:4px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(20px,5vw,30px)">5.0★</span><span style="font-size:13px;color:#C9B2A6">44 ביקורות</span></div>
+</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+<button onClick="{{ goProduct }}" style="background:#F3D9C6;color:#3A2826;border:0;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#FBF5EF">לפרטים · ₪129</button>
+<span style="font-size:14px;color:#C9B2A6">הנחה ברכישת שתי חמאות</span>
+</div>
+</div>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px;gap:16px;flex-wrap:wrap">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,40px)">המומלצים שלנו</h2>
+<a href="#" onClick="{{ goCategory }}" style="font-size:15px;border-bottom:1px solid currentColor">לכל המוצרים של Oli</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(calc(50% - 7px),240px),1fr));gap:clamp(24px,5vw,28px) clamp(12px,3vw,20px)">
+<sc-for list="{{ bestSellers }}" as="p" hint-placeholder-count="4">
+<div style="display:flex;flex-direction:column;gap:12px;height:100%">
+<a href="#" onClick="{{ p.open }}" style="position:relative;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#F3E4D8;display:flex;align-items:center;justify-content:center" style-hover="opacity:.92">
+<div style="{{ p.bgStyle }}"></div>
+<sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}"><div style="{{ p.imgStyle }}"></div></sc-if>
+<sc-if value="{{ p.noImg }}"><span style="position:relative;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(28px,6.5vw,40px);color:#3A2826">{{ p.name }}</span></sc-if>
+<sc-if value="{{ p.badge }}"><span style="position:absolute;top:12px;right:12px;background:#FBF5EF;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px">{{ p.badge }}</span></sc-if>
+</a>
+<div style="display:flex;flex-direction:column;gap:8px;flex:1">
+<div style="display:flex;flex-direction:column;gap:2px">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-size:clamp(17px,4.4vw,22px);font-weight:500;direction:ltr;text-align:right">{{ p.name }}</span>
+<span style="font-size:14px;color:#6E5650;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em">{{ p.sub }}</span>
+</div>
+<div style="display:flex;align-items:baseline;gap:8px;white-space:nowrap;margin-top:auto">
+<span style="font-weight:700;font-size:16px">{{ p.priceLabel }}</span>
+<sc-if value="{{ p.hasSale }}"><span style="font-size:13px;color:#9C847C;text-decoration:line-through">{{ p.oldLabel }}</span></sc-if>
+</div>
+</div>
+<button onClick="{{ p.add }}" style="margin-top:auto;background:transparent;border:1px solid #CDB5A8;color:#3A2826;padding:11px;border-radius:999px;font-size:14px;font-weight:600" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">הוספה לסל</button>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="background:#F3E2D5">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(28px,6vw,56px)">
+<div style="display:flex;flex-direction:column;gap:20px;max-width:440px">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,44px);line-height:1.1">למה Oli</h2>
+<p style="font-size:18px;line-height:1.7;color:#5E4844;text-wrap:pretty">אנו שמות את רווחת האימהות והתינוקות שלהן בראש סדר העדיפויות. המוצרים שלנו נועדו לפנק אתכן האימהות, בעודם משלבים בתוכם תכונות רפואיות מועילות.</p>
+</div>
+<div style="display:flex;flex-direction:column">
+<sc-for list="{{ values }}" as="v" hint-placeholder-count="5">
+<div style="display:flex;flex-wrap:wrap;gap:6px 20px;padding:22px 0;border-top:1px solid #DCC3B3;align-items:baseline">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:15px;color:#A85A3A;flex:0 0 40px">{{ v.n }}</span>
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(20px,5vw,24px);flex:1 0 160px;max-width:200px">{{ v.t }}</h3>
+<p style="font-size:16px;line-height:1.6;color:#5E4844;flex:1 1 260px">{{ v.d }}</p>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;gap:16px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">מארזים</span>
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,40px)">מתנות ליולדת</h2>
+</div>
+<a href="#" onClick="{{ goGifts }}" style="font-size:15px;border-bottom:1px solid currentColor">לכל המארזים</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px">
+<sc-for list="{{ gifts }}" as="p" hint-placeholder-count="3">
+<a href="#" onClick="{{ p.open }}" style="display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:#FFFFFF;border:1px solid #EADBCF" style-hover="box-shadow:0 14px 40px rgba(58,40,38,.10)">
+<div style="position:relative;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:#F3E4D8">
+<div style="{{ p.bgStyle }}"></div>
+<sc-if value="{{ p.noPhoto }}" hint-placeholder-val="{{ false }}"><span style="position:relative;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:36px;text-align:center;padding:0 20px">{{ p.name }}</span></sc-if>
+<sc-if value="{{ p.hasSale }}"><span style="position:absolute;top:14px;right:14px;background:#A85A3A;color:#FFF;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px">{{ p.saveLabel }}</span></sc-if>
+</div>
+<div style="padding:20px 22px;display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+<span style="font-size:16px;color:#5E4844">{{ p.sub }}</span>
+<span style="display:flex;gap:8px;align-items:baseline;white-space:nowrap"><span style="font-weight:700;font-size:17px">{{ p.priceLabel }}</span><span style="font-size:13px;color:#9C847C;text-decoration:line-through">{{ p.oldLabel }}</span></span>
+</div>
+</a>
+</sc-for>
+</div>
+</section>
+
+
+<section style="background:#FFFFFF;border-top:1px solid #EADBCF;border-bottom:1px solid #EADBCF">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px);display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:14px;max-width:680px">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,44px)">המומחים מדברים</h2>
+<p style="font-size:18px;line-height:1.7;color:#5E4844">אנו מאמינות כי ידע הוא כוח וחשוב שהידע יגיע ממקור מוסמך ואמין.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px">
+<a href="#" style="display:grid;grid-template-columns:clamp(90px,24vw,150px) minmax(0,1fr);gap:clamp(14px,4vw,24px);padding:clamp(16px,4vw,24px);border-radius:20px;background:#F3E2D5;align-items:center" style-hover="background:#EED7C7">
+<img src="https://static.wixstatic.com/media/db159b_7d6223d7bf6d43a7ab1e17842a1328b6~mv2.png" alt="" style="width:100%;aspect-ratio:150/190;height:auto;object-fit:cover;border-radius:12px;display:block">
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">פודקאסט</span>
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px">"היריון בטוח"</h3>
+<p style="font-size:15px;line-height:1.6;color:#5E4844">בהנחיית פרופ' אייל שיינר, מומחה במיילדות וגניקולוגיה, מנהל מחלקת נשים ויולדות ב' בביה"ח סורוקה.</p>
+<span style="font-size:14px;font-weight:600">להאזנה ←</span>
+</div>
+</a>
+<a href="#" style="display:grid;grid-template-columns:clamp(90px,24vw,150px) minmax(0,1fr);gap:clamp(14px,4vw,24px);padding:clamp(16px,4vw,24px);border-radius:20px;background:#F3E2D5;align-items:center" style-hover="background:#EED7C7">
+<img src="https://static.wixstatic.com/media/db159b_6c6b073be1574602a9937309c3cb2d29~mv2.png" alt="" style="width:100%;aspect-ratio:150/190;height:auto;object-fit:cover;border-radius:12px;display:block">
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">מאמרים</span>
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px">ידע מבוסס מחקר</h3>
+<p style="font-size:15px;line-height:1.6;color:#5E4844">הריון, טיפוח העור בהריון, לידה והכנה ללידה, אחרי לידה ותינוקות והורות ראשונית.</p>
+<span style="font-size:14px;font-weight:600">לכל המאמרים ←</span>
+</div>
+</a>
+</div>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)">
+<div style="position:relative;border-radius:28px;overflow:hidden;padding:clamp(32px,7vw,64px) clamp(20px,5vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:32px;align-items:center">
+<img src="https://static.wixstatic.com/media/db159b_be6c8692d1084b019a343710fb694324~mv2.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+<div style="position:absolute;inset:0;background:rgba(58,40,38,.55)"></div>
+<div style="position:relative;display:flex;flex-direction:column;gap:10px;color:#FBF5EF">
+<span style="font-size:15px">הרשמי לקבלת עדכונים, טיפים והנחות</span>
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,42px);line-height:1.1">וקבלי 5% הנחה בהזמנה הראשונה!</h2>
+</div>
+<div style="position:relative;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:8px;background:#FBF5EF;border-radius:999px;padding:6px">
+<input placeholder="כתובת אימייל" style="flex:1;min-width:0;border:0;background:transparent;padding:10px 16px;font-family:inherit;font-size:16px;outline:none">
+<button style="background:#3A2826;color:#FBF5EF;border:0;padding:12px 26px;border-radius:999px;font-size:15px;font-weight:600">הרשמי</button>
+</div>
+<label style="font-size:13px;color:#F6E6DA;display:flex;gap:8px;align-items:center"><input type="checkbox">בהרשמה אני מאשרת קבלת תוכן שיווקי</label>
+</div>
+</div>
+</section>
+
+</main>
+</sc-if>
+
+<!-- ============ CATEGORY ============ -->
+<sc-if value="{{ isCategory }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="02 Category" style="max-width:1320px;width:100%;margin:0 auto;padding:clamp(16px,4vw,32px) clamp(16px,4.5vw,32px) clamp(53px,9vw,96px)">
+<div style="font-size:clamp(12px,3.2vw,14px);color:#8A6C64;display:flex;gap:8px;white-space:nowrap;overflow:hidden"><a href="#" onClick="{{ goHome }}" style="color:#8A6C64">דף הבית</a><span>/</span><span>המוצרים של Oli</span><span>/</span><span style="color:#3A2826">{{ catTitle }}</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px clamp(28px,6vw,64px);align-items:end;padding:clamp(14px,4vw,28px) 0 clamp(16px,4vw,36px);border-bottom:1px solid #EADBCF">
+<div style="display:flex;flex-direction:column;gap:clamp(2px,1vw,8px)">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(15px,3.8vw,24px);color:#A85A3A">{{ catEn }}</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(32px,8vw,64px);line-height:1.05">{{ catTitle }}</h1>
+</div>
+<p style="font-size:clamp(14px,3.8vw,17px);line-height:1.7;color:#5E4844;max-width:520px;text-wrap:pretty">{{ catDesc }}</p>
+</div>
+
+<div style="{{ catBar }}">
+<div style="display:flex;gap:8px;overflow-x:auto;max-width:100%;scrollbar-width:none;flex:1 1 auto;min-width:0">
+<sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+<button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button>
+</sc-for>
+</div>
+<div style="display:flex;gap:16px;align-items:center;font-size:14px;color:#6E5650;flex-shrink:0">
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}"><span>{{ resultCount }} מוצרים</span></sc-if>
+<select onChange="{{ onSort }}" value="{{ sort }}" aria-label="מיון" style="{{ sortStyle }}">
+<option value="rec">מומלצים</option>
+<option value="low">מחיר: מהנמוך לגבוה</option>
+<option value="high">מחיר: מהגבוה לנמוך</option>
+</select>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(calc(50% - 7px),250px),1fr));gap:clamp(24px,5vw,40px) clamp(12px,3vw,20px);padding-top:32px">
+<sc-for list="{{ catProducts }}" as="p" hint-placeholder-count="8">
+<div style="display:flex;flex-direction:column;gap:12px;height:100%">
+<a href="#" onClick="{{ p.open }}" style="position:relative;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#F3E4D8;display:flex;align-items:center;justify-content:center" style-hover="opacity:.92">
+<div style="{{ p.bgStyle }}"></div>
+<sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}"><div style="{{ p.imgStyle }}"></div></sc-if>
+<sc-if value="{{ p.noImg }}"><span style="position:relative;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:36px;color:#3A2826;text-align:center;padding:0 16px">{{ p.name }}</span></sc-if>
+<sc-if value="{{ p.badge }}"><span style="position:absolute;top:12px;right:12px;background:#FBF5EF;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px">{{ p.badge }}</span></sc-if>
+</a>
+<div style="display:flex;flex-direction:column;gap:8px;flex:1">
+<div style="display:flex;flex-direction:column;gap:2px">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-size:clamp(17px,4.4vw,22px);font-weight:500">{{ p.name }}</span>
+<span style="font-size:14px;color:#6E5650;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em">{{ p.sub }}</span>
+<sc-if value="{{ p.note }}"><span style="font-size:13px;color:#A85A3A;font-weight:600;margin-top:2px">{{ p.note }}</span></sc-if>
+</div>
+<div style="display:flex;align-items:baseline;gap:8px;white-space:nowrap;margin-top:auto">
+<span style="font-weight:700;font-size:16px">{{ p.priceLabel }}</span>
+<sc-if value="{{ p.hasSale }}"><span style="font-size:13px;color:#9C847C;text-decoration:line-through">{{ p.oldLabel }}</span></sc-if>
+</div>
+</div>
+<button onClick="{{ p.add }}" style="margin-top:auto;background:transparent;border:1px solid #CDB5A8;color:#3A2826;padding:11px;border-radius:999px;font-size:14px;font-weight:600" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">הוספה לסל</button>
+</div>
+</sc-for>
+</div>
+</main>
+</sc-if>
+
+<!-- ============ PRODUCT ============ -->
+<sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="03 Product">
+<div style="max-width:1320px;margin:0 auto;padding:24px clamp(16px,4.5vw,32px) 0;font-size:14px;color:#8A6C64;display:flex;gap:8px"><a href="#" onClick="{{ goHome }}" style="color:#8A6C64">דף הבית</a><span>/</span><a href="#" onClick="{{ goCategory }}" style="color:#8A6C64">הריון</a><span>/</span><span style="color:#3A2826">Olilastic</span></div>
+
+<section style="max-width:1320px;margin:0 auto;padding:24px clamp(16px,4.5vw,32px) clamp(44px,9vw,80px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:clamp(28px,6vw,56px);align-items:start">
+<div style="{{ galleryStyle }}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4">
+<button onClick="{{ t.pick }}" style="{{ t.style }}"><div style="{{ t.bgStyle }}"></div></button>
+</sc-for>
+</div>
+<div style="position:relative;aspect-ratio:4/5;border-radius:20px;overflow:hidden;background:#F3E4D8;display:flex;align-items:center;justify-content:center">
+<div style="{{ mainBgStyle }}"></div>
+<sc-if value="{{ mainIsPlaceholder }}"><div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:72px">Olilastic</span><span style="font-size:13px;letter-spacing:.16em">STRETCH MARK BUTTER · 100 ML</span><span style="font-size:12px;color:#8A6C64;margin-top:18px">[ צילום מוצר ]</span></div></sc-if>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">STRETCH MARK BUTTER</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(40px,10vw,60px);line-height:1">Olilastic</h1>
+<p style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:24px">חמאה למניעה וטשטוש סימני מתיחה</p>
+<a href="#reviews" style="display:flex;gap:8px;align-items:center;font-size:14px;color:#5E4844;margin-top:4px"><span style="color:#A85A3A;letter-spacing:2px">★★★★★</span>5.0 · 44 ביקורות</a>
+</div>
+<p style="font-size:17px;line-height:1.7;color:#5E4844;text-wrap:pretty">משפרת את האלסטיות של העור, מסייעת במניעת סימני מתיחה, ובהפחתת נראות של סימני מתיחה קיימים.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<span style="font-size:13px;padding:7px 12px;border-radius:999px;background:#F3E2D5">✦ ללא בישום</span>
+<span style="font-size:13px;padding:7px 12px;border-radius:999px;background:#F3E2D5">✦ ללא אלכוהול</span>
+<span style="font-size:13px;padding:7px 12px;border-radius:999px;background:#F3E2D5">✦ באישור משרד הבריאות</span>
+<span style="font-size:13px;padding:7px 12px;border-radius:999px;background:#F3E2D5">100 ml</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:6px">
+<span style="font-size:14px;font-weight:600">בחרי כמות</span>
+<sc-for list="{{ bundles }}" as="b" hint-placeholder-count="2">
+<button onClick="{{ b.pick }}" style="{{ b.style }}">
+<span style="display:flex;gap:12px;align-items:center"><span style="{{ b.dot }}"></span><span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="font-weight:600;font-size:16px">{{ b.title }}</span><span style="font-size:13px;color:#6E5650">{{ b.sub }}</span></span></span>
+<span style="font-weight:700;font-size:17px">{{ b.price }}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="display:flex;gap:10px">
+<div style="display:flex;align-items:center;border:1px solid #CDB5A8;border-radius:999px">
+<button onClick="{{ qtyUp }}" style="width:46px;height:54px;border:0;background:transparent;font-size:20px;color:#3A2826">+</button>
+<span style="min-width:24px;text-align:center;font-weight:600">{{ qty }}</span>
+<button onClick="{{ qtyDown }}" style="width:46px;height:54px;border:0;background:transparent;font-size:20px;color:#3A2826">−</button>
+</div>
+<button onClick="{{ addMain }}" style="flex:1;background:#3A2826;color:#FBF5EF;border:0;border-radius:999px;font-size:17px;font-weight:600" style-hover="background:#A85A3A">{{ addLabel }}</button>
+</div>
+<span style="font-size:14px;color:#6E5650">{{ shipNote }}</span>
+
+<div style="border-top:1px solid #EADBCF">
+<sc-for list="{{ accordion }}" as="a" hint-placeholder-count="4">
+<div style="border-bottom:1px solid #EADBCF">
+<button onClick="{{ a.toggle }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:transparent;border:0;font-size:17px;font-weight:600;color:#3A2826;text-align:right">{{ a.title }}<span style="font-size:20px;font-weight:300">{{ a.sign }}</span></button>
+<sc-if value="{{ a.open }}"><div style="padding:0 0 22px;display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{ a.paras }}" as="t"><p style="font-size:16px;line-height:1.7;color:#5E4844">{{ t }}</p></sc-for>
+</div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="background:#F3E2D5">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(44px,9vw,80px) clamp(16px,4.5vw,32px);display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">הוראות שימוש</span>
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,40px);line-height:1.15">מתי להתחיל?</h2>
+</div>
+<div style="{{ tlWrap }}">
+<sc-for list="{{ timeline }}" as="s" hint-placeholder-count="4">
+<div style="{{ tlItem }}">
+<span style="{{ tlDot }}"></span>
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(22px,5.5vw,28px);line-height:1.2">{{ s.when }}</span>
+<p style="font-size:16px;line-height:1.6;color:#5E4844">{{ s.what }}</p>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(44px,9vw,80px) clamp(16px,4.5vw,32px);display:flex;flex-wrap:wrap;gap:clamp(20px,5vw,72px);align-items:flex-start">
+<div style="{{ ingHead }}">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.02em;font-size:clamp(32px,6.5vw,52px);line-height:1.05">רכיבי מפתח</h2>
+<p style="font-size:16px;line-height:1.7;color:#5E4844;max-width:380px;text-wrap:pretty">ארבעה רכיבים טבעיים, נבחרו בשיתוף רופאים וכימאים.</p>
+</div>
+<div style="display:flex;flex-direction:column;border-bottom:1px solid #DCC3B3;flex:999 1 560px;min-width:0">
+<sc-for list="{{ ingredients }}" as="i" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px clamp(20px,4vw,48px);padding:clamp(20px,3.5vw,30px) 0;border-top:1px solid #DCC3B3;align-items:baseline" style-hover="background:#F6EBE2">
+<div style="display:flex;align-items:baseline;gap:14px">
+<span style="font-size:13px;color:#A85A3A;font-weight:600;min-width:24px">{{ i.n }}</span>
+<div style="display:flex;flex-direction:column;gap:2px">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(28px,4.4vw,40px);letter-spacing:-.02em;line-height:1.05;direction:ltr;text-align:right">{{ i.en }}</span>
+<h3 style="font-size:15px;font-weight:500;color:#6E5650">{{ i.he }}</h3>
+</div>
+</div>
+<p style="font-size:16px;line-height:1.65;color:#5E4844;text-wrap:pretty;padding-right:38px">{{ i.d }}</p>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section id="reviews" style="background:#FFFFFF;border-top:1px solid #EADBCF;border-bottom:1px solid #EADBCF">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(44px,9vw,88px) clamp(16px,4.5vw,32px);display:flex;flex-direction:column;gap:clamp(28px,5vw,48px)">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px 40px;padding-bottom:clamp(20px,4vw,32px);border-bottom:1px solid #EADBCF">
+<div style="display:flex;flex-direction:column;gap:10px">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,44px);line-height:1.05">לקוחות ממליצות</h2>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;color:#6E5650">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:28px;color:#3A2826;line-height:1">5.0</span>
+<span style="color:#A85A3A;letter-spacing:2px;font-size:15px">★★★★★</span>
+<span>44 ביקורות · 43 מתוכן 5 כוכבים</span>
+</div>
+</div>
+<button style="background:#3A2826;color:#FBF5EF;border:0;padding:13px 24px;border-radius:999px;font-size:14px;font-weight:600" style-hover="background:#A85A3A">כתיבת ביקורת</button>
+</div>
+<figure style="margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px clamp(28px,6vw,72px);align-items:start">
+<blockquote style="margin:0;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(24px,4.4vw,40px);line-height:1.3;letter-spacing:-.01em;color:#3A2826;text-wrap:pretty;grid-column:1/-1;max-width:980px">״{{ featured.body }}״</blockquote>
+<figcaption style="display:flex;align-items:center;gap:12px;font-size:14px;color:#6E5650">
+<span style="width:40px;height:40px;border-radius:50%;background:#F3D9C6;color:#3A2826;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">{{ featured.initial }}</span>
+<span style="display:flex;flex-direction:column;gap:2px"><span style="color:#3A2826;font-weight:600;font-size:15px">{{ featured.name }}</span><span>{{ featured.meta }}</span></span>
+</figcaption>
+</figure>
+<div style="{{ revWrap }}">
+<sc-for list="{{ moreReviews }}" as="r" hint-placeholder-count="3">
+<div style="{{ revItem }}">
+<span style="color:#A85A3A;letter-spacing:2px;font-size:13px">★★★★★</span>
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(18px,4.4vw,21px);line-height:1.3">{{ r.title }}</h3>
+<p style="font-size:15px;line-height:1.65;color:#5E4844;flex:1">{{ r.body }}</p>
+<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#6E5650;padding-top:14px;border-top:1px solid #EADBCF">
+<span style="width:32px;height:32px;border-radius:50%;background:#F3E2D5;color:#3A2826;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">{{ r.initial }}</span>
+<span style="display:flex;flex-direction:column;gap:1px;min-width:0"><span style="color:#3A2826;font-weight:600;font-size:14px">{{ r.name }}</span><span>{{ r.meta }}</span></span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="max-width:1320px;margin:0 auto;padding:clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px"><h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,40px);margin:0">אולי תאהבי גם</h2>
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:8px"><button onClick="{{ relPrev }}" aria-label="הקודם" style="width:44px;height:44px;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:18px" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">→</button><button onClick="{{ relNext }}" aria-label="הבא" style="width:44px;height:44px;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:18px" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">←</button></div></sc-if>
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;align-items:center"><sc-for list="{{ relDots }}" as="d"><span style="{{ d.style }}"></span></sc-for></div></sc-if>
+</div>
+<div ref="{{ relRef }}" onScroll="{{ onRelScroll }}" style="{{ relWrap }}">
+<sc-for list="{{ related }}" as="p" hint-placeholder-count="4">
+<div style="{{ relItem }}">
+<a href="#" onClick="{{ p.open }}" style="position:relative;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#F3E4D8;display:flex;align-items:center;justify-content:center">
+<div style="{{ p.bgStyle }}"></div>
+<sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}"><div style="{{ p.imgStyle }}"></div></sc-if>
+<sc-if value="{{ p.noImg }}"><span style="position:relative;font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:36px">{{ p.name }}</span></sc-if>
+</a>
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-size:clamp(17px,4.4vw,22px);font-weight:500">{{ p.name }}</span><span style="font-size:14px;color:#6E5650">{{ p.sub }}</span></div>
+<span style="font-weight:700;white-space:nowrap">{{ p.priceLabel }}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</main>
+</sc-if>
+
+<sc-if value="{{ isStores }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="04 Stores" style="width:100%">
+<section style="max-width:1320px;margin:0 auto;padding:clamp(16px,4vw,32px) clamp(16px,4.5vw,32px) clamp(40px,7vw,72px)">
+<div style="font-size:clamp(12px,3.2vw,14px);color:#8A6C64;display:flex;gap:8px;white-space:nowrap"><a href="#" onClick="{{ goHome }}" style="color:#8A6C64">דף הבית</a><span>/</span><span style="color:#3A2826">Oli בחנויות</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(24px,5vw,64px);align-items:center;padding-top:clamp(20px,4vw,40px)">
+<div style="display:flex;flex-direction:column;gap:clamp(14px,2.5vw,22px)">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">Oli בחנויות</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.02em;font-size:clamp(38px,6vw,72px);line-height:1.04;text-wrap:balance">מהיום קרובות אליכן יותר!</h1>
+<p style="font-size:clamp(16px,2.2vw,19px);line-height:1.65;color:#5E4844;text-wrap:pretty">מהלב שלנו למדיפים של שילב! מוצרי oli נמצאים עכשיו על המדף בסניפי שילב נבחרים ברחבי הארץ.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<a href="#branches" style="background:#3A2826;color:#FBF5EF;padding:16px 28px;border-radius:999px;font-size:16px;font-weight:600">לרשימת הסניפים</a>
+<a href="https://wa.me/972559739670" target="_blank" style="border:1px solid #3A2826;color:#3A2826;padding:16px 28px;border-radius:999px;font-size:16px;font-weight:600">שאלה על סניף? WhatsApp</a>
+</div>
+</div>
+<div style="border-radius:clamp(16px,2.5vw,24px);overflow:hidden;background:#F3E4D8;aspect-ratio:703/425">
+<img src="https://static.wixstatic.com/media/db159b_fe94887c94e742c4aa58ee806fc71371~mv2.png/v1/fill/w_1406,h_850,al_c,q_85,enc_auto/file.png" alt="מוצרי Oli על המדף בשילב" style="width:100%;height:100%;object-fit:cover;display:block">
+</div>
+</div>
+</section>
+<section id="branches" style="background:#FFFFFF;border-top:1px solid #EADBCF">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(40px,8vw,80px) clamp(16px,4.5vw,32px);display:flex;flex-direction:column;gap:clamp(20px,4vw,32px)">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6.5vw,44px);line-height:1.05">לרשימת הסניפים</h2>
+<span style="font-size:15px;color:#6E5650">{{ storeCount }}</span>
+</div>
+<div style="display:flex;gap:8px;overflow-x:auto;max-width:100%;scrollbar-width:none">
+<sc-for list="{{ regionTabs }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(20px,4vw,40px)">
+<sc-for list="{{ regions }}" as="g" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:12px;border-bottom:2px solid #3A2826">
+<h3 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(22px,4.6vw,28px)">{{ g.name }}</h3>
+<span style="font-size:13px;color:#6E5650">{{ g.countLabel }}</span>
+</div>
+<sc-for list="{{ g.stores }}" as="st" hint-placeholder-count="4">
+<a href="{{ st.map }}" target="_blank" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 4px;border-bottom:1px solid #EADBCF;color:#3A2826" style-hover="background:#F6EBE2">
+<span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">{{ st.name }}</span><span style="font-size:13px;color:#6E5650">{{ st.city }}</span></span>
+<span style="display:flex;align-items:center;gap:6px;font-size:13px;color:#A85A3A;white-space:nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>במפה</span>
+</a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<p style="font-size:14px;color:#6E5650;line-height:1.6">המלאי משתנה בין הסניפים. מומלץ לבדוק זמינות מול הסניף לפני ההגעה.</p>
+</div>
+</section>
+</main>
+</sc-if>
+
+<sc-if value="{{ isPodcast }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="05 Podcast" style="width:100%">
+<section style="background:#3A2826;color:#F6E6DA;overflow:hidden">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(28px,6vw,64px) clamp(16px,4.5vw,32px) 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(20px,5vw,64px);align-items:end">
+<div style="display:flex;flex-direction:column;gap:clamp(14px,2.5vw,22px);padding-bottom:clamp(32px,6vw,64px)">
+<span style="font-size:13px;letter-spacing:.14em;color:#E3A783;font-weight:600">הפודקאסט של Oli</span>
+<h1 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.02em;font-size:clamp(40px,7vw,84px);line-height:1;color:#FBF5EF">היריון בטוח</h1>
+<p style="font-size:clamp(16px,2.2vw,19px);line-height:1.65;color:#E6D2C6;text-wrap:pretty;max-width:520px">שיחות חשופות עם מיטב המומחים בנושא היריון ולידה. בהנחיית פרופ' אייל שיינר, מומחה למיילדות וגניקולוגיה.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<a href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" style="display:flex;align-items:center;gap:10px;background:#F3D9C6;color:#3A2826;padding:14px 24px;border-radius:999px;font-size:15px;font-weight:600"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>האזנה ב-Spotify</a>
+<a href="https://youtube.com/@olisafecare" target="_blank" style="display:flex;align-items:center;gap:10px;border:1px solid #6B524D;color:#FBF5EF;padding:14px 24px;border-radius:999px;font-size:15px;font-weight:600">צפייה ב-YouTube</a>
+</div>
+<div style="display:flex;gap:28px;padding-top:clamp(8px,2vw,16px);border-top:1px solid #54403C;margin-top:4px;font-size:14px;color:#C9B2A6">
+<span style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px;color:#FBF5EF">{{ epTotal }}</span>פרקים</span>
+<span style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px;color:#FBF5EF">{{ epHours }}</span>שעות האזנה</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:0;position:relative">
+<img src="https://static.wixstatic.com/media/db159b_32d9c51a24f648159b801dae4bb5d0b0~mv2.png/v1/fill/w_740,h_850,al_c,q_85,enc_auto/file.png" alt="פרופסור אייל שיינר" style="width:min(100%,400px);height:auto;display:block;position:relative">
+<div style="position:absolute;bottom:clamp(16px,3vw,28px);right:0;background:#FBF5EF;color:#3A2826;padding:14px 18px;border-radius:14px;max-width:min(300px,80%);display:flex;flex-direction:column;gap:4px;box-shadow:0 14px 40px rgba(0,0,0,.25)">
+<span style="font-weight:700;font-size:15px">פרופסור אייל שיינר</span>
+<span style="font-size:13px;line-height:1.5;color:#5E4844">מומחה במיילדות וגניקולוגיה, מנהל החטיבה למיילדות וגניקולוגיה, מנהל מחלקת נשים ויולדות ב' בבית החולים סורוקה.</span>
+</div>
+</div>
+</div>
+</section>
+<section style="max-width:1320px;margin:0 auto;padding:clamp(36px,7vw,72px) clamp(16px,4.5vw,32px) clamp(48px,8vw,88px);display:flex;flex-direction:column;gap:clamp(20px,4vw,32px)">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="font-size:13px;letter-spacing:.14em;color:#A85A3A;font-weight:600">הפרק החדש</span>
+<a href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(14px,3vw,28px);align-items:center;padding:clamp(18px,3.5vw,32px);border-radius:clamp(16px,2.5vw,24px);background:#F3E2D5;color:#3A2826" style-hover="background:#EED6C6">
+<span style="width:clamp(56px,10vw,84px);height:clamp(56px,10vw,84px);border-radius:50%;background:#3A2826;color:#F3D9C6;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></span>
+<span style="display:flex;flex-direction:column;gap:6px;min-width:0">
+<span style="font-size:13px;color:#8A6C64;font-weight:600">פרק {{ latest.n }} · {{ latest.dur }}</span>
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(22px,3.6vw,34px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance">{{ latest.title }}</span>
+<span style="font-size:clamp(14px,2vw,16px);line-height:1.6;color:#5E4844;text-wrap:pretty">{{ latest.desc }}</span>
+</span>
+</a>
+</div>
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px;padding-top:clamp(12px,3vw,24px)">
+<h2 style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;letter-spacing:-.015em;font-size:clamp(28px,6vw,44px);line-height:1.05">כל הפרקים</h2>
+<div style="display:flex;gap:8px;align-items:center;flex:1 1 280px;max-width:440px">
+<div style="flex:1;display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;border:1px solid #CDB5A8;border-radius:999px;background:#FFFFFF">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E5650" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input value="{{ epQ }}" onChange="{{ onEpQ }}" placeholder="חיפוש פרק, נושא או אורח/ת" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#3A2826">
+</div>
+<button onClick="{{ toggleEpSort }}" style="height:46px;padding:0 16px;border:1px solid #CDB5A8;border-radius:999px;background:transparent;color:#3A2826;font-size:14px;font-weight:600;white-space:nowrap">{{ epSortLabel }}</button>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;border-top:2px solid #3A2826">
+<sc-for list="{{ episodes }}" as="ep" hint-placeholder-count="8">
+<a href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" style="display:grid;grid-template-columns:clamp(40px,7vw,64px) minmax(0,1fr) auto;gap:clamp(12px,2.5vw,24px);align-items:center;padding:clamp(14px,2.5vw,20px) 4px;border-bottom:1px solid #EADBCF;color:#3A2826" style-hover="background:#F6EBE2">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(18px,3vw,26px);color:#A85A3A;letter-spacing:-.01em">{{ ep.num }}</span>
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:clamp(16px,2.4vw,20px);line-height:1.35;text-wrap:pretty">{{ ep.title }}</span>
+<span style="display:flex;align-items:center;gap:10px;font-size:13px;color:#6E5650;white-space:nowrap"><span>{{ ep.dur }}</span><span style="width:36px;height:36px;border-radius:50%;border:1px solid #CDB5A8;display:flex;align-items:center;justify-content:center;color:#3A2826"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></span></span>
+</a>
+</sc-for>
+</div>
+<sc-if value="{{ epNone }}"><span style="font-size:16px;color:#5E4844;padding:8px 0">לא נמצאו פרקים. נסי מילה אחרת.</span></sc-if>
+<sc-if value="{{ epHasMore }}" hint-placeholder-val="{{ true }}"><button onClick="{{ epMore }}" style="align-self:center;background:#3A2826;color:#FBF5EF;border:0;padding:15px 30px;border-radius:999px;font-size:15px;font-weight:600" style-hover="background:#A85A3A">{{ epMoreLabel }}</button></sc-if>
+</div>
+</section>
+</main>
+</sc-if>
+
+<footer dir="rtl" style="background:#3A2826;color:#E6D2C6;margin-top:auto;text-align:right">
+<div style="max-width:1320px;margin:0 auto;padding:clamp(35px,9vw,64px) clamp(16px,4.5vw,32px) 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:40px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<img src="assets/logo-white.png" alt="Oli Safe Care" style="height:64px;width:auto;display:block;align-self:flex-start">
+<p style="font-size:15px;line-height:1.6">מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:15px"><span style="color:#FBF5EF;font-weight:600;margin-bottom:4px">חנות</span><a href="#" style="color:#E6D2C6">המוצרים של Oli</a><a href="#" style="color:#E6D2C6">מתנות ליולדת</a><a href="#" style="color:#E6D2C6">בחנויות Oli</a></div>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:15px"><span style="color:#FBF5EF;font-weight:600;margin-bottom:4px">ידע</span><a href="#" style="color:#E6D2C6">מאמרים</a><a href="#" style="color:#E6D2C6">היריון בטוח, פרופ׳ שיינר</a><a href="#" style="color:#E6D2C6">חופשייה ללדת, זיוה כחלון</a></div>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:15px"><span style="color:#FBF5EF;font-weight:600;margin-bottom:4px">צרי קשר</span><a href="mailto:contact@olisafecare.com" style="color:#E6D2C6">contact@olisafecare.com</a><a href="https://wa.me/972559739670" target="_blank" style="color:#E6D2C6">WhatsApp ‎+972559739670</a><span style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+<a href="https://instagram.com/oli_safecare" target="_blank" aria-label="Instagram" style="width:42px;height:42px;border-radius:50%;border:1px solid #5A4340;display:flex;align-items:center;justify-content:center;color:#E6D2C6" style-hover="background:#F3D9C6;color:#3A2826;border-color:#F3D9C6"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"></circle></svg></a>
+<a href="https://www.facebook.com/profile.php?id=100093537736476" target="_blank" aria-label="Facebook" style="width:42px;height:42px;border-radius:50%;border:1px solid #5A4340;display:flex;align-items:center;justify-content:center;color:#E6D2C6" style-hover="background:#F3D9C6;color:#3A2826;border-color:#F3D9C6"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8h2.5V4.5H14A3.5 3.5 0 0 0 10.5 8v2.5H8V14h2.5v6.5H14V14h2.5l.5-3.5h-3V8z"></path></svg></a>
+<a href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" aria-label="Spotify" style="width:42px;height:42px;border-radius:50%;border:1px solid #5A4340;display:flex;align-items:center;justify-content:center;color:#E6D2C6" style-hover="background:#F3D9C6;color:#3A2826;border-color:#F3D9C6"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M7.5 9.5c3-1 6.5-.8 9.2.7M8 12.6c2.5-.7 5.3-.5 7.5.7M8.6 15.4c2-.5 4-.3 5.7.6"></path></svg></a>
+<a href="https://youtube.com/@olisafecare" target="_blank" aria-label="YouTube" style="width:42px;height:42px;border-radius:50%;border:1px solid #5A4340;display:flex;align-items:center;justify-content:center;color:#E6D2C6" style-hover="background:#F3D9C6;color:#3A2826;border-color:#F3D9C6"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="4"></rect><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"></path></svg></a>
+<a href="https://wa.me/972559739670" target="_blank" aria-label="WhatsApp" style="width:42px;height:42px;border-radius:50%;border:1px solid #5A4340;display:flex;align-items:center;justify-content:center;color:#E6D2C6" style-hover="background:#F3D9C6;color:#3A2826;border-color:#F3D9C6"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.5h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.62.71.23 1.36.2 1.87.12.57-.08 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.05 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88zm8.41-18.29A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.94L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89 0-3.18-1.24-6.16-3.48-8.41z"></path></svg></a>
+</span></div>
+</div>
+<div style="max-width:1320px;margin:0 auto;padding:20px clamp(16px,4.5vw,32px);border-top:1px solid #5A4340;display:flex;gap:24px;font-size:13px;flex-wrap:wrap"><a href="#" style="color:#C9B2A6">תקנון האתר</a><a href="#" style="color:#C9B2A6">נגישות</a><a href="#" style="color:#C9B2A6">מדיניות פרטיות</a></div>
+</footer>
+
+<div style="position:fixed;bottom:20px;left:20px;z-index:50;display:flex;gap:4px;padding:5px;background:#FFFFFF;border:1px solid #EADBCF;border-radius:999px;box-shadow:0 8px 30px rgba(58,40,38,.15);font-size:13px">
+<sc-for list="{{ pageTabs }}" as="t" hint-placeholder-count="3"><button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+</div>
+<div onClick="{{ closeAll }}" style="{{ searchBackdrop }}"></div>
+<div style="{{ searchPanel }}" aria-label="חיפוש">
+<div style="max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex:1;display:flex;align-items:center;gap:12px;border-bottom:2px solid #3A2826;padding:6px 0">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3A2826" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input ref="{{ searchRef }}" value="{{ q }}" onChange="{{ onQ }}" placeholder="מה את מחפשת?" style="flex:1;min-width:0;border:0;background:transparent;font-family:'Google Sans','Heebo',sans-serif;font-size:clamp(22px,4vw,32px);font-weight:500;color:#3A2826;outline:none;padding:4px 0">
+</div>
+<button onClick="{{ closeAll }}" aria-label="סגירה" style="width:40px;height:40px;flex-shrink:0;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:16px;display:flex;align-items:center;justify-content:center" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">✕</button>
+</div>
+<sc-if value="{{ qEmpty }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="font-size:13px;color:#8A6C64;font-weight:600">חיפושים פופולריים</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ popular }}" as="t"><button onClick="{{ t.go }}" style="padding:10px 16px;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:14px" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">{{ t.label }}</button></sc-for></div>
+</div>
+</sc-if>
+<sc-if value="{{ qHasText }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;color:#8A6C64;font-weight:600">{{ resultsLabel }}</span>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:4px 20px;max-height:52vh;overflow-y:auto">
+<sc-for list="{{ results }}" as="p" hint-placeholder-count="3">
+<a href="#" onClick="{{ p.open }}" style="display:flex;align-items:center;gap:14px;padding:10px;border-radius:14px" style-hover="background:#F3E2D5">
+<div style="{{ p.thumb }}"></div>
+<div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:17px">{{ p.name }}</span><span style="font-size:13px;color:#6E5650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.sub }}</span></div>
+<span style="font-weight:700;font-size:14px">{{ p.priceLabel }}</span>
+</a>
+</sc-for>
+</div>
+<sc-if value="{{ noResults }}"><span style="font-size:16px;color:#5E4844;padding:12px 0">לא מצאנו תוצאות. נסי מילה אחרת, למשל "שמן" או "מארז".</span></sc-if>
+</div>
+</sc-if>
+</div>
+</div>
+<div onClick="{{ closeAll }}" style="{{ accBackdrop }}"></div>
+<aside style="{{ accPanel }}" aria-label="החשבון שלי">
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:center;padding-top:10px"><span style="width:44px;height:4px;border-radius:2px;background:#D8C3B6"></span></div></sc-if>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 16px;border-bottom:1px solid #EADBCF">
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px">החשבון שלי</span>
+<button onClick="{{ closeAll }}" aria-label="סגירה" style="width:40px;height:40px;flex-shrink:0;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:16px;display:flex;align-items:center;justify-content:center" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">✕</button>
+</div>
+<div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px">
+<div style="display:grid;grid-template-columns:1fr 1fr;background:#F3E2D5;border-radius:999px;padding:4px">
+<sc-for list="{{ accTabs }}" as="t"><button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+</div>
+<sc-if value="{{ accSignup }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:14px;background:#3A2826;color:#FBF5EF;font-size:14px;line-height:1.5"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:24px;color:#F3D9C6">5%</span><span>הנחה על ההזמנה הראשונה לנרשמות חדשות</span></div>
+<label style="display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:600">שם מלא<input placeholder="השם שלך" style="height:52px;border:1px solid #CDB5A8;border-radius:14px;background:#FFFFFF;padding:0 16px;font-size:16px;font-family:inherit;color:#3A2826;outline:none;width:100%"></label>
+</sc-if>
+<label style="display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:600">אימייל<input type="email" placeholder="name@email.com" style="height:52px;border:1px solid #CDB5A8;border-radius:14px;background:#FFFFFF;padding:0 16px;font-size:16px;font-family:inherit;color:#3A2826;outline:none;width:100%;direction:ltr;text-align:right"></label>
+<label style="display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:600">סיסמה<input type="password" placeholder="••••••••" style="height:52px;border:1px solid #CDB5A8;border-radius:14px;background:#FFFFFF;padding:0 16px;font-size:16px;font-family:inherit;color:#3A2826;outline:none;width:100%"></label>
+<sc-if value="{{ accLogin }}" hint-placeholder-val="{{ true }}"><a href="#" style="font-size:14px;color:#A85A3A;text-decoration:underline;align-self:flex-start">שכחתי סיסמה</a></sc-if>
+<button onClick="{{ closeAll }}" style="background:#3A2826;color:#FBF5EF;border:0;height:54px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#A85A3A">{{ accCta }}</button>
+<div style="display:flex;align-items:center;gap:12px;color:#8A6C64;font-size:13px"><span style="flex:1;height:1px;background:#EADBCF"></span>או<span style="flex:1;height:1px;background:#EADBCF"></span></div>
+<button style="display:flex;align-items:center;justify-content:center;gap:10px;background:#FFFFFF;color:#3A2826;border:1px solid #CDB5A8;height:52px;border-radius:999px;font-size:15px;font-weight:600"><span style="font-weight:700;color:#A85A3A">G</span>המשך עם Google</button>
+</div>
+</aside>
+<div onClick="{{ closeCart }}" style="{{ cartBackdrop }}"></div>
+<aside style="{{ cartPanel }}" aria-label="סל קניות">
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:center;padding-top:10px"><span style="width:44px;height:4px;border-radius:2px;background:#D8C3B6"></span></div></sc-if>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 16px;border-bottom:1px solid #EADBCF">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px">הסל שלך</span><span style="font-size:14px;color:#6E5650">{{ cartCountLabel }}</span></div>
+<button onClick="{{ closeCart }}" aria-label="סגירה" style="width:40px;height:40px;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:16px;display:flex;align-items:center;justify-content:center" style-hover="background:#3A2826;color:#FBF5EF;border-color:#3A2826">✕</button>
+</div>
+<div style="padding:16px 24px;display:flex;flex-direction:column;gap:10px;background:#F6EBE2">
+<span style="font-size:14px;color:#3A2826">{{ shipMsg }}</span>
+<div style="height:6px;border-radius:3px;background:#E6D2C6;overflow:hidden"><div style="{{ shipBar }}"></div></div>
+</div>
+<sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 24px;text-align:center">
+<span style="width:72px;height:72px;border-radius:50%;background:#F3E2D5;display:flex;align-items:center;justify-content:center;color:#A85A3A"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z"></path><path d="M9 8V6.5a3 3 0 0 1 6 0V8"></path></svg></span>
+<span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:22px">הסל עדיין ריק</span>
+<span style="font-size:15px;color:#6E5650">מוצרים בטוחים להריון ולאחר לידה מחכים לך באתר</span>
+<button onClick="{{ goCategory }}" style="margin-top:6px;background:#3A2826;color:#FBF5EF;border:0;padding:14px 26px;border-radius:999px;font-size:15px;font-weight:600">למוצרים של Oli</button>
+</div>
+</sc-if>
+<sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow-y:auto;padding:8px 24px">
+<sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+<div style="{{ it.rowStyle }}">
+<div style="{{ it.thumb }}"></div>
+<div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+<div style="display:flex;justify-content:space-between;gap:10px"><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:18px">{{ it.name }}</span><span style="font-weight:700;font-size:15px;white-space:nowrap">{{ it.lineLabel }}</span></div>
+<span style="font-size:13px;color:#6E5650;line-height:1.4">{{ it.sub }}</span>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+<div style="display:flex;align-items:center;border:1px solid #CDB5A8;border-radius:999px;height:36px">
+<button onClick="{{ it.inc }}" aria-label="הוספה" style="width:36px;height:36px;border:0;background:transparent;color:#3A2826;font-size:17px">+</button>
+<span style="min-width:22px;text-align:center;font-size:14px;font-weight:600">{{ it.qty }}</span>
+<button onClick="{{ it.dec }}" aria-label="הפחתה" style="width:36px;height:36px;border:0;background:transparent;color:#3A2826;font-size:17px">−</button>
+</div>
+<button onClick="{{ it.remove }}" style="border:0;background:transparent;color:#6E5650;font-size:13px;text-decoration:underline;padding:8px 0">הסרה</button>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="padding:18px 24px calc(22px + env(safe-area-inset-bottom));border-top:1px solid #EADBCF;display:flex;flex-direction:column;gap:12px;background:#FBF5EF">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;color:#5E4844">סכום ביניים</span><span style="font-family:'Google Sans','Heebo',sans-serif;font-weight:500;font-size:26px">{{ cartTotal }}</span></div>
+<span style="font-size:13px;color:#6E5650">משלוח ומבצעים יחושבו בקופה</span>
+<button style="background:#3A2826;color:#FBF5EF;border:0;height:54px;border-radius:999px;font-size:16px;font-weight:600" style-hover="background:#A85A3A">למעבר לתשלום</button>
+<button onClick="{{ closeCart }}" style="background:transparent;color:#3A2826;border:0;font-size:14px;text-decoration:underline;padding:4px">המשך קנייה</button>
+</div>
+</sc-if>
+</aside>
+<sc-if value="{{ toast }}"><div style="position:fixed;top:96px;left:50%;transform:translateX(-50%);z-index:60;background:#3A2826;color:#FBF5EF;padding:12px 22px;border-radius:999px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.2)">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;heroVariant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;product&quot;,&quot;split&quot;,&quot;full&quot;],&quot;default&quot;:&quot;product&quot;,&quot;tsType&quot;:&quot;'product'|'split'|'full'&quot;},&quot;showPromoBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;category&quot;,&quot;product&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const W='https://static.wixstatic.com/media/';
+const BG={peach:W+'db159b_e9bdbc308ffa4b0bb18809d1b23ec108~mv2.jpg',rose:W+'db159b_22360eb95c0b4d6eb40a977e9e07dabb~mv2.png',cream:W+'db159b_6c6b073be1574602a9937309c3cb2d29~mv2.png',mist:W+'db159b_7d6223d7bf6d43a7ab1e17842a1328b6~mv2.png'};
+const HERO=W+'db159b_023efbddb9054a1695b0af97979b8d28f000.jpg';
+const IMG=(id,w=800,hh=1000)=>W+id+'/v1/fill/w_'+w+',h_'+hh+',al_c,q_85,enc_auto/file.jpg';
+const PIMG={olineum:'db159b_bfe0061609ae4274a93b6491dd07ed08~mv2.jpg',nippoli:'db159b_6beb68bce7684106a7dbbf14bd9bf408~mv2.jpeg',olilax:'db159b_512f372ce1bd443da5fe477b0e544113~mv2.jpeg',facioli:'db159b_d83a36f5d9db48899f80d8c01a7f4c55~mv2.jpg',bestof:'db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg',olibox:'db159b_c3fca06807e24db585466c46f69e0b36~mv2.jpg'};
+const CLEAN={olineum:'assets/olineum-clean.png',oliglow:'assets/oliglow-clean.png',gift:'assets/gift-clean.png'};
+const CLEAN_WIDE={gift:1};
+const OLINEUM=W+'db159b_6cb362a4da1247828d144b3b6a5a8564~mv2.png';
+const P=[
+{id:'olilastic',name:'Olilastic',sub:'חמאה למניעה וטשטוש סימני מתיחה',price:129,cat:['preg','best'],note:'הנחה ברכישת שתי חמאות',badge:'הנמכר ביותר',bg:'peach'},
+{id:'olineum',name:'Olineum',sub:'שמן עיסוי להריון',price:89,cat:['preg','best','birth'],note:'הנחה ברכישת שני שמנים',bg:'cream'},
+{id:'nippoli',name:'NippOli',sub:'חמאת הרגעה לפטמות',price:69,cat:['birth','best'],bg:'rose'},
+{id:'oliglow',name:'Oliglow',sub:'סרום לשיפור מרקם וגוון העור',price:229,old:245,cat:['preg','best'],bg:'mist'},
+{id:'olilax',name:'Olilax',sub:'קרם עיסוי לרגליים עייפות',price:94,cat:['preg'],bg:'peach'},
+{id:'facioli',name:'FaciOli',sub:'קרם לחות לפנים',price:159,cat:['preg','birth'],bg:'cream'},
+{id:'babyspa',name:'Baby Spa Ritual',sub:'שמן עיסוי לתינוק',price:59,old:74,cat:['birth'],badge:'מחיר השקה',bg:'rose'},
+{id:'oli4',name:'Oli 4 Pregnancy',sub:'מארז הריון',price:379,old:471,cat:['preg','gift'],bg:'mist'},
+{id:'bestof',name:'Best of Oli',sub:'מארז המוצרים האהובים',price:259,old:312,cat:['gift','best'],bg:'peach'},
+{id:'olibox',name:'Olibox',sub:'מארז לידה מפנק',price:292.8,old:366,cat:['gift','birth'],bg:'rose'},
+{id:'gift',name:"It's Oli for you",sub:'מתנה ליולדת',price:358.9,old:485,cat:['gift'],bg:'cream'},
+{id:'oils',name:'Home & Oils',sub:'מארז שמנים ואווירה לבית',price:139,old:147,cat:['gift'],bg:'mist'},
+{id:'olimini',name:'Olimini',sub:'מיני מארז היריון',price:197.6,old:247,cat:['preg','gift'],bg:'peach'},
+{id:'bottle',name:'Birth Bottle',sub:'בקבוק פרי ללידה',price:55,cat:['birth'],badge:'חדש',bg:'cream'},
+{id:'olicalm',name:'Olicalm',sub:'נר ארומטי מרגיע',price:80.1,old:89,cat:['gift'],bg:'rose'},
+{id:'poster',name:'My first time',sub:'פוסטר מעקב התפתחות התינוק',price:107.1,old:119,cat:['birth','gift'],bg:'mist'}
+];
+const CATS={
+all:{t:'כל המוצרים',en:'The full collection',d:'מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו, לצד מתנות ומארזים ליולדת.'},
+best:{t:'המומלצים ביותר',en:'Best sellers',d:'המוצרים שהלקוחות שלנו חוזרות אליהם שוב ושוב.'},
+preg:{t:'הריון',en:'Pregnancy care',d:'חמאת גוף לסימני מתיחה, שמן עיסוי, קרם לרגליים עייפות וקרם פנים, בטוחים לשימוש לאורך ההריון.'},
+birth:{t:'לידה ואחרי לידה',en:'Postpartum care',d:'מוצרים ללידה ולהנקה, ולשבועות הראשונים עם התינוק.'},
+gift:{t:'מתנה ליולדת',en:'Birth gifts',d:'מארזים מוכנים למתנה, להריוניות וליולדות.'}
+};
+const bgS=(u,o)=>({position:'absolute',inset:0,backgroundImage:'url("'+u+'")',backgroundSize:'cover',backgroundPosition:'center',...(o||{})});
+const fmt=n=>'₪'+(Number.isInteger(n)?n:n.toFixed(2).replace(/0$/,''));
+const pill=on=>({padding:'9px 18px',borderRadius:999,border:'1px solid '+(on?'#3A2826':'#CDB5A8'),background:on?'#3A2826':'transparent',color:on?'#FBF5EF':'#3A2826',fontSize:14,fontWeight:600,whiteSpace:'nowrap',flexShrink:0});
+class Component extends DCLogic {
+  state={page:this.props.startPage??'home',cat:'preg',sort:'rec',cart:0,items:[],cartOpen:false,search:false,q:'',account:false,accTab:'login',qty:1,bundle:0,thumb:0,open:0,toast:'',mobile:typeof window!=='undefined'&&window.innerWidth<760,menu:false};
+  _mh(){const hd=this.headerRef&&this.headerRef.current;if(!hd)return;const hh=Math.round(hd.getBoundingClientRect().height)-1;if(hh>20&&hh!==this.state.headH)this.setState({headH:hh});}
+  componentDidMount(){this._r=()=>{const hd=this.headerRef&&this.headerRef.current;this._mh();const m=window.innerWidth<760,w=window.innerWidth>=1024;if(w!==this.state.wide)this.setState({wide:w});if(m!==this.state.mobile)this.setState({mobile:m,menu:false});};window.addEventListener('resize',this._r);requestAnimationFrame(()=>this._mh());setTimeout(()=>this._mh(),300);setTimeout(()=>this._mh(),1200);if(window.ResizeObserver&&this.headerRef&&this.headerRef.current){this._ro=new ResizeObserver(()=>this._mh());this._ro.observe(this.headerRef.current);}this._k=e=>{if(e.key==='Escape'){document.body.style.overflow='';this.setState({search:false,account:false,cartOpen:false,menu:false});}};window.addEventListener('keydown',this._k);this._r();}
+  componentWillUnmount(){this._ro&&this._ro.disconnect();window.removeEventListener('resize',this._r);window.removeEventListener('keydown',this._k);}
+  go(page,extra){document.body.style.overflow='';this.setState({page,menu:false,cartOpen:false,search:false,account:false,...extra});window.scrollTo({top:0});}
+  add(n,name){const p=P.find(x=>x.name===name)||{id:name,name,sub:'',price:0};this.setState(s=>{const items=s.items.slice();const i=items.findIndex(x=>x.id===p.id);if(i>=0)items[i]={...items[i],qty:items[i].qty+n};else items.push({id:p.id,name:p.name,sub:p.sub,price:p.price,bg:p.bg,qty:n});return {items,cart:s.cart+n,cartOpen:true,menu:false};});document.body.style.overflow='hidden';}
+  setQty(id,d){this.setState(s=>{const items=s.items.map(x=>x.id===id?{...x,qty:x.qty+d}:x).filter(x=>x.qty>0);return {items,cart:items.reduce((a,x)=>a+x.qty,0)};});}
+  card(p){const pi=PIMG[p.id],cl=CLEAN[p.id];return {...p,bg:BG[p.bg],bgStyle:cl?bgS(cl,{backgroundSize:CLEAN_WIDE[p.id]?'88% auto':'auto 80%',backgroundRepeat:'no-repeat',backgroundColor:'#F3E4D8',backgroundBlendMode:'multiply'}):pi?bgS(IMG(pi)):bgS(BG[p.bg]),hasPhoto:!!(pi||cl),noPhoto:!(pi||cl),imgStyle:p.img?{position:'relative',width:'86%',height:'86%',backgroundImage:'url("'+p.img+'")',backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center'}:null,hasImg:false,noImg:!(pi||cl),priceLabel:fmt(p.price),oldLabel:p.old?fmt(p.old):'',hasSale:!!p.old,saveLabel:p.old?'חיסכון '+Math.round((1-p.price/p.old)*100)+'%':'',badge:p.badge||'',note:p.note||'',
+    open:e=>{e&&e.preventDefault();this.go('product',{thumb:0,qty:1});},add:()=>this.add(1,p.name)};}
+  renderVals(){
+    const s=this.state,pv=e=>e&&e.preventDefault();
+    const hero=this.props.heroVariant??'product';
+    let list=P.filter(p=>s.cat==='all'||p.cat.includes(s.cat));
+    if(s.sort==='low')list=[...list].sort((a,b)=>a.price-b.price);
+    if(s.sort==='high')list=[...list].sort((a,b)=>b.price-a.price);
+    const c=CATS[s.cat];
+    const thumbSrc=[IMG('db159b_c6044a549cea41979a5612ff7b19c347~mv2.jpeg'),IMG(PIMG.bestof,1200,1500),IMG(PIMG.olibox,1200,1500),BG.peach];
+    const unit=129,two=s.bundle===1;
+    const total=two?s.qty*2:s.qty;
+    return {
+      showPromo:this.props.showPromoBar??true,heroSplit:hero==='split',heroFull:hero==='full',heroProduct:hero==='product',
+      isHome:s.page==='home',isCategory:s.page==='category',isProduct:s.page==='product',isStores:s.page==='stores',isPodcast:s.page==='podcast',
+      goPodcast:e=>{pv(e);this.go('podcast');},
+      ...(()=>{const E=(typeof window!=='undefined'&&window.OLI_EPISODES)||[];const D=(typeof window!=='undefined'&&window.OLI_EP_DESC)||{};
+        const mins=E.reduce((a,x)=>{const [m,sec]=x[2].split(':').map(Number);return a+m+sec/60;},0);
+        const q=(s.epQ||'').trim();const asc=s.epAsc;let list=E.filter(x=>!q||x[1].includes(q)||String(x[0])===q);list=asc?list:list.slice().reverse();
+        const lim=s.epLim||12;const L=E[E.length-1]||[0,'',''];
+        return {epTotal:E.length,epHours:Math.round(mins/60),latest:{n:L[0],title:L[1],dur:L[2],desc:D[L[0]]||''},
+          epQ:s.epQ||'',onEpQ:e=>this.setState({epQ:e.target.value,epLim:12}),
+          epSortLabel:asc?'מהראשון':'מהחדש',toggleEpSort:()=>this.setState({epAsc:!asc}),
+          episodes:list.slice(0,lim).map(x=>({num:String(x[0]).padStart(2,'0'),title:x[1],dur:x[2]})),
+          epNone:!list.length,epHasMore:list.length>lim,epMoreLabel:'עוד פרקים ('+(list.length-lim)+')',epMore:()=>this.setState({epLim:lim+12})};})(),
+      goStores:e=>{pv(e);this.go('stores');},
+      ...(()=>{const D={'דרום':[['שילב אילת','אילת'],['שילב ביג ב״ש','באר שבע'],['שילב גרנד קניון באר שבע','באר שבע'],['שילב ביג אשדוד','אשדוד']],'מרכז':[['שילב ראשון לציון מתחם G','ראשון לציון'],['בית שילב איילון','רמת גן'],['שילב ביג גלילות','גלילות'],['שילב מלחה','ירושלים'],['שילב מודיעין','מודיעין']],'צפון':[['שילב גרנד קניון חיפה','חיפה'],['שילב חוצות המפרץ חיפה','חיפה'],['שילב קניון קריון','קריית ביאליק'],['שילב דודג׳ סנטר נצרת','נצרת'],['שילב עפולה','עפולה'],['שילב ירכא מתחם מיי בייבי','ירכא']]};
+        const reg=s.region||'all';const keys=Object.keys(D);const total=keys.reduce((a,k)=>a+D[k].length,0);
+        return {storeCount:total+' סניפים ברחבי הארץ',
+          regionTabs:[['all','כל הארץ'],...keys.map(k=>[k,k])].map(([k,l])=>({label:l,go:()=>this.setState({region:k}),style:s.mobile?{...pill(reg===k),padding:'7px 13px',fontSize:13}:pill(reg===k)})),
+          regions:keys.filter(k=>reg==='all'||reg===k).map(k=>({name:k,countLabel:D[k].length+' סניפים',stores:D[k].map(([name,city])=>({name,city,map:'https://www.google.com/maps/search/'+encodeURIComponent(name)}))}))};})(),
+      cartCount:s.cart,stageImg:{position:'absolute',left:s.mobile?'6%':'8%',top:s.mobile?'50%':'12%',transform:s.mobile?'translateY(-50%)':'none',height:s.mobile?'78%':'56%',aspectRatio:'1140/1425',mixBlendMode:'multiply',filter:'drop-shadow(0 18px 18px rgba(58,40,38,.18))',pointerEvents:'none',transition:'transform .5s cubic-bezier(.2,.8,.2,1)'},relPrev:()=>{const el=this.relRef&&this.relRef.current;if(el)el.scrollBy({left:el.clientWidth,behavior:'smooth'});},relNext:()=>{const el=this.relRef&&this.relRef.current;if(el)el.scrollBy({left:-el.clientWidth,behavior:'smooth'});},
+      revWrap:s.mobile?{display:'flex',gap:12,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',margin:'0 -16px',padding:'0 16px 4px',scrollPaddingInline:16}:{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:20},
+      revItem:{display:'flex',flexDirection:'column',gap:10,padding:s.mobile?20:24,borderRadius:16,background:'#FBF5EF',flex:s.mobile?'0 0 82%':'initial',scrollSnapAlign:'start',minWidth:0},
+      catBar:{position:'sticky',top:(s.headH>20?s.headH:64),zIndex:10,background:'#FBF5EF',display:'flex',justifyContent:'space-between',alignItems:'center',gap:s.mobile?8:16,padding:s.mobile?'10px 0':'18px 0',flexWrap:s.mobile?'nowrap':'wrap',borderBottom:'1px solid #EADBCF',margin:s.mobile?'0 -16px':0,paddingInline:s.mobile?16:0},
+      sortStyle:{fontFamily:'inherit',fontSize:s.mobile?13:14,padding:s.mobile?'7px 10px':'9px 14px',borderRadius:999,border:'1px solid #CDB5A8',background:'#FBF5EF',color:'#3A2826',maxWidth:s.mobile?104:'none'},flagBox:{aspectRatio:s.mobile?'1/1':'4/5',borderRadius:s.mobile?16:24,overflow:'hidden',background:'#3A2826',position:'relative',width:'100%',maxWidth:s.mobile?420:'none',justifySelf:'center'},stageCard:{position:'relative',display:'flex',flexDirection:'column',justifyContent:'space-between',gap:s.mobile?18:0,minHeight:s.mobile?190:380,padding:s.mobile?'20px 20px 18px':28,borderRadius:s.mobile?16:20,overflow:'hidden',background:'#F4DECF',transition:'transform .3s'},headerRef:this.headerRef||(this.headerRef=React.createRef()),headH:s.headH>20?s.headH:64,
+      openSearch:e=>{pv(e);document.body.style.overflow='hidden';this.setState({search:true,account:false,cartOpen:false,menu:false});setTimeout(()=>this.searchRef.current&&this.searchRef.current.focus(),350);},
+      openAccount:e=>{pv(e);document.body.style.overflow='hidden';this.setState({account:true,search:false,cartOpen:false,menu:false});},
+      closeAll:e=>{pv(e);document.body.style.overflow='';this.setState({search:false,account:false});},
+      searchRef:this.searchRef||(this.searchRef=React.createRef()),
+      q:s.q,onQ:e=>this.setState({q:e.target.value}),qEmpty:!s.q.trim(),qHasText:!!s.q.trim(),
+      popular:['סימני מתיחה','שמן עיסוי','הנקה','מארזי מתנה','ספרים'].map(label=>({label,go:()=>this.setState({q:label.split(' ')[0]})})),
+      ...(()=>{const t=s.q.trim().toLowerCase();const res=t?P.filter(p=>(p.name+' '+p.sub).toLowerCase().includes(t)||(t.length>1&&p.sub.split(' ').some(w=>w.startsWith(t)))):[];return {
+        results:res.slice(0,12).map(p=>{const pi=PIMG[p.id];const src=pi?IMG(pi,200,250):p.id==='olilastic'?thumbSrc[0]:BG[p.bg];return {name:p.name,sub:p.sub,priceLabel:fmt(p.price),open:e=>{pv(e);document.body.style.overflow='';this.go('product',{thumb:0,qty:1,q:''});},thumb:{width:52,height:64,borderRadius:10,flexShrink:0,backgroundColor:'#F3E4D8',backgroundImage:'url("'+src+'")',backgroundSize:'cover',backgroundPosition:'center'}};}),
+        resultsLabel:res.length?res.length+' תוצאות':'',noResults:!!t&&!res.length};})(),
+      searchBackdrop:{position:'fixed',inset:0,zIndex:72,background:'rgba(42,28,26,.42)',backdropFilter:s.search?'blur(3px)':'none',opacity:s.search?1:0,pointerEvents:s.search?'auto':'none',transition:'opacity .4s ease'},
+      searchPanel:{position:'fixed',top:0,left:0,right:0,zIndex:73,background:'#FBF5EF',color:'#3A2826',padding:s.mobile?'20px 16px 28px':'36px 32px 40px',height:s.mobile?'100dvh':'auto',maxHeight:'100dvh',overflowY:'auto',borderRadius:s.mobile?0:'0 0 28px 28px',boxShadow:'0 20px 60px rgba(42,28,26,.2)',transform:s.search?'translateY(0)':'translateY(-104%)',transition:'transform .55s cubic-bezier(.7,0,.2,1)'},
+      accBackdrop:{position:'fixed',inset:0,zIndex:72,background:'rgba(42,28,26,.42)',backdropFilter:s.account?'blur(3px)':'none',opacity:s.account?1:0,pointerEvents:s.account?'auto':'none',transition:'opacity .45s ease'},
+      accPanel:s.mobile?{position:'fixed',left:0,right:0,bottom:0,maxHeight:'92dvh',zIndex:73,background:'#FBF5EF',color:'#3A2826',borderRadius:'26px 26px 0 0',display:'flex',flexDirection:'column',boxShadow:'0 -20px 60px rgba(42,28,26,.25)',transform:s.account?'translateY(0)':'translateY(104%)',transition:'transform .6s cubic-bezier(.32,1.2,.4,1)'}
+        :{position:'fixed',top:0,bottom:0,left:0,width:'min(440px,92vw)',zIndex:73,background:'#FBF5EF',color:'#3A2826',display:'flex',flexDirection:'column',boxShadow:'20px 0 60px rgba(42,28,26,.2)',transform:s.account?'translateX(0)':'translateX(-104%)',transition:'transform .55s cubic-bezier(.7,0,.2,1)'},
+      accTabs:[['login','התחברות'],['signup','הרשמה']].map(([k,label])=>({label,go:()=>this.setState({accTab:k}),style:{height:42,border:0,borderRadius:999,fontSize:15,fontWeight:600,background:s.accTab===k?'#FBF5EF':'transparent',color:'#3A2826',boxShadow:s.accTab===k?'0 2px 8px rgba(58,40,38,.12)':'none',transition:'all .25s'}})),
+      accLogin:s.accTab==='login',accSignup:s.accTab==='signup',accCta:s.accTab==='login'?'התחברות':'יצירת חשבון',navHomeStyle:{fontWeight:s.page==='home'?600:400},navProdStyle:{fontWeight:s.page==='category'||s.page==='product'?600:400},navStoresStyle:{fontWeight:s.page==='stores'?600:400},navPodStyle:{fontWeight:s.page==='podcast'?600:400},ingHead:{display:'flex',flexDirection:'column',gap:14,flex:'1 1 300px',position:s.wide?'sticky':'relative',top:s.wide?110:'auto'},
+      promoMarquee:this._mq||(this._mq=(()=>{const msgs=['משלוח חינם בהזמנה מעל 250 ש״ח','5% הנחה בהזמנה הראשונה לנרשמות','בטוח לשימוש בהריון ולאחר לידה'];const run=k=>msgs.flatMap((m,i)=>[React.createElement('span',{key:k+'m'+i,dir:'rtl',style:{whiteSpace:'nowrap'}},m),React.createElement('span',{key:k+'d'+i,style:{color:'#C9A08A',fontSize:10}},'✦')]);return React.createElement('div',{style:{display:'flex',width:'max-content',animation:'oliMarquee 22s linear infinite'}},[0,1].map(k=>React.createElement('div',{key:k,style:{display:'flex',alignItems:'center',gap:24,paddingRight:24}},run(k).concat(run(k+'b')))));})()),
+      openCart:e=>{pv(e);document.body.style.overflow='hidden';this.setState({cartOpen:true,menu:false});},
+      closeCart:e=>{pv(e);document.body.style.overflow='';this.setState({cartOpen:false});},
+      cartCountLabel:s.cart===1?'פריט אחד':s.cart+' פריטים',
+      cartEmpty:!s.items.length,cartHasItems:!!s.items.length,
+      cartTotal:fmt(s.items.reduce((a,x)=>a+x.price*x.qty,0)),
+      shipMsg:(()=>{const t=s.items.reduce((a,x)=>a+x.price*x.qty,0);return t>=250?'✓ מגיע לך משלוח חינם':'עוד '+fmt(250-t)+' ומקבלים משלוח חינם';})(),
+      shipBar:{height:'100%',borderRadius:3,background:'#A85A3A',width:Math.min(100,s.items.reduce((a,x)=>a+x.price*x.qty,0)/250*100)+'%',transition:'width .6s cubic-bezier(.2,.8,.2,1)'},
+      cartBackdrop:{position:'fixed',inset:0,zIndex:70,background:'rgba(42,28,26,.42)',backdropFilter:s.cartOpen?'blur(3px)':'none',opacity:s.cartOpen?1:0,pointerEvents:s.cartOpen?'auto':'none',transition:'opacity .45s ease'},
+      cartPanel:s.mobile?{position:'fixed',left:0,right:0,bottom:0,height:'88dvh',zIndex:71,background:'#FBF5EF',color:'#3A2826',borderRadius:'26px 26px 0 0',display:'flex',flexDirection:'column',boxShadow:'0 -20px 60px rgba(42,28,26,.25)',transform:s.cartOpen?'translateY(0)':'translateY(104%)',transition:'transform .6s cubic-bezier(.32,1.2,.4,1)'}
+        :{position:'fixed',top:0,bottom:0,left:0,width:'min(440px,92vw)',zIndex:71,background:'#FBF5EF',color:'#3A2826',display:'flex',flexDirection:'column',boxShadow:'20px 0 60px rgba(42,28,26,.2)',transform:s.cartOpen?'translateX(0)':'translateX(-104%)',transition:'transform .55s cubic-bezier(.7,0,.2,1)'},
+      cartItems:s.items.map((x,i)=>{const pi=PIMG[x.id];const src=pi?IMG(pi,240,300):x.id==='olilastic'?thumbSrc[0]:null;return {...x,lineLabel:fmt(x.price*x.qty),
+        inc:()=>this.setQty(x.id,1),dec:()=>this.setQty(x.id,-1),remove:()=>this.setQty(x.id,-x.qty),
+        thumb:{width:84,aspectRatio:'4/5',borderRadius:12,flexShrink:0,backgroundColor:'#F3E4D8',backgroundImage:'url("'+(src||BG[x.bg])+'")',backgroundSize:'cover',backgroundPosition:'center'},
+        rowStyle:{display:'flex',gap:14,padding:'16px 0',borderBottom:'1px solid #EADBCF',opacity:s.cartOpen?1:0,transform:s.cartOpen?'none':'translateY(14px)',transition:'opacity .45s ease '+(s.cartOpen?.2+i*.06:0)+'s, transform .5s cubic-bezier(.2,.8,.2,1) '+(s.cartOpen?.2+i*.06:0)+'s'}};}),
+      aboutVid:this.aboutVidCb||(this.aboutVidCb=el=>{this.aboutVid={current:el};if(el){el.muted=true;el.defaultMuted=true;el.loop=true;el.playsInline=true;if(!el._oli){el._oli=1;const kick=()=>{if(el.paused){const q=el.play();if(q&&q.catch)q.catch(()=>{});}};el.addEventListener('ended',()=>{el.currentTime=0;kick();});el.addEventListener('pause',()=>setTimeout(kick,50));el.addEventListener('stalled',kick);el.addEventListener('waiting',()=>setTimeout(kick,500));document.addEventListener('visibilitychange',()=>{if(!document.hidden)kick();});}const p=el.play();if(p&&p.catch)p.catch(()=>{});}}),
+      relRef:this.relRef||(this.relRef=React.createRef()),
+      onRelScroll:e=>{const el=e.currentTarget;const step=el.clientWidth/2;const i=Math.round(Math.abs(el.scrollLeft)/step);if(i!==s.relIdx)this.setState({relIdx:i});},
+      relDots:[0,1,2,3,4].map(i=>({style:{width:(s.relIdx||0)===i?18:6,height:6,borderRadius:3,background:(s.relIdx||0)===i?'#3A2826':'#D8C3B6',transition:'all .3s'}})),
+      relWrap:s.mobile?{display:'flex',gap:12,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',margin:'0 -16px',padding:'0 16px 4px',scrollPaddingInline:16}:{display:'flex',gap:20,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',scrollBehavior:'smooth'},
+      relItem:s.mobile?{display:'flex',flexDirection:'column',gap:12,alignSelf:'stretch',flex:'0 0 calc(50% - 6px)',scrollSnapAlign:'start',minWidth:0}:{display:'flex',flexDirection:'column',gap:12,flex:'0 0 calc(25% - 15px)',scrollSnapAlign:'start',minWidth:0},
+      tlWrap:s.mobile?{display:'flex',flexDirection:'column',borderRight:'2px solid #3A2826',marginRight:6}:{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',borderTop:'2px solid #3A2826'},
+      tlItem:s.mobile?{display:'flex',flexDirection:'column',gap:6,padding:'0 26px 30px 0',position:'relative'}:{display:'flex',flexDirection:'column',gap:10,padding:'28px 0 0 24px',position:'relative'},
+      tlDot:s.mobile?{position:'absolute',top:6,right:-9,width:16,height:16,borderRadius:'50%',background:'#3A2826',boxShadow:'0 0 0 4px #F3E2D5'}:{position:'absolute',top:-9,right:0,width:16,height:16,borderRadius:'50%',background:'#3A2826',boxShadow:'0 0 0 4px #F3E2D5'},galleryStyle:{display:'grid',gridTemplateColumns:'clamp(52px,13vw,72px) minmax(0,1fr)',gap:'clamp(8px,2vw,14px)',position:s.mobile?'relative':'sticky',top:s.mobile?'auto':100},isMobile:s.mobile,isDesktop:!s.mobile,menuOpen:s.menu,toggleMenu:()=>{const m=!s.menu;document.body.style.overflow=m?'hidden':'';this.setState({menu:m});},
+      burgerBtn:{justifySelf:'start',width:44,height:44,border:'1px solid '+(s.menu?'#3A2826':'#CDB5A8'),borderRadius:999,background:s.menu?'#3A2826':'transparent',position:'relative',padding:0,transition:'background .35s, border-color .35s'},
+      bar1:{position:'absolute',left:13,right:13,height:1.5,borderRadius:2,background:s.menu?'#FBF5EF':'#3A2826',top:s.menu?21:17,transform:s.menu?'rotate(45deg)':'none',transition:'all .45s cubic-bezier(.7,0,.2,1)'},
+      bar2:{position:'absolute',left:13,right:s.menu?13:19,height:1.5,borderRadius:2,background:s.menu?'#FBF5EF':'#3A2826',top:s.menu?21:25,transform:s.menu?'rotate(-45deg)':'none',transition:'all .45s cubic-bezier(.7,0,.2,1)'},
+      menuPanel:{position:'absolute',top:'100%',left:0,right:0,height:'calc(100dvh - '+((s.headH>20?s.headH:64)+1)+'px)',background:'#3A2826',color:'#FBF5EF',display:'flex',flexDirection:'column',overflowY:'auto',clipPath:s.menu?'inset(0 0 0 0)':'inset(0 0 100% 0)',transition:'clip-path .65s cubic-bezier(.7,0,.2,1)',pointerEvents:s.menu?'auto':'none',zIndex:19},
+      menuLinks:[['דף הבית',e=>{pv(e);this.go('home');}],['המוצרים של Oli',e=>{pv(e);this.go('category',{cat:'all'});}],['מתנות ליולדת',e=>{pv(e);this.go('category',{cat:'gift'});}],['Oli בחנויות',e=>{pv(e);this.go('stores');}],['פודקאסט',e=>{pv(e);this.go('podcast');}]].map(([label,go],i)=>({label,go,n:'0'+(i+1),style:{display:'flex',alignItems:'center',gap:16,padding:'15px 0',borderBottom:'1px solid #54403C',color:'#FBF5EF',fontSize:26,fontWeight:500,letterSpacing:'-.01em',opacity:s.menu?1:0,transform:s.menu?'translateY(0)':'translateY(24px)',transition:'opacity .5s ease '+(s.menu?.25+i*.06:0)+'s, transform .6s cubic-bezier(.2,.8,.2,1) '+(s.menu?.25+i*.06:0)+'s'}})),
+      menuFoot:{padding:'28px 24px calc(48px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:20,opacity:s.menu?1:0,transform:s.menu?'none':'translateY(16px)',transition:'opacity .5s ease '+(s.menu?.6:0)+'s, transform .6s ease '+(s.menu?.6:0)+'s'},toast:s.toast,
+      goHome:e=>{pv(e);this.go('home');},
+      goCategory:e=>{pv(e);this.go('category',{cat:'preg'});},
+      goGifts:e=>{pv(e);this.go('category',{cat:'gift'});},
+      goProduct:e=>{pv(e);this.go('product',{thumb:0});},
+      stages:(st=>st.map(x=>({...x,imgStyle:x.img?{position:'absolute',backgroundImage:'url("'+x.img+'")',backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center',mixBlendMode:'multiply',filter:'drop-shadow(0 18px 18px rgba(58,40,38,.17))',pointerEvents:'none',top:s.mobile?'50%':(x.wide?'16%':'12%'),transform:s.mobile?'translateY(-50%)':'none',left:x.wide?(s.mobile?'5%':'7%'):(s.mobile?'6%':'8%'),...(x.wide?{width:s.mobile?'36%':'50%',aspectRatio:'1450/1080'}:{height:s.mobile?'78%':'56%',aspectRatio:'1140/1425'})}:null,textStyle:{position:'relative',display:'flex',flexDirection:'column',gap:'clamp(4px,1vw,8px)',maxWidth:s.mobile&&x.img?'60%':'none'}})))([
+        {title:'הריון',en:'Pregnancy care',img:'assets/stage-preg.png',desc:'מסימני מתיחה ועד רגליים עייפות, טיפוח בטוח לכל טרימסטר.',count:P.filter(p=>p.cat.includes('preg')).length+' מוצרים',bg:BG.peach,bgStyle:bgS(BG.peach,{opacity:.9}),go:e=>{pv(e);this.go('category',{cat:'preg'});}},
+        {title:'לידה ואחרי',en:'Postpartum care',img:'assets/stage-birth.png',desc:'הכנה ללידה, הנקה והשבועות הראשונים.',count:P.filter(p=>p.cat.includes('birth')).length+' מוצרים',bg:BG.rose,bgStyle:bgS(BG.rose,{opacity:.9}),go:e=>{pv(e);this.go('category',{cat:'birth'});}},
+        {title:'מתנות ליולדת',en:'Birth gifts',img:'assets/stage-gift.png',wide:true,desc:'מארזים מפנקים, מוכנים למסירה.',count:P.filter(p=>p.cat.includes('gift')).length+' מארזים',bg:BG.mist,bgStyle:bgS(BG.mist,{opacity:.9}),go:e=>{pv(e);this.go('category',{cat:'gift'});}}
+      ]),
+      bestSellers:['olilastic','olineum','nippoli','oliglow'].map(id=>this.card(P.find(p=>p.id===id))),
+      gifts:['gift','olibox','oils'].map(id=>this.card(P.find(p=>p.id===id))),
+      values:[
+        {n:'01',t:'איכות',d:'אנו מבטיחות שהמוצרים שלנו עומדים בסטנדרטים הגבוהים ביותר של איכות ויעילות.'},
+        {n:'02',t:'בטיחות',d:'כל המוצרים שלנו מבוססים על מחקרים ועל ספרות מדעית ומאושרים על ידי משרד הבריאות.'},
+        {n:'03',t:'העצמה',d:'אנו שואפות להעצים נשים באמצעות המוצרים שלנו ועל ידי הקניית ידע רפואי חשוב עבור כל אישה ולהריוניות ואמהות בפרט.'},
+        {n:'04',t:'טבעיות',d:'המוצרים שלנו מבוססים על רכיבים טבעיים. אנו משתמשות בחומרי הגלם האיכותיים ביותר, מתוצרת הארץ.'},
+        {n:'05',t:'זכויות בעלי החיים',d:'המוצרים שלנו לא נוסו על בעלי חיים ואף תוכלו למצוא את מדבקת הטבעונות על חלק נכבד ממוצרינו.'}
+      ],
+      catTitle:c.t,catEn:c.en,catDesc:c.d,resultCount:list.length,sort:s.sort,
+      onSort:e=>this.setState({sort:e.target.value}),
+      filters:Object.keys(CATS).map(k=>({label:CATS[k].t,style:s.mobile?{...pill(s.cat===k),padding:'7px 13px',fontSize:13}:pill(s.cat===k),pick:()=>this.setState({cat:k})})),
+      catProducts:list.map(p=>this.card(p)),
+      thumbs:thumbSrc.map((src,i)=>({src,bgStyle:{width:'100%',height:'100%',backgroundImage:'url("'+src+'")',backgroundSize:'cover',backgroundPosition:'center'},pick:()=>this.setState({thumb:i}),style:{width:'100%',aspectRatio:'4/5',padding:0,borderRadius:10,overflow:'hidden',border:'2px solid '+(s.thumb===i?'#3A2826':'transparent'),background:'#F3E4D8'}})),
+      mainImg:thumbSrc[s.thumb],mainBgStyle:bgS(thumbSrc[s.thumb]),mainIsPlaceholder:s.thumb===3,
+      bundles:[{t:'חמאה אחת',sub:'100 ml',p:fmt(unit)},{t:'זוג חמאות',sub:'הנחה ברכישת שתי חמאות',p:fmt(unit*2)}].map((b,i)=>{const on=s.bundle===i;return {title:b.t,sub:b.sub,price:b.p,pick:()=>this.setState({bundle:i}),
+        style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'16px 18px',borderRadius:14,border:'1.5px solid '+(on?'#3A2826':'#E1CDC0'),background:on?'#FFFFFF':'transparent',color:'#3A2826',textAlign:'right'},
+        dot:{width:18,height:18,borderRadius:'50%',border:'1.5px solid #3A2826',boxShadow:on?'inset 0 0 0 4px #FFFFFF':'none',background:on?'#3A2826':'transparent'}};}),
+      qty:s.qty,qtyUp:()=>this.setState({qty:s.qty+1}),qtyDown:()=>this.setState({qty:Math.max(1,s.qty-1)}),
+      addLabel:'הוספה לסל · '+fmt(unit*total),
+      shipNote:unit*total>=250?'✓ ההזמנה זכאית למשלוח חינם':'עוד '+fmt(250-unit*total)+' למשלוח חינם',
+      addMain:()=>this.add(total,'Olilastic'),
+      accordion:[
+        {t:'תיאור',p:['הכירי את Olilastic, חמאת גוף חדשנית, אידיאלית עבור מניעה והפחתה של סימני מתיחה, באמצעות תרכובת ייחודית של שמנים טהורים המכילים: שמן חוחובה, שמן שקדים ושמן זית.','בחרנו בקפידה שמנים ממקור טבעי עם ריכוז גבוה של ויטמין E ונוגדי חמצון, שילוב ייחודי המספק לחות עמוקה, מגביר את הגמישות ומקדם עור זוהר ובריא.']},
+        {t:'הוראות שימוש',p:['יש למרוח פעמיים ביום- בוקר וערב. מומלץ לאחר מקלחת חמה.','מומלץ למרוח בכל האיזורים שנוטים להימתח: בטן, חזה, ירכיים, ישבן. ניתן אף בשוקיים.']},
+        {t:'נשארה לכן חמאה?',p:['מעולה! החמאה שלנו יכולה לשמש אתכן לטיפול ביובש ולהרגעת גירודים בעור. משמשת גם כמשחת פלא שתמיד טוב שיש בבית!']},
+        {t:'רשימת INCI מלאה',p:['[ רשימת רכיבים מלאה ]']}
+      ].map((a,i)=>({title:a.t,paras:a.p,open:s.open===i,sign:s.open===i?'−':'+',toggle:()=>this.setState({open:s.open===i?-1:i})})),
+      timeline:[
+        {when:'גילוי ההריון',what:'ניתן להתחיל להשתמש בחמאה מרגע גילוי ההריון.'},
+        {when:'שבוע 12',what:'הבטן יוצאת מהאגן הקטן ומתחילה הגדילה. החל משבוע זה מומלץ מאוד להתחיל להשתמש.'},
+        {when:'בוקר וערב',what:'פעמיים ביום, על בטן, חזה, ירכיים וישבן.'},
+        {when:'אחרי הלידה',what:'יש להמשיך את השימוש גם מספר חודשים לאחר הלידה.'}
+      ],
+      ingredients:[
+        {n:'01',en:'Jojoba',he:'שמן חוחובה',d:'נספג בקלות, עשיר בויטמין E ואומגה 9, משפר את מרקם העור ומגביר את גמישותו.'},
+        {n:'02',en:'Almond',he:'שמן שקדים',d:'מסייע במניעת סימני מתיחה, עשיר בחומצות שומן חיוניות ובויטמיני B.'},
+        {n:'03',en:'Olive',he:'שמן זית',d:'מעניק לחות עמוקה, תורם לאלסטיות ורכות העור בזכות הרכב עשיר של ויטמינים ומינרלים.'},
+        {n:'04',en:'Vitamin E',he:'ויטמין E',d:'נוגד חמצון עוצמתי, מסייע בשמירה על מראה עור גמיש, אחיד ובריא.'}
+      ],
+      reviews:[
+        {name:'מיכל',verified:' · רכישה מאומתת',date:'22 ביוני',title:'מאוד מרוצה',body:'אני אלרגית לחומר משמר שנמצא בכל תכשירי הביוטי. המשחה ללא אלכוהול, ללא חומר משמר והתגובה של העור נפלאה.'},
+        {name:'tamar stain',verified:' · רכישה מאומתת',date:'16 ביוני',title:'קפץ לי בפייס ואני ממש מרוצה',body:'קרם נהדר. עושה את העבודה. נעים.'},
+        {name:'טלי',verified:'',date:'23 במרץ',title:'קרם עשיר ויעיל',body:'הוא עשיר ונספג טוב ומשאיר הרגשה נעימה של עור חלק.'},
+        {name:'ספיר ס.',verified:'',date:'12 בפבר׳',title:'המלצות מדולות ונשות מקצוע',body:'התחלתי בחודש האחרון יותר להתמיד ומבחינת תוצאות נראה ממש טוב.'}
+      ],
+      ...(()=>{const R=[
+        {name:'מיכל',verified:' · רכישה מאומתת',date:'22 ביוני',title:'מאוד מרוצה',body:'אני אלרגית לחומר משמר שנמצא בכל תכשירי הביוטי. המשחה ללא אלכוהול, ללא חומר משמר והתגובה של העור נפלאה.'},
+        {name:'tamar stain',verified:' · רכישה מאומתת',date:'16 ביוני',title:'קפץ לי בפייס ואני ממש מרוצה',body:'קרם נהדר. עושה את העבודה. נעים.'},
+        {name:'טלי',verified:'',date:'23 במרץ',title:'קרם עשיר ויעיל',body:'הוא עשיר ונספג טוב ומשאיר הרגשה נעימה של עור חלק.'},
+        {name:'ספיר ס.',verified:'',date:'12 בפבר׳',title:'המלצות מדולות ונשות מקצוע',body:'התחלתי בחודש האחרון יותר להתמיד ומבחינת תוצאות נראה ממש טוב.'}
+      ].map(r=>({...r,initial:r.name.trim()[0].toUpperCase(),meta:r.date+(r.verified||'')}));return {featured:R[0],moreReviews:R.slice(1)};})(),
+      related:['olineum','olilax','facioli','nippoli','bestof','olibox'].map(id=>this.card(P.find(p=>p.id===id))),
+      pageTabs:[['home','עמוד בית'],['category','קטגוריה'],['product','מוצר'],['stores','חנויות'],['podcast','פודקאסט']].map(([k,l])=>({label:l,go:()=>this.go(k),style:{padding:'8px 16px',borderRadius:999,border:0,background:s.page===k?'#3A2826':'transparent',color:s.page===k?'#FBF5EF':'#3A2826',fontSize:13,fontWeight:600}}))
+    };
+  }
+}
+</script>
+</body>
+</html>
