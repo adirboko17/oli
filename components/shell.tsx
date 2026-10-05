@@ -71,6 +71,7 @@ function Header() {
   const pod = path.startsWith("/podcast");
   const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const });
   const [menuTop, setMenuTop] = useState(108);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const el = site.headerRef.current;
@@ -81,6 +82,8 @@ function Header() {
       if (hh > 20) site.setHeaderH(hh);
       const bottom = Math.max(0, Math.round(rect.bottom));
       setMenuTop((prev) => (prev === bottom ? prev : bottom));
+      const y = window.scrollY > 2;
+      setScrolled((prev) => (prev === y ? prev : y));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -108,7 +111,7 @@ function Header() {
 
   return (
     <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EADBCF" }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid " + (scrolled ? "#EADBCF" : "transparent"), transition: "border-color .2s ease" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
           <Link href="/" style={nav(home)}>דף הבית</Link>
