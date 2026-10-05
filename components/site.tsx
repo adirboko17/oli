@@ -52,8 +52,8 @@ type Site = {
 
 const Ctx = createContext<Site | null>(null);
 
-function lock(on: boolean) {
-  document.body.style.overflow = on ? "hidden" : "";
+function allowScroll(target: EventTarget | null) {
+  return target instanceof Element && !!target.closest("[data-scroll-lock-allow]");
 }
 
 export function SiteProvider({ children }: { children: ReactNode }) {
@@ -81,7 +81,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     window.addEventListener("resize", onResize);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        lock(false);
         setSearch(false);
         setAccount(false);
         setCartOpen(false);
@@ -96,21 +95,37 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    lock(false);
     setMenu(false);
     setSearch(false);
     setAccount(false);
     setCartOpen(false);
   }, [path]);
 
+  const overlay = menu || search || account || cartOpen;
+  useEffect(() => {
+    if (!overlay) return;
+    const onTouch = (e: TouchEvent) => {
+      if (allowScroll(e.target)) return;
+      e.preventDefault();
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (allowScroll(e.target)) return;
+      e.preventDefault();
+    };
+    document.addEventListener("touchmove", onTouch, { passive: false });
+    document.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      document.removeEventListener("touchmove", onTouch);
+      document.removeEventListener("wheel", onWheel);
+    };
+  }, [overlay]);
+
   const closeAll = useCallback(() => {
-    lock(false);
     setSearch(false);
     setAccount(false);
   }, []);
 
   const openSearch = useCallback(() => {
-    lock(true);
     setSearch(true);
     setAccount(false);
     setCartOpen(false);
@@ -118,7 +133,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openAccount = useCallback(() => {
-    lock(true);
     setAccount(true);
     setSearch(false);
     setCartOpen(false);
@@ -126,22 +140,16 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openCart = useCallback(() => {
-    lock(true);
     setCartOpen(true);
     setMenu(false);
   }, []);
 
   const closeCart = useCallback(() => {
-    lock(false);
     setCartOpen(false);
   }, []);
 
   const toggleMenu = useCallback(() => {
-    setMenu((m) => {
-      const next = !m;
-      lock(next);
-      return next;
-    });
+    setMenu((m) => !m);
   }, []);
 
   const add = useCallback((n: number, name: string) => {
@@ -158,7 +166,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     });
     setCartOpen(true);
     setMenu(false);
-    lock(true);
   }, []);
 
   const setQty = useCallback((id: string, d: number) => {

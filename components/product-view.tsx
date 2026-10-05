@@ -230,13 +230,21 @@ export function ProductView() {
                   <div style={v.bgStyle} />
                   {v.noImg && <span style={{ position: "relative", fontFamily: FF, fontWeight: 500, fontSize: 36 }}>{p.name}</span>}
                 </Link>
-                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "4px 12px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontFamily: FF, fontSize: "clamp(17px,4.4vw,22px)", fontWeight: 500 }}>{p.name}</span>
-                    <span style={{ fontSize: 14, color: "#6E5650" }}>{p.sub}</span>
+                {mobile ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                    <span style={{ fontFamily: FF, fontSize: 16, fontWeight: 500, lineHeight: 1.2 }}>{p.name}</span>
+                    <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.4, minHeight: "2.8em" }}>{p.sub}</span>
+                    <span style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>{fmt(p.price)}</span>
                   </div>
-                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{fmt(p.price)}</span>
-                </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, minWidth: 0 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
+                      <span style={{ fontFamily: FF, fontSize: "clamp(17px,4.4vw,22px)", fontWeight: 500, lineHeight: 1.2 }}>{p.name}</span>
+                      <span style={{ fontSize: 14, color: "#6E5650", lineHeight: 1.4 }}>{p.sub}</span>
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: 16, whiteSpace: "nowrap", flexShrink: 0, lineHeight: 1.2 }}>{fmt(p.price)}</span>
+                  </div>
+                )}
               </div>
             );
           })}

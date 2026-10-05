@@ -62,8 +62,20 @@ function Promo() {
   );
 }
 
+function useMenuChrome(open: boolean) {
+  const [on, setOn] = useState(open);
+  if (open && !on) setOn(true);
+  useEffect(() => {
+    if (open) return;
+    const t = window.setTimeout(() => setOn(false), 680);
+    return () => window.clearTimeout(t);
+  }, [open]);
+  return on;
+}
+
 function Header() {
   const site = useSite();
+  const menuChrome = useMenuChrome(site.menu);
   const path = usePathname();
   const home = path === "/";
   const prod = path.startsWith("/products") || path.startsWith("/product");
@@ -107,7 +119,7 @@ function Header() {
   ];
 
   return (
-    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
+    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: menuChrome ? "#3A2826" : "transparent" }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EADBCF" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
@@ -153,7 +165,9 @@ function Header() {
         </div>
       </div>
 
-      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, height: `calc(100dvh - ${menuTop}px)`, background: "#3A2826", color: "#FBF5EF", display: "flex", flexDirection: "column", overflowY: "auto", clipPath: site.menu ? "inset(0 0 0 0)" : "inset(0 0 100% 0)", transition: "clip-path .65s cubic-bezier(.7,0,.2,1)", pointerEvents: site.menu ? "auto" : "none", zIndex: 19 }}>
+      <div className="mob-menu" style={{ position: "absolute", top: "100%", left: 0, right: 0, height: `calc(100dvh - ${menuTop}px + 160px)`, zIndex: 19, background: "transparent", color: "#FBF5EF", flexDirection: "column", pointerEvents: site.menu ? "auto" : "none" }}>
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#3A2826", clipPath: site.menu ? "inset(0 0 0 0)" : "inset(0 0 100% 0)", transition: "clip-path .65s cubic-bezier(.7,0,.2,1)" }} />
+        <div data-scroll-lock-allow style={{ position: "relative", zIndex: 1, height: `calc(100dvh - ${menuTop}px)`, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "18px 24px 4px", opacity: site.menu ? 1 : 0, transform: site.menu ? "translateY(0)" : "translateY(16px)", transition: `opacity .5s ease ${site.menu ? 0.18 : 0}s, transform .55s cubic-bezier(.2,.8,.2,1) ${site.menu ? 0.18 : 0}s` }}>
           <button type="button" onClick={site.openSearch} style={menuRow}>
             <IconSearch size={20} />
@@ -182,12 +196,14 @@ function Header() {
           </div>
           <span style={{ textAlign: "center", fontSize: 13, color: "#C9B2A6" }}>משלוח חינם בהזמנה מעל 250 ש״ח</span>
         </div>
+        </div>
       </div>
       <style>{`
-        .mob-nav { display: none; }
+        .mob-nav, .mob-menu { display: none; }
         @media (max-width: 759px) {
           .desk-nav { display: none !important; }
           .mob-nav { display: grid !important; }
+          .mob-menu { display: flex; }
         }
       `}</style>
     </header>
@@ -293,7 +309,7 @@ function SearchOverlay() {
   return (
     <>
       <div onClick={site.closeAll} style={{ position: "fixed", inset: 0, zIndex: 72, background: "rgba(42,28,26,.42)", backdropFilter: visible ? "blur(3px)" : "none", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transition: "opacity .4s ease" }} />
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FBF5EF", color: "#3A2826", padding: site.mobile ? "20px 16px 28px" : "36px 32px 40px", height: site.mobile ? "100dvh" : "auto", maxHeight: "100dvh", overflowY: "auto", borderRadius: site.mobile ? 0 : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: visible ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
+      <div data-scroll-lock-allow style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FBF5EF", color: "#3A2826", padding: site.mobile ? "20px 16px 28px" : "36px 32px 40px", height: site.mobile ? "100dvh" : "auto", maxHeight: "100dvh", overflowY: "auto", borderRadius: site.mobile ? 0 : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: visible ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
         <div style={{ maxWidth: 880, margin: "0 auto", display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #3A2826", padding: "6px 0" }}>
@@ -358,7 +374,7 @@ function AccountDrawer() {
   return (
     <>
       <div onClick={site.closeAll} style={backdrop(72, open)} />
-      <aside style={panel(open, site.mobile, false)} aria-label="החשבון שלי">
+      <aside data-scroll-lock-allow style={panel(open, site.mobile, false)} aria-label="החשבון שלי">
         {site.mobile && <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}><span style={{ width: 44, height: 4, borderRadius: 2, background: "#D8C3B6" }} /></div>}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px 16px", borderBottom: "1px solid #EADBCF" }}>
           <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>החשבון שלי</span>
@@ -410,7 +426,7 @@ function CartDrawer() {
   return (
     <>
       <div onClick={site.closeCart} style={backdrop(70, open)} />
-      <aside style={panel(open, site.mobile, true)} aria-label="סל קניות">
+      <aside data-scroll-lock-allow style={panel(open, site.mobile, true)} aria-label="סל קניות">
         {site.mobile && <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}><span style={{ width: 44, height: 4, borderRadius: 2, background: "#D8C3B6" }} /></div>}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px 16px", borderBottom: "1px solid #EADBCF" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -509,6 +525,7 @@ function scrollToTop() {
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const menuChrome = useMenuChrome(useSite().menu);
   const first = useRef(true);
 
   useLayoutEffect(() => {
@@ -529,8 +546,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div dir="rtl" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="chrome-clear top" aria-hidden />
-      <div className="chrome-clear bottom" aria-hidden />
+      <div className="chrome-clear top" aria-hidden style={{ backgroundColor: menuChrome ? "#3A2826" : "transparent" }} />
+      <div className="chrome-clear bottom" aria-hidden style={{ backgroundColor: menuChrome ? "#3A2826" : "transparent" }} />
       <Promo />
       <Header />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</div>
