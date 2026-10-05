@@ -62,20 +62,8 @@ function Promo() {
   );
 }
 
-function useMenuChrome(open: boolean) {
-  const [on, setOn] = useState(open);
-  if (open && !on) setOn(true);
-  useEffect(() => {
-    if (open) return;
-    const t = window.setTimeout(() => setOn(false), 680);
-    return () => window.clearTimeout(t);
-  }, [open]);
-  return on;
-}
-
 function Header() {
   const site = useSite();
-  const menuChrome = useMenuChrome(site.menu);
   const path = usePathname();
   const home = path === "/";
   const prod = path.startsWith("/products") || path.startsWith("/product");
@@ -119,7 +107,7 @@ function Header() {
   ];
 
   return (
-    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: menuChrome ? "#3A2826" : "transparent" }}>
+    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EADBCF" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
@@ -525,7 +513,6 @@ function scrollToTop() {
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const menuChrome = useMenuChrome(useSite().menu);
   const first = useRef(true);
 
   useLayoutEffect(() => {
@@ -546,8 +533,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div dir="rtl" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="chrome-clear top" aria-hidden style={{ backgroundColor: menuChrome ? "#3A2826" : "transparent" }} />
-      <div className="chrome-clear bottom" aria-hidden style={{ backgroundColor: menuChrome ? "#3A2826" : "transparent" }} />
+      <div className="chrome-clear top" aria-hidden />
+      <div className="chrome-clear bottom" aria-hidden />
       <Promo />
       <Header />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</div>

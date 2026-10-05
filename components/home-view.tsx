@@ -44,17 +44,13 @@ export function HomeView() {
             <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>ELEVATE YOUR SAFE CARE</span>
             <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.02em", fontSize: "clamp(38px,5.6vw,76px)", lineHeight: 1.04, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
             <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
               <Hx as={Link} href="/products?cat=preg" style={primary} hover={{ background: "#A85A3A" }}>למוצרים של Oli</Hx>
-              <Hx as={Link} href="/products?cat=gift" style={ghost} hover={{ background: "#F3E2D5" }}>מתנות ליולדת</Hx>
+              <Hx as={Link} href="/products?cat=gift" style={textLink} hover={{ color: "#A85A3A" }}>מתנות ליולדת</Hx>
             </div>
           </div>
           <div className="hero-product" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(220px,48vw,600px)" }}>
             <img src="/assets/olineum-hero.png" alt="Olineum שמן עיסוי להריון" style={{ position: "relative", width: "min(100%,600px,72vw)", height: "auto", mixBlendMode: "multiply", filter: "drop-shadow(0 30px 30px rgba(58,40,38,.18))" }} />
-            <Link href="/product" style={{ position: "absolute", bottom: "6%", right: "4%", background: "#FBF5EF", padding: "12px 16px", borderRadius: 14, display: "flex", flexDirection: "column", gap: 2, boxShadow: "0 10px 30px rgba(58,40,38,.12)", color: "#3A2826" }}>
-              <span style={{ fontWeight: 600, fontSize: 15 }}>Olineum · ₪89</span>
-              <span style={{ fontSize: 13, color: "#5E4844" }}>שמן עיסוי להריון · 5.0 ★</span>
-            </Link>
           </div>
         </div>
         <style>{`
@@ -223,7 +219,7 @@ export function HomeView() {
 }
 
 const primary: CSSProperties = { background: "#3A2826", color: "#FBF5EF", border: 0, padding: "16px 30px", borderRadius: 999, fontSize: 16, fontWeight: 600, display: "inline-flex" };
-const ghost: CSSProperties = { background: "transparent", color: "#3A2826", border: "1px solid #3A2826", padding: "16px 30px", borderRadius: 999, fontSize: 16, fontWeight: 600, display: "inline-flex" };
+const textLink: CSSProperties = { background: "transparent", color: "#3A2826", border: 0, padding: "8px 2px", fontSize: 16, fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "underline", textUnderlineOffset: 5, textDecorationThickness: 1 };
 const h2: CSSProperties = { fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,40px)" };
 const body: CSSProperties = { fontSize: 18, lineHeight: 1.8, color: "#5E4844", textWrap: "pretty" };
 const expert: CSSProperties = { display: "grid", gridTemplateColumns: "clamp(90px,24vw,150px) minmax(0,1fr)", gap: "clamp(14px,4vw,24px)", padding: "clamp(16px,4vw,24px)", borderRadius: 20, background: "#F3E2D5", alignItems: "center", color: "#3A2826" };
