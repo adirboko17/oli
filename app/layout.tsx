@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
@@ -6,6 +6,12 @@ import { Shell } from "@/components/shell";
 export const metadata: Metadata = {
   title: "Oli Safe Care",
   description: "טיפוח בטוח למסע היקר של ההריון ולאחריו",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

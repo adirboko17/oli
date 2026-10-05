@@ -8,6 +8,24 @@ html, body {
   overflow-anchor: none;
 }
 
+/* Mobile browser chrome samples fixed edge elements. These stay transparent
+   so the address bar stays glass instead of picking up the page background. */
+.chrome-clear { display: none; }
+@media (max-width: 759px) {
+  .chrome-clear {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background-color: transparent;
+    pointer-events: none;
+    z-index: 30;
+  }
+  .chrome-clear.top { top: 0; }
+  .chrome-clear.bottom { bottom: 0; }
+}
+
 * { box-sizing: border-box; }
 
 a { color: #3a2826; text-decoration: none; }

@@ -49,7 +49,13 @@ function Promo() {
         .promo-mob { display: none; }
         @media (max-width: 759px) {
           .promo-desk { display: none !important; }
-          .promo-mob { display: flex !important; }
+          .promo-mob {
+            display: flex !important;
+            height: auto !important;
+            box-sizing: border-box;
+            min-height: calc(36px + env(safe-area-inset-top));
+            padding-top: env(safe-area-inset-top);
+          }
         }
       `}</style>
     </>
@@ -101,8 +107,9 @@ function Header() {
   ];
 
   return (
-    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", borderBottom: "1px solid #EADBCF" }}>
-      <div className="desk-nav" style={{ maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
+    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EADBCF" }} />
+      <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
           <Link href="/" style={nav(home)}>דף הבית</Link>
           <Link href="/products?cat=preg" style={nav(prod)}>המוצרים של Oli</Link>
@@ -127,7 +134,7 @@ function Header() {
         </div>
       </div>
 
-      <div className="mob-nav" style={{ padding: "12px 16px", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+      <div className="mob-nav" style={{ position: "relative", zIndex: 1, padding: "12px 16px", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
         <button type="button" onClick={site.toggleMenu} aria-label="תפריט" style={{ justifySelf: "start", width: 44, height: 44, border: "1px solid " + (site.menu ? "#3A2826" : "#CDB5A8"), borderRadius: 999, background: site.menu ? "#3A2826" : "transparent", position: "relative", padding: 0, transition: "background .35s, border-color .35s" }}>
           <span style={{ position: "absolute", left: 13, right: 13, height: 1.5, borderRadius: 2, background: site.menu ? "#FBF5EF" : "#3A2826", top: site.menu ? 21 : 17, transform: site.menu ? "rotate(45deg)" : "none", transition: "all .45s cubic-bezier(.7,0,.2,1)" }} />
           <span style={{ position: "absolute", left: 13, right: site.menu ? 13 : 19, height: 1.5, borderRadius: 2, background: site.menu ? "#FBF5EF" : "#3A2826", top: site.menu ? 21 : 25, transform: site.menu ? "rotate(-45deg)" : "none", transition: "all .45s cubic-bezier(.7,0,.2,1)" }} />
@@ -206,7 +213,7 @@ const menuRow = {
 function Footer() {
   const { mobile } = useSite();
   return (
-    <footer dir="rtl" style={{ marginTop: "auto", textAlign: "right", padding: mobile ? "8px 16px 16px" : "16px clamp(20px,4.5vw,40px) 24px" }}>
+    <footer dir="rtl" style={{ marginTop: "auto", textAlign: "right", padding: mobile ? "8px 16px calc(16px + env(safe-area-inset-bottom))" : "16px clamp(20px,4.5vw,40px) 24px" }}>
       <div style={{ maxWidth: 1320, margin: "0 auto", background: "#3A2826", color: "#E6D2C6", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
       <div style={{ padding: "clamp(35px,9vw,64px) clamp(20px,4.5vw,40px) 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 40 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -248,9 +255,28 @@ function Footer() {
   );
 }
 
+function useShown(open: boolean, duration = 650) {
+  const [present, setPresent] = useState(open);
+  const [visible, setVisible] = useState(open);
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      const first = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(first);
+    }
+    setVisible(false);
+    const t = window.setTimeout(() => setPresent(false), duration);
+    return () => window.clearTimeout(t);
+  }, [open, duration]);
+  return { present, visible };
+}
+
 function SearchOverlay() {
   const site = useSite();
   const ref = useRef<HTMLInputElement>(null);
+  const { present, visible } = useShown(site.search, 560);
   useEffect(() => {
     if (!site.search) return;
     const t = setTimeout(() => ref.current?.focus(), 350);
@@ -262,10 +288,12 @@ function SearchOverlay() {
     ? PRODUCTS.filter((p) => (p.name + " " + p.sub).toLowerCase().includes(t) || (t.length > 1 && p.sub.split(" ").some((w) => w.startsWith(t))))
     : [];
 
+  if (!present) return null;
+
   return (
     <>
-      <div onClick={site.closeAll} style={{ position: "fixed", inset: 0, zIndex: 72, background: "rgba(42,28,26,.42)", backdropFilter: site.search ? "blur(3px)" : "none", opacity: site.search ? 1 : 0, pointerEvents: site.search ? "auto" : "none", transition: "opacity .4s ease" }} />
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FBF5EF", color: "#3A2826", padding: site.mobile ? "20px 16px 28px" : "36px 32px 40px", height: site.mobile ? "100dvh" : "auto", maxHeight: "100dvh", overflowY: "auto", borderRadius: site.mobile ? 0 : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: site.search ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
+      <div onClick={site.closeAll} style={{ position: "fixed", inset: 0, zIndex: 72, background: "rgba(42,28,26,.42)", backdropFilter: visible ? "blur(3px)" : "none", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transition: "opacity .4s ease" }} />
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FBF5EF", color: "#3A2826", padding: site.mobile ? "20px 16px 28px" : "36px 32px 40px", height: site.mobile ? "100dvh" : "auto", maxHeight: "100dvh", overflowY: "auto", borderRadius: site.mobile ? 0 : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: visible ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
         <div style={{ maxWidth: 880, margin: "0 auto", display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #3A2826", padding: "6px 0" }}>
@@ -324,7 +352,9 @@ const field = {
 
 function AccountDrawer() {
   const site = useSite();
-  const open = site.account;
+  const { present, visible } = useShown(site.account);
+  if (!present) return null;
+  const open = visible;
   return (
     <>
       <div onClick={site.closeAll} style={backdrop(72, open)} />
@@ -374,7 +404,9 @@ function AccountDrawer() {
 function CartDrawer() {
   const site = useSite();
   const total = site.items.reduce((a, x) => a + x.price * x.qty, 0);
-  const open = site.cartOpen;
+  const { present, visible } = useShown(site.cartOpen);
+  if (!present) return null;
+  const open = visible;
   return (
     <>
       <div onClick={site.closeCart} style={backdrop(70, open)} />
@@ -497,6 +529,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div dir="rtl" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div className="chrome-clear top" aria-hidden />
+      <div className="chrome-clear bottom" aria-hidden />
       <Promo />
       <Header />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</div>
