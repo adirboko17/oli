@@ -165,9 +165,9 @@ function Header() {
         </div>
       </div>
 
-      <div className="mob-menu" style={{ position: "absolute", top: "100%", left: 0, right: 0, height: `calc(100dvh - ${menuTop}px + 160px)`, zIndex: 19, background: "transparent", color: "#FBF5EF", flexDirection: "column", pointerEvents: site.menu ? "auto" : "none" }}>
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#3A2826", clipPath: site.menu ? "inset(0 0 0 0)" : "inset(0 0 100% 0)", transition: "clip-path .65s cubic-bezier(.7,0,.2,1)" }} />
-        <div data-scroll-lock-allow style={{ position: "relative", zIndex: 1, height: `calc(100dvh - ${menuTop}px)`, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div className="mob-menu" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 19, maxHeight: `calc(100dvh - ${menuTop}px)`, borderRadius: "0 0 28px 28px", overflow: "hidden", color: "#FBF5EF", flexDirection: "column", pointerEvents: site.menu ? "auto" : "none" }}>
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#3A2826", borderRadius: "0 0 28px 28px", clipPath: site.menu ? "inset(0 0 0 0 round 0 0 28px 28px)" : "inset(0 0 100% 0 round 0 0 28px 28px)", transition: "clip-path .65s cubic-bezier(.7,0,.2,1)" }} />
+        <div data-scroll-lock-allow style={{ position: "relative", zIndex: 1, maxHeight: `calc(100dvh - ${menuTop}px)`, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "18px 24px 4px", opacity: site.menu ? 1 : 0, transform: site.menu ? "translateY(0)" : "translateY(16px)", transition: `opacity .5s ease ${site.menu ? 0.18 : 0}s, transform .55s cubic-bezier(.2,.8,.2,1) ${site.menu ? 0.18 : 0}s` }}>
           <button type="button" onClick={site.openSearch} style={menuRow}>
             <IconSearch size={20} />

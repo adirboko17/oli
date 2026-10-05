@@ -39,8 +39,8 @@ export function HomeView() {
   return (
     <main>
       <section style={{ position: "relative", overflow: "hidden", background: "#FBF5EF" }}>
-        <div style={{ position: "relative", maxWidth: 1320, margin: "0 auto", padding: "clamp(32px,6vw,64px) clamp(16px,4.5vw,32px) clamp(48px,8vw,88px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,440px),1fr))", gap: "clamp(24px,5vw,56px)", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(18px,3vw,26px)", maxWidth: 560 }}>
+        <div className="hero-grid" style={{ position: "relative", maxWidth: 1320, margin: "0 auto", padding: "clamp(32px,6vw,64px) clamp(16px,4.5vw,32px) clamp(48px,8vw,88px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,440px),1fr))", gap: "clamp(24px,5vw,56px)", alignItems: "center" }}>
+          <div className="hero-copy" style={{ display: "flex", flexDirection: "column", gap: "clamp(18px,3vw,26px)", maxWidth: 560 }}>
             <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>ELEVATE YOUR SAFE CARE</span>
             <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.02em", fontSize: "clamp(38px,5.6vw,76px)", lineHeight: 1.04, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
             <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
@@ -49,7 +49,7 @@ export function HomeView() {
               <Hx as={Link} href="/products?cat=gift" style={ghost} hover={{ background: "#F3E2D5" }}>מתנות ליולדת</Hx>
             </div>
           </div>
-          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(220px,48vw,600px)" }}>
+          <div className="hero-product" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(220px,48vw,600px)" }}>
             <img src="/assets/olineum-hero.png" alt="Olineum שמן עיסוי להריון" style={{ position: "relative", width: "min(100%,600px,72vw)", height: "auto", mixBlendMode: "multiply", filter: "drop-shadow(0 30px 30px rgba(58,40,38,.18))" }} />
             <Link href="/product" style={{ position: "absolute", bottom: "6%", right: "4%", background: "#FBF5EF", padding: "12px 16px", borderRadius: 14, display: "flex", flexDirection: "column", gap: 2, boxShadow: "0 10px 30px rgba(58,40,38,.12)", color: "#3A2826" }}>
               <span style={{ fontWeight: 600, fontSize: 15 }}>Olineum · ₪89</span>
@@ -57,6 +57,11 @@ export function HomeView() {
             </Link>
           </div>
         </div>
+        <style>{`
+          @media (max-width: 759px) {
+            .hero-product { order: -1; }
+          }
+        `}</style>
       </section>
 
       <section style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(48px,9vw,88px)" }}>
