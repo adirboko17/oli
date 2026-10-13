@@ -1,5 +1,5 @@
-import { ProductView } from "@/components/product-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ProductView />;
+  redirect("/products");
 }

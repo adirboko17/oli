@@ -2,11 +2,16 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
+import { loadPublicCatalog } from "@/lib/catalog";
 
-export const metadata: Metadata = {
-  title: "Oli Safe Care",
-  description: "טיפוח בטוח למסע היקר של ההריון ולאחריו",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const result = await loadPublicCatalog();
+  const name = result.status === "ready" ? result.catalog.name : "חנות";
+  return {
+    title: name,
+    description: name,
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -14,7 +19,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const result = await loadPublicCatalog();
   return (
     <html lang="he" dir="rtl">
       <head>
@@ -23,9 +29,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <SiteProvider>
-          <Shell>{children}</Shell>
-        </SiteProvider>
+        {result.status === "ready" ? (
+          <SiteProvider products={result.catalog.products} storeName={result.catalog.name}>
+            <Shell>{children}</Shell>
+          </SiteProvider>
+        ) : (
+          <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 32, textAlign: "center" }}>
+            <p style={{ fontSize: 22 }}>{result.status === "inactive" ? "החנות לא פעילה." : "לא הצלחנו לטעון את הקטלוג."}</p>
+          </main>
+        )}
       </body>
     </html>
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { PRODUCTS, thumbOf } from "@/lib/data";
+import { productBlurb, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
@@ -103,8 +103,7 @@ function Header() {
 
   const links = [
     { href: "/", label: "דף הבית" },
-    { href: "/products?cat=all", label: "המוצרים של Oli" },
-    { href: "/products?cat=gift", label: "מתנות ליולדת" },
+    { href: "/products", label: "המוצרים" },
     { href: "/stores", label: "Oli בחנויות" },
     { href: "/podcast", label: "פודקאסט" },
   ];
@@ -115,13 +114,12 @@ function Header() {
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
           <Link href="/" style={nav(home)}>דף הבית</Link>
-          <Link href="/products?cat=preg" style={nav(prod)}>המוצרים של Oli</Link>
-          <Link href="/products?cat=gift" style={nav(false)}>מתנות ליולדת</Link>
+          <Link href="/products" style={nav(prod)}>המוצרים</Link>
           <Link href="/stores" style={nav(stores)}>Oli בחנויות</Link>
           <Link href="/podcast" style={nav(pod)}>פודקאסט</Link>
         </nav>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <img src="/assets/logo-brown.png" alt="Oli Safe Care" style={{ height: 46, display: "block" }} />
+          <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
         </Link>
         <div style={{ display: "flex", gap: "clamp(10px,1.4vw,18px)", justifyContent: "flex-end", alignItems: "center", fontSize: 14, whiteSpace: "nowrap" }}>
           <Hx as="button" onClick={site.openSearch} style={iconLink} hover={{ background: "#F3E2D5" }}>
@@ -143,7 +141,7 @@ function Header() {
           <span style={{ position: "absolute", left: 13, right: site.menu ? 13 : 19, height: 1.5, borderRadius: 2, background: site.menu ? "#FBF5EF" : "#3A2826", top: site.menu ? 21 : 25, transform: site.menu ? "rotate(-45deg)" : "none", transition: "all .45s cubic-bezier(.7,0,.2,1)" }} />
         </button>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-          <img src="/assets/logo-brown.png" alt="Oli Safe Care" style={{ height: 46, display: "block" }} />
+          <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
         </Link>
         <div style={{ justifySelf: "end", display: "flex", gap: 6, alignItems: "center" }}>
           <button type="button" onClick={site.openSearch} aria-label="חיפוש" style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", color: "#3A2826", background: "transparent", border: 0 }}>
@@ -218,19 +216,18 @@ const menuRow = {
 } as const;
 
 function Footer() {
-  const { mobile } = useSite();
+  const { mobile, storeName } = useSite();
   return (
     <footer dir="rtl" style={{ marginTop: "auto", textAlign: "right", padding: mobile ? "8px 16px calc(16px + env(safe-area-inset-bottom))" : "16px clamp(20px,4.5vw,40px) 24px" }}>
       <div style={{ maxWidth: 1320, margin: "0 auto", background: "#3A2826", color: "#E6D2C6", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
       <div style={{ padding: "clamp(35px,9vw,64px) clamp(20px,4.5vw,40px) 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 40 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <img src="/assets/logo-white.png" alt="Oli Safe Care" style={{ height: 64, width: "auto", display: "block", alignSelf: "flex-start" }} />
+          <img src="/assets/logo-white.png" alt={storeName} style={{ height: 64, width: "auto", display: "block", alignSelf: "flex-start" }} />
           <p style={{ fontSize: 15, lineHeight: 1.6 }}>מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
           <span style={{ color: "#FBF5EF", fontWeight: 600, marginBottom: 4 }}>חנות</span>
-          <Link href="/products?cat=preg" style={{ color: "#E6D2C6" }}>המוצרים של Oli</Link>
-          <Link href="/products?cat=gift" style={{ color: "#E6D2C6" }}>מתנות ליולדת</Link>
+          <Link href="/products" style={{ color: "#E6D2C6" }}>המוצרים</Link>
           <Link href="/stores" style={{ color: "#E6D2C6" }}>בחנויות Oli</Link>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
@@ -292,7 +289,7 @@ function SearchOverlay() {
 
   const t = site.q.trim().toLowerCase();
   const res = t
-    ? PRODUCTS.filter((p) => (p.name + " " + p.sub).toLowerCase().includes(t) || (t.length > 1 && p.sub.split(" ").some((w) => w.startsWith(t))))
+    ? site.products.filter((product) => `${product.title} ${productBlurb(product)} ${product.tags.join(" ")}`.toLowerCase().includes(t))
     : [];
 
   if (!present) return null;
@@ -324,11 +321,11 @@ function SearchOverlay() {
               <span style={{ fontSize: 13, color: "#8A6C64", fontWeight: 600 }}>{res.length ? res.length + " תוצאות" : ""}</span>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,260px),1fr))", gap: "4px 20px", maxHeight: "52vh", overflowY: "auto" }}>
                 {res.slice(0, 12).map((p) => (
-                  <Hx key={p.id} as={Link} href="/product" style={{ display: "flex", alignItems: "center", gap: 14, padding: 10, borderRadius: 14, color: "#3A2826" }} hover={{ background: "#F3E2D5" }}>
-                    <div style={{ width: 52, height: 64, borderRadius: 10, flexShrink: 0, backgroundColor: "#F3E4D8", backgroundImage: `url("${thumbOf(p)}")`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                  <Hx key={p.id} as={Link} href={productHref(p)} style={{ display: "flex", alignItems: "center", gap: 14, padding: 10, borderRadius: 14, color: "#3A2826" }} hover={{ background: "#F3E2D5" }}>
+                    <div style={thumbStyle(productImage(p))} />
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-                      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 17 }}>{p.name}</span>
-                      <span style={{ fontSize: 13, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.sub}</span>
+                      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 17 }}>{p.title}</span>
+                      <span style={{ fontSize: 13, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(p)}</span>
                     </div>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{fmt(p.price)}</span>
                   </Hx>
@@ -341,6 +338,19 @@ function SearchOverlay() {
       </div>
     </>
   );
+}
+
+function thumbStyle(src: string | null) {
+  return {
+    width: 52,
+    height: 64,
+    borderRadius: 10,
+    flexShrink: 0,
+    backgroundColor: "#F3E4D8",
+    backgroundImage: src ? `url("${src}")` : undefined,
+    backgroundSize: "cover" as const,
+    backgroundPosition: "center" as const,
+  };
 }
 
 const closeBtn = {
@@ -437,14 +447,14 @@ function CartDrawer() {
             <span style={{ width: 72, height: 72, borderRadius: "50%", background: "#F3E2D5", display: "flex", alignItems: "center", justifyContent: "center", color: "#A85A3A" }}><IconBag size={30} /></span>
             <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 22 }}>הסל עדיין ריק</span>
             <span style={{ fontSize: 15, color: "#6E5650" }}>מוצרים בטוחים להריון ולאחר לידה מחכים לך באתר</span>
-            <Link href="/products?cat=preg" onClick={site.closeCart} style={{ marginTop: 6, background: "#3A2826", color: "#FBF5EF", border: 0, padding: "14px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>למוצרים של Oli</Link>
+            <Link href="/products" onClick={site.closeCart} style={{ marginTop: 6, background: "#3A2826", color: "#FBF5EF", border: 0, padding: "14px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>לכל המוצרים</Link>
           </div>
         ) : (
           <>
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px" }}>
               {site.items.map((x, i) => (
                 <div key={x.id} style={{ display: "flex", gap: 14, padding: "16px 0", borderBottom: "1px solid #EADBCF", opacity: open ? 1 : 0, transform: open ? "none" : "translateY(14px)", transition: `opacity .45s ease ${open ? 0.2 + i * 0.06 : 0}s, transform .5s cubic-bezier(.2,.8,.2,1) ${open ? 0.2 + i * 0.06 : 0}s` }}>
-                  <div style={{ width: 84, aspectRatio: "4/5", borderRadius: 12, flexShrink: 0, backgroundColor: "#F3E4D8", backgroundImage: `url("${thumbOf(x, 240, 300)}")`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                  <div style={{ ...thumbStyle(x.image), width: 84, height: "auto", aspectRatio: "4/5" }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{x.name}</span>

@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useCallback, type CSSProperties } from "react";
-import { byId, cover, STAGES, VALUES } from "@/lib/data";
-import { FF } from "@/lib/format";
+import { VALUES } from "@/lib/data";
+import { categoryGroups, productBlurb, productHref, productImage } from "@/lib/catalog-model";
+import { FF, fmt } from "@/lib/format";
 import { CatalogCard, GiftCard } from "@/components/cards";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
 
-const best = ["olilastic", "olineum", "nippoli", "oliglow"].map(byId);
-const gifts = ["gift", "olibox", "oils"].map(byId);
-
 export function HomeView() {
-  const { mobile } = useSite();
+  const { mobile, products } = useSite();
+  const groups = categoryGroups(products);
+  const lead = products[0];
+  const leadImage = lead ? productImage(lead) : null;
+  const gifts = products.filter((product) => /מתנ|gift/i.test(`${product.category} ${product.tags.join(" ")}`));
   const aboutVid = useCallback((el: HTMLVideoElement | null) => {
     if (!el) return;
     el.muted = true;
@@ -45,8 +47,7 @@ export function HomeView() {
             <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.02em", fontSize: "clamp(38px,5.6vw,76px)", lineHeight: 1.04, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
             <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
             <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
-              <Hx as={Link} href="/products?cat=preg" style={primary} hover={{ background: "#A85A3A" }}>למוצרים של Oli</Hx>
-              <Hx as={Link} href="/products?cat=gift" style={textLink} hover={{ color: "#A85A3A" }}>מתנות ליולדת</Hx>
+              <Hx as={Link} href="/products" style={primary} hover={{ background: "#A85A3A" }}>לכל המוצרים</Hx>
             </div>
           </div>
           <div className="hero-product" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(220px,48vw,600px)" }}>
@@ -66,18 +67,14 @@ export function HomeView() {
             <h2 style={h2}>לכל שלב במסע</h2>
             <p style={{ fontSize: "clamp(15px,2vw,17px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520, textWrap: "pretty" }}>מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב.</p>
           </div>
-          <Link href="/products?cat=preg" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
+          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))", gap: "clamp(10px,2vw,20px)" }}>
-          {STAGES.map((s) => (
-            <Hx key={s.cat} as={Link} href={"/products?cat=" + s.cat} style={stageCard(mobile)} hover={{ transform: "translateY(-4px)" }}>
-              <div style={cover(s.bg, { opacity: 0.9 })} />
-              <div style={stageImg(!!s.wide, mobile, s.img)} />
-              <span style={{ position: "relative", fontFamily: FF, fontWeight: 500, fontSize: "clamp(15px,3.6vw,22px)", color: "#A85A3A" }}>{s.en}</span>
-              <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "clamp(4px,1vw,8px)", maxWidth: mobile ? "60%" : "none" }}>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(26px,6vw,34px)" }}>{s.title}</h3>
-                <p style={{ fontSize: "clamp(14px,3.6vw,16px)", lineHeight: 1.5, color: "#5E4844", maxWidth: 300 }}>{s.desc}</p>
-                <span style={{ fontSize: 14, fontWeight: 600, marginTop: "clamp(4px,1.5vw,10px)" }}>{s.count} ←</span>
+          {(groups.length ? groups : [{ key: "all", count: 0 }]).map((group) => (
+            <Hx key={group.key} as={Link} href={group.key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(group.key)} style={stageCard(mobile)} hover={{ transform: "translateY(-4px)" }}>
+              <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "clamp(4px,1vw,8px)" }}>
+                <h3 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(26px,6vw,34px)" }}>{group.key === "all" ? "הקטלוג" : group.key}</h3>
+                <span style={{ fontSize: 14, fontWeight: 600, marginTop: "clamp(4px,1.5vw,10px)" }}>{group.count ? group.count + " מוצרים" : "אין מוצרים פעילים"} ←</span>
               </div>
             </Hx>
           ))}
@@ -99,25 +96,18 @@ export function HomeView() {
       <section style={{ padding: mobile ? "8px 16px 28px" : "8px clamp(20px,4.5vw,40px) 16px" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", background: "#3A2826", color: "#F6E6DA", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
         <div style={{ maxWidth: mobile ? 1320 : 1160, margin: "0 auto", padding: mobile ? "clamp(36px,8vw,56px) clamp(16px,4.5vw,28px)" : "52px 40px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "minmax(280px, 420px) minmax(0, 1fr)", gap: mobile ? "clamp(28px,6vw,64px)" : 44, alignItems: "center" }}>
-          <div style={{ aspectRatio: mobile ? "1/1" : "4/5", borderRadius: mobile ? 16 : 22, overflow: "hidden", background: "#3A2826", position: "relative", width: "100%", maxWidth: 420, justifySelf: "center" }}>
-            <img src="https://static.wixstatic.com/media/db159b_c6044a549cea41979a5612ff7b19c347~mv2.jpeg/v1/fill/w_1000,h_1250,al_c,q_85,enc_auto/file.jpg" alt="Olilastic" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.06)" }} />
+          <div style={{ aspectRatio: mobile ? "1/1" : "4/5", borderRadius: mobile ? 16 : 22, overflow: "hidden", background: "#4A3532", position: "relative", width: "100%", maxWidth: 420, justifySelf: "center", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            {leadImage ? <img src={leadImage} alt={lead?.title ?? ""} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(28px,4vw,42px)", textAlign: "center" }}>{lead ? lead.title : "הקטלוג"}</span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: mobile ? 24 : 18 }}>
-            <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#E3A783", fontWeight: 600 }}>מוצר הדגל</span>
-            <h2 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: mobile ? "clamp(34px,4vw,52px)" : "clamp(30px,2.5vw,42px)", lineHeight: 1.15, textWrap: "balance" }}>טיפול בסימני מתיחה בהריון, זאת המומחיות שלנו</h2>
-            <p style={{ fontSize: mobile ? 18 : 17, lineHeight: 1.65, color: "#E6D2C6", textWrap: "pretty" }}>חמאת גוף שמשפרת את האלסטיות של העור, מסייעת במניעת סימני מתיחה ובהפחתת נראות של סימני מתיחה קיימים. תרכובת של שמן חוחובה, שמן שקדים ושמן זית.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: "#5A4340", borderRadius: 14, overflow: "hidden" }}>
-              {[["שבוע 12", "מומלץ להתחיל"], ["×2", "ביום, בוקר וערב"], ["5.0★", "44 ביקורות"]].map(([a, b]) => (
-                <div key={a} style={{ background: "#3A2826", padding: mobile ? "clamp(12px,3vw,18px)" : "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontFamily: FF, fontWeight: 500, fontSize: mobile ? "clamp(20px,5vw,30px)" : 26 }}>{a}</span>
-                  <span style={{ fontSize: 13, color: "#C9B2A6" }}>{b}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <Hx as={Link} href="/product" style={{ background: "#F3D9C6", color: "#3A2826", border: 0, padding: mobile ? "16px 30px" : "14px 26px", borderRadius: 999, fontSize: mobile ? 16 : 15.5, fontWeight: 600 }} hover={{ background: "#FBF5EF" }}>לפרטים · ₪129</Hx>
-              <span style={{ fontSize: 14, color: "#C9B2A6" }}>הנחה ברכישת שתי חמאות</span>
-            </div>
+            <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#E3A783", fontWeight: 600 }}>{lead ? "מהחנות" : "הקטלוג"}</span>
+            <h2 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: mobile ? "clamp(34px,4vw,52px)" : "clamp(30px,2.5vw,42px)", lineHeight: 1.15, textWrap: "balance" }}>{lead ? lead.title : "אין כרגע מוצרים פעילים"}</h2>
+            <p style={{ fontSize: mobile ? 18 : 17, lineHeight: 1.65, color: "#E6D2C6", textWrap: "pretty" }}>{lead ? productBlurb(lead) : "מוצרים פעילים מהחנות יופיעו כאן."}</p>
+            {lead && (
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <Hx as={Link} href={productHref(lead)} style={{ background: "#F3D9C6", color: "#3A2826", border: 0, padding: mobile ? "16px 30px" : "14px 26px", borderRadius: 999, fontSize: mobile ? 16 : 15.5, fontWeight: 600 }} hover={{ background: "#FBF5EF" }}>לפרטים · {fmt(lead.price)}</Hx>
+              </div>
+            )}
           </div>
         </div>
         </div>
@@ -126,11 +116,15 @@ export function HomeView() {
       <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
           <h2 style={h2}>המומלצים שלנו</h2>
-          <Link href="/products?cat=preg" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים של Oli</Link>
+          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(220px, 1fr))", gap: mobile ? "22px 12px" : "28px 20px" }}>
-          {best.map((p) => <CatalogCard key={p.id} p={p} ltrName />)}
-        </div>
+        {products.length === 0 ? (
+          <p style={{ fontSize: 18, color: "#5E4844" }}>אין כרגע מוצרים פעילים.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(220px, 1fr))", gap: mobile ? "22px 12px" : "28px 20px" }}>
+            {products.slice(0, 4).map((p) => <CatalogCard key={p.id} p={p} />)}
+          </div>
+        )}
       </section>
 
       <section style={{ padding: mobile ? "8px 16px" : "16px clamp(20px,4.5vw,40px)" }}>
@@ -153,18 +147,20 @@ export function HomeView() {
         </div>
       </section>
 
+      {gifts.length > 0 && (
       <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>מארזים</span>
-            <h2 style={h2}>מתנות ליולדת</h2>
+            <h2 style={h2}>מתנות</h2>
           </div>
-          <Link href="/products?cat=gift" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המארזים</Link>
+          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3,minmax(0,1fr))", gap: mobile ? 12 : 20 }}>
           {gifts.map((p) => <GiftCard key={p.id} p={p} />)}
         </div>
       </section>
+      )}
 
       <section style={{ padding: mobile ? "8px 16px" : "16px clamp(20px,4.5vw,40px)" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", background: "#FFFFFF", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
@@ -233,21 +229,3 @@ function stageCard(mobile: boolean): CSSProperties {
   };
 }
 
-function stageImg(wide: boolean, mobile: boolean, src: string): CSSProperties {
-  return {
-    position: "absolute",
-    backgroundImage: `url("${src}")`,
-    backgroundSize: "contain",
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "center",
-    mixBlendMode: "multiply",
-    filter: "drop-shadow(0 18px 18px rgba(58,40,38,.17))",
-    pointerEvents: "none",
-    top: mobile ? "50%" : wide ? "16%" : "12%",
-    transform: mobile ? "translateY(-50%)" : "none",
-    left: wide ? (mobile ? "5%" : "7%") : mobile ? "6%" : "8%",
-    ...(wide
-      ? { width: mobile ? "36%" : "50%", aspectRatio: "1450/1080" }
-      : { height: mobile ? "78%" : "56%", aspectRatio: "1140/1425" }),
-  };
-}

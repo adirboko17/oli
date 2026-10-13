@@ -12,16 +12,18 @@ import {
   type RefObject,
 } from "react";
 import { usePathname } from "next/navigation";
-import { findProduct, type BgKey } from "@/lib/data";
+import type { CatalogProduct } from "@/lib/catalog-model";
 
 export type CartItem = {
   id: string;
   name: string;
   sub: string;
   price: number;
-  bg: BgKey;
+  image: string | null;
   qty: number;
 };
+
+export type CartDraft = Omit<CartItem, "qty">;
 
 type Site = {
   mobile: boolean;
@@ -44,9 +46,11 @@ type Site = {
   openCart: () => void;
   closeCart: () => void;
   closeAll: () => void;
+  products: CatalogProduct[];
+  storeName: string;
   items: CartItem[];
   cartCount: number;
-  add: (n: number, name: string) => void;
+  add: (item: CartDraft, qty?: number) => void;
   setQty: (id: string, d: number) => void;
 };
 
@@ -56,7 +60,7 @@ function allowScroll(target: EventTarget | null) {
   return target instanceof Element && !!target.closest("[data-scroll-lock-allow]");
 }
 
-export function SiteProvider({ children }: { children: ReactNode }) {
+export function SiteProvider({ children, products, storeName }: { children: ReactNode; products: CatalogProduct[]; storeName: string }) {
   const path = usePathname();
   const headerRef = useRef<HTMLElement | null>(null);
   const [mobile, setMobile] = useState(false);
@@ -152,16 +156,12 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setMenu((m) => !m);
   }, []);
 
-  const add = useCallback((n: number, name: string) => {
-    const p = findProduct(name);
-    const item = p
-      ? { id: p.id, name: p.name, sub: p.sub, price: p.price, bg: p.bg, qty: n }
-      : { id: name, name, sub: "", price: 0, bg: "peach" as const, qty: n };
+  const add = useCallback((item: CartDraft, qty = 1) => {
     setItems((prev) => {
       const next = prev.slice();
       const i = next.findIndex((x) => x.id === item.id);
-      if (i >= 0) next[i] = { ...next[i], qty: next[i].qty + n };
-      else next.push(item);
+      if (i >= 0) next[i] = { ...next[i], qty: next[i].qty + qty };
+      else next.push({ ...item, qty });
       return next;
     });
     setCartOpen(true);
@@ -179,9 +179,9 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       mobile, wide, headerH, setHeaderH, headerRef, menu, toggleMenu,
       closeMenu: () => setMenu(false),
       search, q, setQ, openSearch, account, accTab, setAccTab, openAccount,
-      cartOpen, openCart, closeCart, closeAll, items, cartCount, add, setQty,
+      cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty,
     }),
-    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, items, cartCount, add, setQty],
+    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
