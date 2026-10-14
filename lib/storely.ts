@@ -1,11 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const ALLOWED_HOST = "oli-eosin.vercel.app";
-const VISITOR_COOKIE = "storely_visitor";
+export const VISITOR_COOKIE = "storely_visitor";
 const VISITOR_KEY = /^[A-Za-z0-9_-]{16,80}$/;
 
+export function visitorCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: true,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  };
+}
+
+export function validVisitorKey(value: string | undefined | null): value is string {
+  return !!value && VISITOR_KEY.test(value);
+}
+
+export function createVisitorKey(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 const EVENTS = ["page_view", "product_view", "add_to_cart", "begin_checkout", "purchase"] as const;
-type StorefrontEventName = (typeof EVENTS)[number];
+export type StorefrontEventName = (typeof EVENTS)[number];
 
 type StorefrontEvent = {
   eventName: StorefrontEventName;
@@ -34,12 +54,9 @@ function isPrefetch(request: NextRequest): boolean {
 }
 
 function visitorKey(request: NextRequest): { key: string; isNew: boolean } {
-  const current = request.cookies.get(VISITOR_COOKIE)?.value ?? "";
-  if (VISITOR_KEY.test(current)) return { key: current, isNew: false };
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  const key = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return { key, isNew: true };
+  const current = request.cookies.get(VISITOR_COOKIE)?.value;
+  if (validVisitorKey(current)) return { key: current, isNew: false };
+  return { key: createVisitorKey(), isNew: true };
 }
 
 function placeName(value: string | null): string {
@@ -68,7 +85,7 @@ function eventBody(event: StorefrontEvent, trackingKey: string): Record<string, 
   return body;
 }
 
-async function recordStorefrontEvent(event: StorefrontEvent): Promise<void> {
+export async function recordStorefrontEvent(event: StorefrontEvent): Promise<void> {
   const base = process.env.STORELY_SUPABASE_URL?.replace(/\/$/, "");
   const publishableKey = process.env.STORELY_PUBLISHABLE_KEY;
   const trackingKey = process.env.STORELY_TRACKING_KEY;
@@ -86,7 +103,7 @@ async function recordStorefrontEvent(event: StorefrontEvent): Promise<void> {
     signal: AbortSignal.timeout(2000),
   });
   if (!response.ok) {
-    console.error("Storely page event was not recorded", response.status);
+    console.error("Storely event was not recorded", response.status);
   }
 }
 
@@ -99,25 +116,32 @@ export async function trackPageView(request: NextRequest, response: NextResponse
 
   const visitor = visitorKey(request);
   if (visitor.isNew) {
-    response.cookies.set(VISITOR_COOKIE, visitor.key, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-    });
+    response.cookies.set(VISITOR_COOKIE, visitor.key, visitorCookieOptions());
   }
 
+  const country = placeName(request.headers.get("x-vercel-ip-country"));
+  const city = placeName(request.headers.get("x-vercel-ip-city"));
+  const path = request.nextUrl.pathname;
   try {
     await recordStorefrontEvent({
       eventName: "page_view",
       hostname,
       visitorKey: visitor.key,
-      path: request.nextUrl.pathname,
-      country: placeName(request.headers.get("x-vercel-ip-country")),
-      city: placeName(request.headers.get("x-vercel-ip-city")),
+      path,
+      country,
+      city,
     });
+    if (path === "/checkout") {
+      await recordStorefrontEvent({
+        eventName: "begin_checkout",
+        hostname,
+        visitorKey: visitor.key,
+        path,
+        country,
+        city,
+      });
+    }
   } catch (error) {
-    console.error("Storely page event failed", error instanceof Error ? error.name : "Error");
+    console.error("Storely event failed", error instanceof Error ? error.name : "Error");
   }
 }

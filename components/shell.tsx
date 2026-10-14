@@ -479,7 +479,7 @@ function CartDrawer() {
                 <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>{fmt(total)}</span>
               </div>
               <span style={{ fontSize: 13, color: "#6E5650" }}>משלוח ומבצעים יחושבו בקופה</span>
-              <Hx as="button" style={{ background: "#3A2826", color: "#FBF5EF", border: 0, height: 54, borderRadius: 999, fontSize: 16, fontWeight: 600 }} hover={{ background: "#A85A3A" }}>למעבר לתשלום</Hx>
+              <Hx as={Link} href="/checkout" prefetch={false} onClick={site.closeCart} style={{ background: "#3A2826", color: "#FBF5EF", border: 0, height: 54, borderRadius: 999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center" }} hover={{ background: "#A85A3A" }}>למעבר לתשלום</Hx>
               <button type="button" onClick={site.closeCart} style={{ background: "transparent", color: "#3A2826", border: 0, fontSize: 14, textDecoration: "underline", padding: 4 }}>המשך קנייה</button>
             </div>
           </>
