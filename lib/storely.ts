@@ -53,10 +53,13 @@ function isPrefetch(request: NextRequest): boolean {
   return purpose.includes("prefetch");
 }
 
-function visitorKey(request: NextRequest): { key: string; isNew: boolean } {
+export function ensureVisitor(request: NextRequest): { key: string; isNew: boolean } {
   const current = request.cookies.get(VISITOR_COOKIE)?.value;
   if (validVisitorKey(current)) return { key: current, isNew: false };
-  return { key: createVisitorKey(), isNew: true };
+  const key = createVisitorKey();
+  request.cookies.set(VISITOR_COOKIE, key);
+  request.headers.set("x-storely-visitor", key);
+  return { key, isNew: true };
 }
 
 function placeName(value: string | null): string {
@@ -85,39 +88,62 @@ function eventBody(event: StorefrontEvent, trackingKey: string): Record<string, 
   return body;
 }
 
-export async function recordStorefrontEvent(event: StorefrontEvent): Promise<void> {
-  const base = process.env.STORELY_SUPABASE_URL?.replace(/\/$/, "");
-  const publishableKey = process.env.STORELY_PUBLISHABLE_KEY;
-  const trackingKey = process.env.STORELY_TRACKING_KEY;
-  if (!base || !publishableKey || !trackingKey || !isStorelyHost(event.hostname)) return;
-  if (!EVENTS.includes(event.eventName) || !VISITOR_KEY.test(event.visitorKey)) return;
+function storelyConfig(event: StorefrontEvent): { url: string; publishableKey: string; trackingKey: string } | null {
+  const missing = (
+    [
+      ["STORELY_SUPABASE_URL", process.env.STORELY_SUPABASE_URL],
+      ["STORELY_PUBLISHABLE_KEY", process.env.STORELY_PUBLISHABLE_KEY],
+      ["STORELY_TRACKING_KEY", process.env.STORELY_TRACKING_KEY],
+    ] as const
+  ).filter(([, value]) => !value?.trim()).map(([name]) => name);
+  if (missing.length) {
+    console.error(`Storely ${event.eventName} was not sent: missing ${missing.join(", ")}`);
+    return null;
+  }
+  if (!isStorelyHost(event.hostname)) {
+    console.error(`Storely ${event.eventName} was not sent: host "${event.hostname || "(empty)"}" is not ${ALLOWED_HOST}`);
+    return null;
+  }
+  if (!validVisitorKey(event.visitorKey)) {
+    console.error(`Storely ${event.eventName} was not sent: visitor_key is missing or invalid`);
+    return null;
+  }
+  return {
+    url: process.env.STORELY_SUPABASE_URL!.replace(/\/$/, ""),
+    publishableKey: process.env.STORELY_PUBLISHABLE_KEY!,
+    trackingKey: process.env.STORELY_TRACKING_KEY!,
+  };
+}
 
-  const response = await fetch(`${base}/rest/v1/rpc/record_storefront_event`, {
+export async function recordStorefrontEvent(event: StorefrontEvent): Promise<void> {
+  const config = storelyConfig(event);
+  if (!config || !EVENTS.includes(event.eventName)) return;
+
+  const response = await fetch(`${config.url}/rest/v1/rpc/record_storefront_event`, {
     method: "POST",
     headers: {
-      apikey: publishableKey,
-      authorization: `Bearer ${publishableKey}`,
+      apikey: config.publishableKey,
+      authorization: `Bearer ${config.publishableKey}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify(eventBody(event, trackingKey)),
+    body: JSON.stringify(eventBody(event, config.trackingKey)),
     signal: AbortSignal.timeout(2000),
   });
   if (!response.ok) {
-    console.error("Storely event was not recorded", response.status);
+    const detail = await response.text().catch(() => "");
+    console.error("Storely event was not recorded", response.status, detail.slice(0, 200));
   }
 }
 
 export async function trackPageView(request: NextRequest, response: NextResponse): Promise<void> {
   if (request.method !== "GET" || isPrefetch(request)) return;
   if (response.status >= 300 && response.status < 400) return;
+  // A full document render records the visit next to the catalog load.
+  if (request.headers.get("rsc") !== "1") return;
 
   const hostname = requestHostname(request.headers.get("host"));
-  if (!isStorelyHost(hostname)) return;
-
-  const visitor = visitorKey(request);
-  if (visitor.isNew) {
-    response.cookies.set(VISITOR_COOKIE, visitor.key, visitorCookieOptions());
-  }
+  const visitor = ensureVisitor(request);
+  if (visitor.isNew) response.cookies.set(VISITOR_COOKIE, visitor.key, visitorCookieOptions());
 
   const country = placeName(request.headers.get("x-vercel-ip-country"));
   const city = placeName(request.headers.get("x-vercel-ip-city"));
