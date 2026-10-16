@@ -78,7 +78,7 @@ export function SiteProvider({ children, products, storeName }: { children: Reac
 
   useEffect(() => {
     const onResize = () => {
-      const m = window.innerWidth < 760;
+      const m = window.innerWidth < 768;
       setMobile(m);
       setWide(window.innerWidth >= 1024);
       if (!m) setMenu(false);

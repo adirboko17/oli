@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { findUser, formatPhone, saveUser, useOliUser } from "@/lib/account-session";
+import { groupHref, shopGroups } from "@/lib/shop-groups";
 import { productBlurb, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
@@ -10,6 +12,8 @@ import {
   IconBag, IconFacebook, IconInstagram, IconSearch, IconSpotify, IconUser, IconWhatsApp, IconYouTube,
 } from "@/components/icons";
 import { useSite } from "@/components/site";
+import { A11yWidget } from "@/components/widgets";
+import PromoFivePercent from "@/components/PromoFivePercent";
 
 const PROMO = ["משלוח חינם בהזמנה מעל 250 ש״ח", "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
 const POPULAR = ["סימני מתיחה", "שמן עיסוי", "הנקה", "מארזי מתנה", "ספרים"];
@@ -34,12 +38,12 @@ function Promo() {
   );
   return (
     <>
-      <div className="promo-desk" style={{ background: "#3A2826", color: "#F6E6DA", fontSize: 13, letterSpacing: ".04em", display: "flex", justifyContent: "center", gap: 28, padding: "9px 16px", flexWrap: "wrap" }}>
+      <div className="promo-desk" style={{ background: "#F3D9C6", color: "#3A2826", fontSize: 13, letterSpacing: ".04em", display: "flex", justifyContent: "center", gap: 28, padding: "9px 16px", flexWrap: "wrap" }}>
         <span>משלוח חינם בהזמנה מעל 250 ש״ח</span>
         <span style={{ opacity: 0.5 }}>·</span>
         <span>5% הנחה בהזמנה הראשונה לנרשמות</span>
       </div>
-      <div className="promo-mob" style={{ background: "#3A2826", color: "#F6E6DA", fontSize: 13, letterSpacing: ".04em", overflow: "hidden", height: 36, alignItems: "center", direction: "ltr", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)", maskImage: "linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)" }}>
+      <div className="promo-mob" style={{ background: "#F3D9C6", color: "#3A2826", fontSize: 13, letterSpacing: ".04em", overflow: "hidden", height: 36, alignItems: "center", direction: "ltr", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)", maskImage: "linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)" }}>
         <div style={{ display: "flex", width: "max-content", animation: "oliMarquee 22s linear infinite" }}>
           {row("a")}
           {row("b")}
@@ -47,7 +51,7 @@ function Promo() {
       </div>
       <style>{`
         .promo-mob { display: none; }
-        @media (max-width: 759px) {
+        @media (max-width: 767px) {
           .promo-desk { display: none !important; }
           .promo-mob {
             display: flex !important;
@@ -69,9 +73,15 @@ function Header() {
   const prod = path.startsWith("/products") || path.startsWith("/product");
   const stores = path.startsWith("/stores");
   const pod = path.startsWith("/podcast");
-  const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const });
+  const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const, color: "#3A2826" });
   const [menuTop, setMenuTop] = useState(108);
-  const [scrolled, setScrolled] = useState(false);
+  const [prodOpen, setProdOpen] = useState(false);
+  const hideProd = useRef<number | undefined>(undefined);
+  const [subOpen, setSubOpen] = useState(false);
+  const router = useRouter();
+  const user = useOliUser();
+  const groups = shopGroups(site.products);
+  const openMine = () => { if (user) router.push("/account"); else site.openAccount(); };
 
   useEffect(() => {
     const el = site.headerRef.current;
@@ -82,8 +92,6 @@ function Header() {
       if (hh > 20) site.setHeaderH(hh);
       const bottom = Math.max(0, Math.round(rect.bottom));
       setMenuTop((prev) => (prev === bottom ? prev : bottom));
-      const y = window.scrollY > 2;
-      setScrolled((prev) => (prev === y ? prev : y));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -103,18 +111,30 @@ function Header() {
 
   const links = [
     { href: "/", label: "דף הבית" },
-    { href: "/products", label: "המוצרים" },
+    { href: "/products", label: "המוצרים של Oli" },
+    { href: groupHref("gift"), label: "מתנות ליולדת" },
     { href: "/stores", label: "Oli בחנויות" },
     { href: "/podcast", label: "פודקאסט" },
   ];
 
   return (
     <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(251,245,239,.92)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid " + (scrolled ? "#EADBCF" : "transparent"), transition: "border-color .2s ease" }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(255,255,255,.94)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EFE4DC" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
-        <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden" }}>
+        <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", alignItems: "center", minWidth: 0 }}>
           <Link href="/" style={nav(home)}>דף הבית</Link>
-          <Link href="/products" style={nav(prod)}>המוצרים</Link>
+          <div onMouseEnter={() => { window.clearTimeout(hideProd.current); setProdOpen(true); }} onMouseLeave={() => { hideProd.current = window.setTimeout(() => setProdOpen(false), 120); }} style={{ position: "relative", display: "flex", alignItems: "center", gap: 4, padding: "12px 0", margin: "-12px 0" }}>
+            <Link href="/products" style={nav(prod)}>המוצרים של Oli</Link>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .3s", transform: prodOpen ? "rotate(180deg)" : "none", opacity: 0.7 }}><path d="M6 9l6 6 6-6" /></svg>
+            <div style={{ position: "absolute", top: "100%", right: -14, minWidth: 260, background: "#FFFFFF", borderRadius: 16, boxShadow: "0 18px 50px rgba(42,28,26,.14)", border: "1px solid #EFE4DC", padding: 8, display: "flex", flexDirection: "column", zIndex: 30, opacity: prodOpen ? 1 : 0, transform: prodOpen ? "translateY(0)" : "translateY(-6px)", pointerEvents: prodOpen ? "auto" : "none", transition: "opacity .25s ease, transform .3s cubic-bezier(.2,.8,.2,1)" }}>
+              <Hx as={Link} href="/products" style={dropLink} hover={{ background: "#F8EFE9" }}>כל המוצרים<span style={{ fontSize: 12, color: "#8A6C64" }}>{site.products.length}</span></Hx>
+              {groups.map((group) => (
+                <Hx key={group.id} as={Link} href={groupHref(group.id)} style={dropLink} hover={{ background: "#F8EFE9" }}>
+                  {group.label}<span style={{ fontSize: 12, color: "#8A6C64" }}>{group.count}</span>
+                </Hx>
+              ))}
+            </div>
+          </div>
           <Link href="/stores" style={nav(stores)}>Oli בחנויות</Link>
           <Link href="/podcast" style={nav(pod)}>פודקאסט</Link>
         </nav>
@@ -122,10 +142,10 @@ function Header() {
           <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
         </Link>
         <div style={{ display: "flex", gap: "clamp(10px,1.4vw,18px)", justifyContent: "flex-end", alignItems: "center", fontSize: 14, whiteSpace: "nowrap" }}>
-          <Hx as="button" onClick={site.openSearch} style={iconLink} hover={{ background: "#F3E2D5" }}>
+          <Hx as="button" onClick={site.openSearch} style={iconLink} hover={{ background: "#F8EFE9" }}>
             <IconSearch /><span>חיפוש</span>
           </Hx>
-          <Hx as="button" onClick={site.openAccount} style={iconLink} hover={{ background: "#F3E2D5" }}>
+          <Hx as="button" onClick={openMine} style={iconLink} hover={{ background: "#F8EFE9" }}>
             <IconUser /><span>החשבון שלי</span>
           </Hx>
           <Hx as="button" onClick={site.openCart} aria-label="סל קניות" style={cartBtn} hover={{ background: "#A85A3A" }}>
@@ -164,19 +184,40 @@ function Header() {
           </button>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", padding: "8px 24px 0" }}>
-          {links.map((l, i) => (
-            <Link key={l.href + l.label} href={l.href} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 0", borderBottom: "1px solid #54403C", color: "#FBF5EF", fontSize: 26, fontWeight: 500, letterSpacing: "-.01em", opacity: site.menu ? 1 : 0, transform: site.menu ? "translateY(0)" : "translateY(24px)", transition: `opacity .5s ease ${site.menu ? 0.28 + i * 0.06 : 0}s, transform .6s cubic-bezier(.2,.8,.2,1) ${site.menu ? 0.28 + i * 0.06 : 0}s` }}>
-              <span style={{ fontSize: 13, color: "#C9A08A", fontWeight: 500, letterSpacing: ".06em", minWidth: 26 }}>0{i + 1}</span>
-              <span style={{ flex: 1 }}>{l.label}</span>
-              <span style={{ fontSize: 20, color: "#C9A08A" }}>←</span>
-            </Link>
-          ))}
+          {links.map((l, i) => {
+            const products = l.href === "/products";
+            return (
+              <div key={l.href}>
+                {products ? (
+                  <button type="button" onClick={() => setSubOpen((v) => !v)} style={menuLink(site.menu, i)}>
+                    <span style={menuNum}>0{i + 1}</span>
+                    <span style={{ flex: 1 }}>{l.label}</span>
+                    <span style={{ fontSize: 24, color: "#C9A08A", fontWeight: 300, transform: subOpen ? "rotate(45deg)" : "none", transition: "transform .35s" }}>+</span>
+                  </button>
+                ) : (
+                  <Link href={l.href} style={menuLink(site.menu, i)}>
+                    <span style={menuNum}>0{i + 1}</span>
+                    <span style={{ flex: 1 }}>{l.label}</span>
+                    <span style={{ fontSize: 20, color: "#C9A08A" }}>←</span>
+                  </Link>
+                )}
+                {products && (
+                  <div style={{ maxHeight: subOpen ? (groups.length + 1) * 46 : 0, overflow: "hidden", transition: "max-height .5s cubic-bezier(.2,.8,.2,1)" }}>
+                    <Link href="/products" style={subLink}>כל המוצרים<span>{site.products.length}</span></Link>
+                    {groups.map((group) => (
+                      <Link key={group.id} href={groupHref(group.id)} style={subLink}>{group.label}<span>{group.count}</span></Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
         <div style={{ padding: "16px 24px calc(16px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 14, opacity: site.menu ? 1 : 0, transform: site.menu ? "none" : "translateY(16px)", transition: `opacity .5s ease ${site.menu ? 0.62 : 0}s, transform .6s ease ${site.menu ? 0.62 : 0}s` }}>
-          <button type="button" onClick={site.openAccount} style={{ ...menuRow, color: "#FBF5EF", fontWeight: 600 }}>
-            <IconUser size={20} />
-            <span style={{ flex: 1 }}>החשבון שלי</span>
-            <span style={{ fontSize: 12, fontWeight: 400, color: "#C9B2A6" }}>הזמנות ופרטים</span>
+          <button type="button" onClick={openMine} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: "#4A3532", color: "#FFFFFF", border: 0, textAlign: "right" }}>
+            <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#F3D9C6", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center" }}><IconUser size={20} /></span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}><span style={{ fontSize: 15, fontWeight: 600 }}>{user ? "האזור האישי" : "התחברות לאזור האישי"}</span><span style={{ fontSize: 12, color: "#C9B2A6" }}>{user ? user.name : "הזמנות, פרטים והטבות"}</span></span>
+            <span style={{ fontSize: 18, color: "#C9A08A" }}>←</span>
           </button>
           <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
             <Hx as="a" href="https://wa.me/972559739670" target="_blank" rel="noreferrer" aria-label="WhatsApp" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconWhatsApp size={19} /></Hx>
@@ -189,7 +230,7 @@ function Header() {
       </div>
       <style>{`
         .mob-nav, .mob-menu { display: none; }
-        @media (max-width: 759px) {
+        @media (max-width: 767px) {
           .desk-nav { display: none !important; }
           .mob-nav { display: grid !important; }
           .mob-menu { display: flex; }
@@ -199,6 +240,8 @@ function Header() {
   );
 }
 
+const dropLink: CSSProperties = { display: "flex", justifyContent: "space-between", gap: 24, padding: "11px 14px", borderRadius: 10, fontSize: 15, color: "#3A2826" };
+
 const iconLink = {
   display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 10px",
   borderRadius: 999, color: "#3A2826", background: "transparent", border: 0, fontSize: 14,
@@ -206,8 +249,20 @@ const iconLink = {
 
 const cartBtn = {
   position: "relative" as const, display: "flex", alignItems: "center", gap: 8, height: 42,
-  padding: "0 18px 0 16px", border: 0, borderRadius: 999, background: "#3A2826", color: "#FBF5EF", fontSize: 14, fontWeight: 600,
+  padding: "0 18px 0 16px", border: 0, borderRadius: 999, background: "#3A2826", color: "#FFFFFF", fontSize: 14, fontWeight: 600,
 };
+
+function menuLink(open: boolean, i: number): CSSProperties {
+  return {
+    display: "flex", alignItems: "center", gap: 16, width: "100%", padding: "15px 0",
+    border: 0, borderBottom: "1px solid #54403C", background: "transparent", color: "#FFFFFF",
+    fontSize: 26, fontWeight: 500, letterSpacing: "-.01em", textAlign: "right",
+    opacity: open ? 1 : 0, transform: open ? "translateY(0)" : "translateY(24px)",
+    transition: `opacity .5s ease ${open ? 0.28 + i * 0.06 : 0}s, transform .6s cubic-bezier(.2,.8,.2,1) ${open ? 0.28 + i * 0.06 : 0}s`,
+  };
+}
+const menuNum: CSSProperties = { fontSize: 13, color: "#C9A08A", fontWeight: 500, letterSpacing: ".06em", minWidth: 26 };
+const subLink: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 42px 11px 0", fontSize: 17, color: "#E6D2C6", borderBottom: "1px solid #4A3532" };
 
 const menuRow = {
   display: "flex", alignItems: "center", gap: 12, height: 52, width: "100%",
@@ -215,45 +270,48 @@ const menuRow = {
   fontSize: 15, border: 0, textAlign: "right" as const,
 } as const;
 
+const footSocial = {
+  width: 42, height: 42, borderRadius: "50%", border: "1px solid #D9B9A5",
+  display: "flex", alignItems: "center", justifyContent: "center", color: "#5E4844",
+} as const;
+
 function Footer() {
-  const { mobile, storeName } = useSite();
+  const { storeName } = useSite();
   return (
-    <footer dir="rtl" style={{ marginTop: "auto", textAlign: "right", padding: mobile ? "8px 16px calc(16px + env(safe-area-inset-bottom))" : "16px clamp(20px,4.5vw,40px) 24px" }}>
-      <div style={{ maxWidth: 1320, margin: "0 auto", background: "#3A2826", color: "#E6D2C6", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
-      <div style={{ padding: "clamp(35px,9vw,64px) clamp(20px,4.5vw,40px) 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 40 }}>
+    <footer dir="rtl" style={{ background: "#F3D9C6", color: "#5E4844", marginTop: "auto", textAlign: "right" }}>
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(35px,9vw,64px) clamp(16px,4.5vw,32px) 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 40 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <img src="/assets/logo-white.png" alt={storeName} style={{ height: 64, width: "auto", display: "block", alignSelf: "flex-start" }} />
+          <img src="/assets/logo-brown.png" alt={storeName} style={{ height: 64, width: "auto", display: "block", alignSelf: "flex-start" }} />
           <p style={{ fontSize: 15, lineHeight: 1.6 }}>מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#FBF5EF", fontWeight: 600, marginBottom: 4 }}>חנות</span>
-          <Link href="/products" style={{ color: "#E6D2C6" }}>המוצרים</Link>
-          <Link href="/stores" style={{ color: "#E6D2C6" }}>בחנויות Oli</Link>
+          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>חנות</span>
+          <Link href="/products" style={{ color: "#5E4844" }}>המוצרים של Oli</Link>
+          <Link href="/products" style={{ color: "#5E4844" }}>מתנות ליולדת</Link>
+          <Link href="/stores" style={{ color: "#5E4844" }}>בחנויות Oli</Link>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#FBF5EF", fontWeight: 600, marginBottom: 4 }}>ידע</span>
-          <a href="#" style={{ color: "#E6D2C6" }}>מאמרים</a>
-          <Link href="/podcast" style={{ color: "#E6D2C6" }}>היריון בטוח, פרופ׳ שיינר</Link>
-          <a href="#" style={{ color: "#E6D2C6" }}>חופשייה ללדת, זיוה כחלון</a>
+          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>ידע</span>
+          <a href="https://instagram.com/oli_safecare" style={{ color: "#5E4844" }}>מאמרים</a>
+          <Link href="/podcast" style={{ color: "#5E4844" }}>היריון בטוח, פרופ׳ שיינר</Link>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#FBF5EF", fontWeight: 600, marginBottom: 4 }}>צרי קשר</span>
-          <a href="mailto:contact@olisafecare.com" style={{ color: "#E6D2C6" }}>contact@olisafecare.com</a>
-          <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ color: "#E6D2C6" }}>WhatsApp ‎+972559739670</a>
+          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>צרי קשר</span>
+          <a href="mailto:contact@olisafecare.com" style={{ color: "#5E4844" }}>contact@olisafecare.com</a>
+          <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ color: "#5E4844" }}>WhatsApp ‎+972559739670</a>
           <span style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-            <Hx as="a" href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="Instagram" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconInstagram /></Hx>
-            <Hx as="a" href="https://www.facebook.com/profile.php?id=100093537736476" target="_blank" rel="noreferrer" aria-label="Facebook" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconFacebook /></Hx>
-            <Hx as="a" href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" rel="noreferrer" aria-label="Spotify" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconSpotify /></Hx>
-            <Hx as="a" href="https://youtube.com/@olisafecare" target="_blank" rel="noreferrer" aria-label="YouTube" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconYouTube /></Hx>
-            <Hx as="a" href="https://wa.me/972559739670" target="_blank" rel="noreferrer" aria-label="WhatsApp" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconWhatsApp size={19} /></Hx>
+            <Hx as="a" href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="Instagram" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconInstagram /></Hx>
+            <Hx as="a" href="https://www.facebook.com/profile.php?id=100093537736476" target="_blank" rel="noreferrer" aria-label="Facebook" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconFacebook /></Hx>
+            <Hx as="a" href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" rel="noreferrer" aria-label="Spotify" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconSpotify /></Hx>
+            <Hx as="a" href="https://youtube.com/@olisafecare" target="_blank" rel="noreferrer" aria-label="YouTube" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconYouTube /></Hx>
+            <Hx as="a" href="https://wa.me/972559739670" target="_blank" rel="noreferrer" aria-label="WhatsApp" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconWhatsApp size={19} /></Hx>
           </span>
         </div>
       </div>
-      <div style={{ padding: "20px clamp(20px,4.5vw,40px)", borderTop: "1px solid #5A4340", display: "flex", gap: 24, fontSize: 13, flexWrap: "wrap" }}>
-        <a href="#" style={{ color: "#C9B2A6" }}>תקנון האתר</a>
-        <a href="#" style={{ color: "#C9B2A6" }}>נגישות</a>
-        <a href="#" style={{ color: "#C9B2A6" }}>מדיניות פרטיות</a>
-      </div>
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "20px clamp(16px,4.5vw,32px)", borderTop: "1px solid #E2C2AD", display: "flex", gap: 24, fontSize: 13, flexWrap: "wrap" }}>
+        <Link href="/legal?tab=terms" style={{ color: "#5E4844" }}>תקנון האתר</Link>
+        <Link href="/legal?tab=a11y" style={{ color: "#5E4844" }}>הצהרת נגישות</Link>
+        <Link href="/legal?tab=privacy" style={{ color: "#5E4844" }}>מדיניות פרטיות</Link>
       </div>
     </footer>
   );
@@ -297,7 +355,7 @@ function SearchOverlay() {
   return (
     <>
       <div onClick={site.closeAll} style={{ position: "fixed", inset: 0, zIndex: 72, background: "rgba(42,28,26,.42)", backdropFilter: visible ? "blur(3px)" : "none", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transition: "opacity .4s ease" }} />
-      <div data-scroll-lock-allow style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FBF5EF", color: "#3A2826", padding: site.mobile ? "20px 16px 28px" : "36px 32px 40px", height: site.mobile ? "100dvh" : "auto", maxHeight: "100dvh", overflowY: "auto", borderRadius: site.mobile ? 0 : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: visible ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
+      <div data-scroll-lock-allow style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 73, background: "#FFFFFF", color: "#3A2826", padding: site.mobile ? "calc(14px + env(safe-area-inset-top)) 16px 22px" : "36px 32px 40px", height: "auto", maxHeight: site.mobile ? "82dvh" : "100dvh", overflowY: "auto", borderRadius: site.mobile ? "0 0 24px 24px" : "0 0 28px 28px", boxShadow: "0 20px 60px rgba(42,28,26,.2)", transform: visible ? "translateY(0)" : "translateY(-104%)", transition: "transform .55s cubic-bezier(.7,0,.2,1)" }} aria-label="חיפוש">
         <div style={{ maxWidth: 880, margin: "0 auto", display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #3A2826", padding: "6px 0" }}>
@@ -321,7 +379,7 @@ function SearchOverlay() {
               <span style={{ fontSize: 13, color: "#8A6C64", fontWeight: 600 }}>{res.length ? res.length + " תוצאות" : ""}</span>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,260px),1fr))", gap: "4px 20px", maxHeight: "52vh", overflowY: "auto" }}>
                 {res.slice(0, 12).map((p) => (
-                  <Hx key={p.id} as={Link} href={productHref(p)} style={{ display: "flex", alignItems: "center", gap: 14, padding: 10, borderRadius: 14, color: "#3A2826" }} hover={{ background: "#F3E2D5" }}>
+                  <Hx key={p.id} as={Link} href={productHref(p)} style={{ display: "flex", alignItems: "center", gap: 14, padding: 10, borderRadius: 14, color: "#3A2826" }} hover={{ background: "#F8EFE9" }}>
                     <div style={thumbStyle(productImage(p))} />
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
                       <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 17 }}>{p.title}</span>
@@ -362,61 +420,160 @@ const pillBtn = {
   padding: "10px 16px", borderRadius: 999, border: "1px solid #CDB5A8", background: "transparent", color: "#3A2826", fontSize: 14,
 } as const;
 
-const field = {
-  height: 52, border: "1px solid #CDB5A8", borderRadius: 14, background: "#FFFFFF",
-  padding: "0 16px", fontSize: 16, fontFamily: "inherit", color: "#3A2826", outline: "none", width: "100%",
-} as const;
-
 function AccountDrawer() {
   const site = useSite();
-  const { present, visible } = useShown(site.account);
+  const router = useRouter();
+  const { present, visible } = useShown(site.account, 450);
+  const [step, setStep] = useState<"phone" | "code" | "name" | "done">("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [bad, setBad] = useState(false);
+  const [left, setLeft] = useState(30);
+  const [form, setForm] = useState({ name: "", age: "", email: "", city: "", addr: "", due: "" });
+  const known = useRef(false);
+
+  useEffect(() => {
+    if (!site.account) return;
+    setStep("phone");
+    setCode("");
+    setBad(false);
+  }, [site.account]);
+
+  useEffect(() => {
+    if (step !== "code" || left <= 0) return;
+    const t = window.setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [step, left]);
+
   if (!present) return null;
   const open = visible;
+  const phoneOk = /^05\d{8}$/.test(phone);
+  const nameOk = form.name.trim().length > 1 && Number(form.age) >= 16 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.city.trim() && form.addr.trim();
+
+  function send() {
+    if (!phoneOk) return;
+    known.current = !!findUser(phone);
+    setStep("code");
+    setCode("");
+    setBad(false);
+    setLeft(30);
+  }
+
+  function onCode(value: string) {
+    const next = value.replace(/\D/g, "").slice(0, 6);
+    setCode(next);
+    setBad(false);
+    if (next.length < 6) return;
+    window.setTimeout(() => {
+      if (known.current) finish(findUser(phone)!);
+      else setStep("name");
+    }, 250);
+  }
+
+  function finish(user: { name: string; phone: string; email: string; age: string; city: string; addr: string; due: string; isNew: boolean }) {
+    saveUser(user);
+    setStep("done");
+    window.setTimeout(() => {
+      site.closeAll();
+      router.push("/account");
+    }, 700);
+  }
+
+  const box = site.mobile
+    ? { position: "fixed" as const, left: 0, right: 0, bottom: 0, maxHeight: "92dvh", zIndex: 73, background: "#FFFFFF", color: "#3A2826", borderRadius: "26px 26px 0 0", display: "flex", flexDirection: "column" as const, boxShadow: "0 -20px 60px rgba(42,28,26,.25)", transform: open ? "translateY(0)" : "translateY(104%)", transition: "transform .6s cubic-bezier(.32,1.2,.4,1)" }
+    : { position: "fixed" as const, top: "50%", left: "50%", width: "min(440px,92vw)", maxHeight: "90vh", zIndex: 73, background: "#FFFFFF", color: "#3A2826", display: "flex", flexDirection: "column" as const, borderRadius: 28, boxShadow: "0 30px 80px rgba(42,28,26,.28)", opacity: open ? 1 : 0, transform: open ? "translate(-50%,-50%) scale(1)" : "translate(-50%,-46%) scale(.96)", transition: "opacity .3s ease, transform .45s cubic-bezier(.32,1.2,.4,1)" };
+
   return (
     <>
       <div onClick={site.closeAll} style={backdrop(72, open)} />
-      <aside data-scroll-lock-allow style={panel(open, site.mobile, false)} aria-label="החשבון שלי">
+      <aside data-scroll-lock-allow style={box} aria-label="כניסה לחשבון">
         {site.mobile && <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}><span style={{ width: 44, height: 4, borderRadius: 2, background: "#D8C3B6" }} /></div>}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px 16px", borderBottom: "1px solid #EADBCF" }}>
-          <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>החשבון שלי</span>
-          <Hx as="button" onClick={site.closeAll} aria-label="סגירה" style={closeBtn} hover={{ background: "#3A2826", color: "#FBF5EF", borderColor: "#3A2826" }}>✕</Hx>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 0" }}>
+          {step === "code" || step === "name" ? <button type="button" onClick={() => setStep(step === "name" ? "code" : "phone")} style={{ height: 40, padding: "0 14px", borderRadius: 999, border: 0, background: "#F8EFE9", color: "#3A2826", fontSize: 14 }}>→ חזרה</button> : <span />}
+          <Hx as="button" onClick={site.closeAll} aria-label="סגירה" style={closeBtn} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}>✕</Hx>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", background: "#F3E2D5", borderRadius: 999, padding: 4 }}>
-            {([["login", "התחברות"], ["signup", "הרשמה"]] as const).map(([k, label]) => (
-              <button key={k} type="button" onClick={() => site.setAccTab(k)} style={{ height: 42, border: 0, borderRadius: 999, fontSize: 15, fontWeight: 600, background: site.accTab === k ? "#FBF5EF" : "transparent", color: "#3A2826", boxShadow: site.accTab === k ? "0 2px 8px rgba(58,40,38,.12)" : "none", transition: "all .25s" }}>{label}</button>
-            ))}
-          </div>
-          {site.accTab === "signup" && (
-            <>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "14px 16px", borderRadius: 14, background: "#3A2826", color: "#FBF5EF", fontSize: 14, lineHeight: 1.5 }}>
-                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 24, color: "#F3D9C6" }}>5%</span>
-                <span>הנחה על ההזמנה הראשונה לנרשמות חדשות</span>
+        <div style={{ padding: "8px clamp(24px,6vw,40px) calc(36px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 22, overflowY: "auto" }}>
+          {step === "phone" && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26, textAlign: "center", paddingTop: 4 }}>
+              <img src="/assets/logo-brown.png" alt="Oli" style={{ height: 34 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+                <span style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(28px,6vw,34px)", lineHeight: 1.1 }}>ברוכה הבאה</span>
+                <span style={{ fontSize: 15, lineHeight: 1.6, color: "#6E5650", maxWidth: 300 }}>כניסה או הרשמה עם מספר הנייד. נשלח לך קוד חד־פעמי, בלי סיסמאות.</span>
               </div>
-              <label style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, fontWeight: 600 }}>שם מלא
-                <input placeholder="השם שלך" style={field} />
-              </label>
-            </>
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", height: 58, borderRadius: 999, background: "#F8EFE9", direction: "ltr", padding: "0 6px 0 22px", gap: 12 }}>
+                  <span style={{ fontSize: 16, fontWeight: 500, color: "#8A6C64" }}>+972</span>
+                  <span style={{ width: 1, height: 22, background: "#E1CABD" }} />
+                  <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} onKeyDown={(e) => { if (e.key === "Enter") send(); }} type="tel" inputMode="numeric" placeholder="050-000-0000" style={{ flex: 1, height: "100%", border: 0, outline: "none", fontSize: 18, letterSpacing: ".05em", fontFamily: "inherit", color: "#3A2826", background: "transparent", minWidth: 0 }} />
+                </label>
+                <button type="button" disabled={!phoneOk} onClick={send} style={{ height: 56, border: 0, borderRadius: 999, background: phoneOk ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>שליחת קוד</button>
+              </div>
+              <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.6 }}>פעם ראשונה? ניצור לך חשבון ותקבלי <span style={{ color: "#A85A3A", fontWeight: 600 }}>5% הנחה</span> על ההזמנה הראשונה</span>
+            </div>
           )}
-          <label style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, fontWeight: 600 }}>אימייל
-            <input type="email" placeholder="name@email.com" style={{ ...field, direction: "ltr", textAlign: "right" }} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, fontWeight: 600 }}>סיסמה
-            <input type="password" placeholder="••••••••" style={field} />
-          </label>
-          {site.accTab === "login" && <a href="#" style={{ fontSize: 14, color: "#A85A3A", textDecoration: "underline", alignSelf: "flex-start" }}>שכחתי סיסמה</a>}
-          <Hx as="button" onClick={site.closeAll} style={{ background: "#3A2826", color: "#FBF5EF", border: 0, height: 54, borderRadius: 999, fontSize: 16, fontWeight: 600 }} hover={{ background: "#A85A3A" }}>{site.accTab === "login" ? "התחברות" : "יצירת חשבון"}</Hx>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, color: "#8A6C64", fontSize: 13 }}>
-            <span style={{ flex: 1, height: 1, background: "#EADBCF" }} />או<span style={{ flex: 1, height: 1, background: "#EADBCF" }} />
-          </div>
-          <button type="button" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFFFF", color: "#3A2826", border: "1px solid #CDB5A8", height: 52, borderRadius: 999, fontSize: 15, fontWeight: 600 }}>
-            <span style={{ fontWeight: 700, color: "#A85A3A" }}>G</span>המשך עם Google
-          </button>
+          {step === "code" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 30, lineHeight: 1.15 }}>הקוד בדרך אלייך</span>
+                <span style={{ fontSize: 16, lineHeight: 1.55, color: "#5E4844" }}>שלחנו קוד בן 6 ספרות למספר <span style={{ direction: "ltr", display: "inline-block", fontWeight: 600, color: "#3A2826" }}>{formatPhone(phone)}</span></span>
+              </div>
+              <div style={{ position: "relative", direction: "ltr" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8 }}>
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <span key={i} style={{ height: 56, borderRadius: 14, border: "1.5px solid " + (code[i] ? "#3A2826" : "#E6D2C6"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 600 }}>{code[i] || ""}</span>
+                  ))}
+                </div>
+                <input value={code} onChange={(e) => onCode(e.target.value)} type="tel" inputMode="numeric" autoComplete="one-time-code" maxLength={6} aria-label="קוד אימות" autoFocus style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%" }} />
+              </div>
+              {bad && <span style={{ fontSize: 14, color: "#A33A2A" }}>הקוד לא תואם. נסי שוב.</span>}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#6E5650" }}>
+                {left <= 0 ? <button type="button" onClick={send} style={textBtn}>שליחת קוד חדש</button> : <span>קוד חדש בעוד 0:{String(left).padStart(2, "0")}</span>}
+                <button type="button" onClick={() => setStep("phone")} style={{ ...textBtn, color: "#3A2826" }}>שינוי מספר</button>
+              </div>
+              <span style={{ fontSize: 13, color: "#8A6C64" }}>לצורך ההדגמה, כל קוד בן 6 ספרות יעבוד.</span>
+            </div>
+          )}
+          {step === "name" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 32, lineHeight: 1.1 }}>נעים להכיר</span>
+                <span style={{ fontSize: 15, lineHeight: 1.55, color: "#6E5650" }}>שלב אחרון. כמה פרטים כדי שנוכל להתאים לך מוצרים ולשלוח אלייך הזמנות.</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 88px", gap: 10 }}>
+                <Soft label="שם מלא" value={form.name} onChange={(name) => setForm({ ...form, name })} placeholder="השם שלך" />
+                <Soft label="גיל" value={form.age} onChange={(age) => setForm({ ...form, age })} placeholder="—" type="number" center />
+              </div>
+              <Soft label="אימייל" value={form.email} onChange={(email) => setForm({ ...form, email })} placeholder="name@email.com" type="email" ltr />
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.5fr)", gap: 10 }}>
+                <Soft label="עיר" value={form.city} onChange={(city) => setForm({ ...form, city })} placeholder="עיר" />
+                <Soft label="רחוב ומספר" value={form.addr} onChange={(addr) => setForm({ ...form, addr })} placeholder="רחוב ומספר" />
+              </div>
+              <Soft label="תאריך לידה משוער" value={form.due} onChange={(due) => setForm({ ...form, due })} type="date" />
+              <button type="button" disabled={!nameOk} onClick={() => finish({ ...form, phone, isNew: true })} style={{ height: 54, border: 0, borderRadius: 999, background: nameOk ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>יצירת החשבון</button>
+            </div>
+          )}
+          {step === "done" && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "28px 0 12px", textAlign: "center" }}>
+              <span style={{ width: 64, height: 64, borderRadius: "50%", background: "#F3D9C6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>✓</span>
+              <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 30 }}>היי {form.name || findUser(phone)?.name}</span>
+              <span style={{ fontSize: 16, color: "#5E4844" }}>מעבירים אותך לאזור האישי</span>
+            </div>
+          )}
         </div>
       </aside>
     </>
   );
 }
+
+function Soft({ label, value, onChange, placeholder, type, ltr, center }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ltr?: boolean; center?: boolean }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, fontWeight: 500, color: "#8A6C64" }}>{label}
+      <input value={value} type={type || "text"} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} style={{ height: 50, border: "1.5px solid transparent", borderRadius: 14, padding: "0 16px", fontSize: 16, fontFamily: "inherit", color: "#3A2826", outline: "none", width: "100%", background: "#FBF5F1", ...(ltr ? { direction: "ltr" as const, textAlign: "right" as const } : null), ...(center ? { textAlign: "center" as const } : null) }} />
+    </label>
+  );
+}
+
+const textBtn: CSSProperties = { background: "transparent", border: 0, padding: 0, fontSize: 14, color: "#A85A3A", textDecoration: "underline" };
 
 function CartDrawer() {
   const site = useSite();
@@ -424,63 +581,69 @@ function CartDrawer() {
   const { present, visible } = useShown(site.cartOpen);
   if (!present) return null;
   const open = visible;
+  const ship = total >= 250 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(250 - total) + " ומקבלים משלוח חינם";
   return (
     <>
       <div onClick={site.closeCart} style={backdrop(70, open)} />
       <aside data-scroll-lock-allow style={panel(open, site.mobile, true)} aria-label="סל קניות">
         {site.mobile && <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}><span style={{ width: 44, height: 4, borderRadius: 2, background: "#D8C3B6" }} /></div>}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px 16px", borderBottom: "1px solid #EADBCF" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>הסל שלך</span>
-            <span style={{ fontSize: 14, color: "#6E5650" }}>{site.cartCount === 1 ? "פריט אחד" : site.cartCount + " פריטים"}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px 18px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 28, letterSpacing: "-.01em" }}>הסל שלך</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#A85A3A", background: "#F8EFE9", padding: "4px 10px", borderRadius: 999 }}>{site.cartCount === 1 ? "פריט אחד" : site.cartCount + " פריטים"}</span>
           </div>
-          <Hx as="button" onClick={site.closeCart} aria-label="סגירה" style={closeBtn} hover={{ background: "#3A2826", color: "#FBF5EF", borderColor: "#3A2826" }}>✕</Hx>
+          <Hx as="button" onClick={site.closeCart} aria-label="סגירה" style={{ ...closeBtn, borderColor: "#E6D2C6" }} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}>✕</Hx>
         </div>
-        <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 10, background: "#F6EBE2" }}>
-          <span style={{ fontSize: 14, color: "#3A2826" }}>{total >= 250 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(250 - total) + " ומקבלים משלוח חינם"}</span>
-          <div style={{ height: 6, borderRadius: 3, background: "#E6D2C6", overflow: "hidden" }}>
+        <div style={{ margin: "0 24px", padding: "14px 16px", borderRadius: 16, background: "#FBF5F1", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#3A2826" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A85A3A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.6" /><circle cx="17" cy="17.5" r="1.6" /></svg>
+            <span>{ship}</span>
+          </div>
+          <div style={{ height: 4, borderRadius: 2, background: "#EBDAD0", overflow: "hidden" }}>
             <div style={{ height: "100%", borderRadius: 3, background: "#A85A3A", width: Math.min(100, (total / 250) * 100) + "%", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} />
           </div>
         </div>
         {!site.items.length ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "40px 24px", textAlign: "center" }}>
-            <span style={{ width: 72, height: 72, borderRadius: "50%", background: "#F3E2D5", display: "flex", alignItems: "center", justifyContent: "center", color: "#A85A3A" }}><IconBag size={30} /></span>
-            <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 22 }}>הסל עדיין ריק</span>
-            <span style={{ fontSize: 15, color: "#6E5650" }}>מוצרים בטוחים להריון ולאחר לידה מחכים לך באתר</span>
-            <Link href="/products" onClick={site.closeCart} style={{ marginTop: 6, background: "#3A2826", color: "#FBF5EF", border: 0, padding: "14px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>לכל המוצרים</Link>
+            <span style={{ width: 76, height: 76, borderRadius: "50%", background: "#F8EFE9", display: "flex", alignItems: "center", justifyContent: "center", color: "#A85A3A" }}><IconBag size={30} /></span>
+            <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 24 }}>הסל עדיין ריק</span>
+            <span style={{ fontSize: 15, color: "#6E5650", maxWidth: 260, lineHeight: 1.5 }}>מוצרים בטוחים להריון ולאחר לידה מחכים לך באתר</span>
+            <Link href="/products" onClick={site.closeCart} style={{ marginTop: 6, background: "#3A2826", color: "#FFFFFF", height: 50, padding: "0 28px", borderRadius: 999, fontSize: 15, fontWeight: 600, display: "inline-flex", alignItems: "center" }}>למוצרים של Oli</Link>
           </div>
         ) : (
           <>
-            <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px", display: "flex", flexDirection: "column" }}>
               {site.items.map((x, i) => (
-                <div key={x.id} style={{ display: "flex", gap: 14, padding: "16px 0", borderBottom: "1px solid #EADBCF", opacity: open ? 1 : 0, transform: open ? "none" : "translateY(14px)", transition: `opacity .45s ease ${open ? 0.2 + i * 0.06 : 0}s, transform .5s cubic-bezier(.2,.8,.2,1) ${open ? 0.2 + i * 0.06 : 0}s` }}>
-                  <div style={{ ...thumbStyle(x.image), width: 84, height: "auto", aspectRatio: "4/5" }} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{x.name}</span>
-                      <span style={{ fontWeight: 700, fontSize: 15, whiteSpace: "nowrap" }}>{fmt(x.price * x.qty)}</span>
+                <div key={x.id} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: "1px solid #F1E5DD", opacity: open ? 1 : 0, transform: open ? "none" : "translateY(14px)", transition: `opacity .45s ease ${open ? 0.2 + i * 0.06 : 0}s, transform .5s cubic-bezier(.2,.8,.2,1) ${open ? 0.2 + i * 0.06 : 0}s` }}>
+                  <div style={{ ...thumbStyle(x.image), width: 88, height: 110, borderRadius: 14, backgroundColor: "#F6EEE8" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18, lineHeight: 1.2 }}>{x.name}</span>
+                      <button type="button" onClick={() => site.setQty(x.id, -x.qty)} aria-label="הסרה" style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", border: 0, background: "transparent", color: "#8A6C64", fontSize: 12 }}>✕</button>
                     </div>
-                    <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.4 }}>{x.sub}</span>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-                      <div style={{ display: "flex", alignItems: "center", border: "1px solid #CDB5A8", borderRadius: 999, height: 36 }}>
+                    <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.45 }}>{x.sub}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", background: "#F8EFE9", borderRadius: 999, height: 34, padding: "0 2px" }}>
                         <button type="button" onClick={() => site.setQty(x.id, 1)} aria-label="הוספה" style={qtyBtn}>+</button>
                         <span style={{ minWidth: 22, textAlign: "center", fontSize: 14, fontWeight: 600 }}>{x.qty}</span>
                         <button type="button" onClick={() => site.setQty(x.id, -1)} aria-label="הפחתה" style={qtyBtn}>−</button>
                       </div>
-                      <button type="button" onClick={() => site.setQty(x.id, -x.qty)} style={{ border: 0, background: "transparent", color: "#6E5650", fontSize: 13, textDecoration: "underline", padding: "8px 0" }}>הסרה</button>
+                      <span style={{ fontWeight: 600, fontSize: 16, whiteSpace: "nowrap" }}>{fmt(x.price * x.qty)}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ padding: "18px 24px calc(22px + env(safe-area-inset-bottom))", borderTop: "1px solid #EADBCF", display: "flex", flexDirection: "column", gap: 12, background: "#FBF5EF" }}>
+            <div style={{ padding: "18px 24px calc(20px + env(safe-area-inset-bottom))", borderTop: "1px solid #F1E5DD", display: "flex", flexDirection: "column", gap: 14, background: "#FFFFFF" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 15, color: "#5E4844" }}>סכום ביניים</span>
-                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>{fmt(total)}</span>
+                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 24 }}>{fmt(total)}</span>
               </div>
-              <span style={{ fontSize: 13, color: "#6E5650" }}>משלוח ומבצעים יחושבו בקופה</span>
-              <Hx as={Link} href="/checkout" prefetch={false} onClick={site.closeCart} style={{ background: "#3A2826", color: "#FBF5EF", border: 0, height: 54, borderRadius: 999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center" }} hover={{ background: "#A85A3A" }}>למעבר לתשלום</Hx>
-              <button type="button" onClick={site.closeCart} style={{ background: "transparent", color: "#3A2826", border: 0, fontSize: 14, textDecoration: "underline", padding: 4 }}>המשך קנייה</button>
+              <Hx as={Link} href="/checkout" prefetch={false} onClick={site.closeCart} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#3A2826", color: "#FFFFFF", border: 0, height: 58, padding: "0 26px", borderRadius: 999, fontSize: 16, fontWeight: 600 }} hover={{ background: "#A85A3A" }}><span>למעבר לתשלום</span><span style={{ fontSize: 18 }}>←</span></Hx>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#6E5650" }}>
+                <span>משלוח ומבצעים יחושבו בקופה</span>
+                <button type="button" onClick={site.closeCart} style={{ background: "transparent", color: "#3A2826", border: 0, fontSize: 13, textDecoration: "underline", padding: "4px 0" }}>המשך קנייה</button>
+              </div>
             </div>
           </>
         )}
@@ -489,7 +652,7 @@ function CartDrawer() {
   );
 }
 
-const qtyBtn = { width: 36, height: 36, border: 0, background: "transparent", color: "#3A2826", fontSize: 17 } as const;
+const qtyBtn = { width: 32, height: 32, border: 0, borderRadius: "50%", background: "transparent", color: "#3A2826", fontSize: 16 } as const;
 
 function backdrop(z: number, on: boolean) {
   return {
@@ -500,7 +663,7 @@ function backdrop(z: number, on: boolean) {
 }
 
 function panel(open: boolean, mobile: boolean, cart: boolean) {
-  const base = { zIndex: cart ? 71 : 73, background: "#FBF5EF", color: "#3A2826", display: "flex", flexDirection: "column" as const };
+  const base = { zIndex: cart ? 71 : 73, background: "#FFFFFF", color: "#3A2826", display: "flex", flexDirection: "column" as const };
   if (mobile) {
     return {
       ...base, position: "fixed" as const, left: 0, right: 0, bottom: 0,
@@ -526,6 +689,9 @@ function scrollToTop() {
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const site = useSite();
+  const user = useOliUser();
   const first = useRef(true);
 
   useLayoutEffect(() => {
@@ -555,6 +721,12 @@ export function Shell({ children }: { children: ReactNode }) {
       <SearchOverlay />
       <AccountDrawer />
       <CartDrawer />
+      <A11yWidget />
+      <PromoFivePercent
+        hidden={!!user || site.menu || site.search || site.account || site.cartOpen}
+        code="OLI5"
+        onShop={() => router.push("/products")}
+      />
     </div>
   );
 }

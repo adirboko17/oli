@@ -1,231 +1,542 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
-import { categoryGroups, productBlurb, productHref, productImage } from "@/lib/catalog-model";
+import { categoryGroups, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
-import { CatalogCard, GiftCard } from "@/components/cards";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
 
+const W = "https://static.wixstatic.com/media/";
+const shot = (id: string, w = 600, h = 600) => `${W}${id}/v1/fill/w_${w},h_${h},al_c,q_85,enc_auto/file.jpg`;
+const IG = [
+  "db159b_bfe0061609ae4274a93b6491dd07ed08~mv2.jpg",
+  "db159b_6beb68bce7684106a7dbbf14bd9bf408~mv2.jpeg",
+  "db159b_512f372ce1bd443da5fe477b0e544113~mv2.jpeg",
+  "db159b_d83a36f5d9db48899f80d8c01a7f4c55~mv2.jpg",
+  "db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg",
+  "db159b_c3fca06807e24db585466c46f69e0b36~mv2.jpg",
+].map((id) => shot(id));
+const EXPERTISE = shot("db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg", 1600, 900);
+const OLILASTIC = "https://static.wixstatic.com/media/db159b_c6044a549cea41979a5612ff7b19c347~mv2.jpeg/v1/fill/w_900,h_1125,al_c,q_85,enc_auto/file.jpg";
+
+const STAGES = [
+  { n: "01", title: "הריון", desc: "מסימני מתיחה ועד רגליים עייפות, טיפוח בטוח לכל טרימסטר.", img: "/assets/stage-preg.png", test: /הריון/ },
+  { n: "02", title: "לידה ואחרי", desc: "הכנה ללידה, הנקה והשבועות הראשונים.", img: "/assets/stage-birth.png", test: /לידה|אחרי/ },
+  { n: "03", title: "מתנות ליולדת", desc: "מארזים מפנקים, מוכנים למסירה.", img: "/assets/stage-gift.png", wide: true, test: /מתנ/ },
+  { n: "04", title: "תינוקות", desc: "קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים.", img: "/assets/stage-baby.png", flat: true, test: /תינוק|baby|olimini/i },
+];
+
+const MINI = [
+  { id: "pre", name: "Pre & Shower Ritual", sub: "מרקם רחצה לתינוקות", price: 69, img: "/assets/olimini-pre-cut.png", test: /pre\s*(&|and)?\s*shower|מרקם רחצה/i },
+  { id: "spa", name: "Baby Spa Ritual", sub: "קרם עיסוי לתינוק", price: 59, old: 74, img: "/assets/olimini-spa-cut.png", big: true, test: /baby spa|spa ritual/i },
+  { id: "after", name: "After Shower Ritual", sub: "קרם לחות לתינוק", price: 69, img: "/assets/olimini-after-cut.png", test: /after shower/i },
+];
+
+const PILLARS = [
+  { n: "01", t: "ידע רפואי", d: "המוצרים פותחו בשיתוף רופאים בכירים וכימאים, על בסיס המומחיות הרפואית של המשפחה." },
+  { n: "02", t: "רכיבים טבעיים", d: "שמנים וחומרי גלם טבעיים באיכות גבוהה, שנבחרו בקפידה עבור עור בהריון ואחרי לידה." },
+  { n: "03", t: "בטוח, יעיל ומפנק", d: "מוצרים שבטוחים לשימוש בהריון ולאחר לידה, הוכחו כיעילים ונעימים לשימוש יומיומי." },
+];
+
+const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.01em", lineHeight: 1.05, fontSize: "clamp(34px,6.5vw,60px)" };
+
+function findProduct(products: CatalogProduct[], test: RegExp) {
+  return products.find((p) => test.test(`${p.title} ${p.category} ${p.tags.join(" ")}`)) ?? null;
+}
+
+function Plus() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function Waves({ flip }: { flip?: boolean }) {
+  const paths = [40, 66, 92, 118, 144, 170, 196, 222, 248];
+  return (
+    <svg aria-hidden viewBox="0 0 1440 300" preserveAspectRatio="none" style={{ position: "absolute", left: 0, right: 0, [flip ? "top" : "bottom"]: 0, width: "100%", height: flip ? "clamp(100px,14vw,180px)" : "clamp(160px,22vw,300px)", pointerEvents: "none", opacity: flip ? 0.22 : 0.34, transform: flip ? "scaleY(-1)" : undefined }}>
+      {paths.map((y, i) => (
+        <path key={y} d={`M-20 ${y} C 240 ${y - 70}, 480 ${y + 70}, 720 ${y} S 1200 ${y - 70}, 1460 ${y}`} fill="none" stroke="#E9CDBD" strokeWidth="1" opacity={0.9 - i * 0.07} />
+      ))}
+    </svg>
+  );
+}
+
 export function HomeView() {
-  const { mobile, products } = useSite();
+  const { mobile, products, add } = useSite();
   const groups = categoryGroups(products);
-  const lead = products[0];
-  const leadImage = lead ? productImage(lead) : null;
-  const gifts = products.filter((product) => /מתנ|gift/i.test(`${product.category} ${product.tags.join(" ")}`));
-  const aboutVid = useCallback((el: HTMLVideoElement | null) => {
+  const [why, setWhy] = useState(0);
+  const [mini, setMini] = useState(0);
+  const [miniHover, setMiniHover] = useState<string | null>(null);
+  const [gift, setGift] = useState(0);
+  const [giftFade, setGiftFade] = useState(false);
+
+  const kick = useCallback((el: HTMLVideoElement | null) => {
     if (!el) return;
     el.muted = true;
     el.defaultMuted = true;
     el.loop = true;
     el.playsInline = true;
-    const kick = () => {
-      if (el.paused) {
-        const q = el.play();
-        if (q) q.catch(() => {});
-      }
-    };
+    const play = () => { if (el.paused) el.play()?.catch(() => {}); };
     if (!el.dataset.oli) {
       el.dataset.oli = "1";
-      el.addEventListener("ended", () => { el.currentTime = 0; kick(); });
-      el.addEventListener("pause", () => setTimeout(kick, 50));
-      el.addEventListener("stalled", kick);
-      el.addEventListener("waiting", () => setTimeout(kick, 500));
-      document.addEventListener("visibilitychange", () => { if (!document.hidden) kick(); });
+      el.addEventListener("ended", () => { el.currentTime = 0; play(); });
+      el.addEventListener("pause", () => setTimeout(play, 50));
     }
-    kick();
+    play();
   }, []);
+
+  const stages = STAGES.map((stage) => {
+    const group = groups.find((g) => stage.test.test(g.key));
+    const count = group?.count ?? products.filter((p) => stage.test.test(`${p.title} ${p.category} ${p.tags.join(" ")}`)).length;
+    const href = group ? "/products?cat=" + encodeURIComponent(group.key) : "/products";
+    return { ...stage, href, count: count ? `${count} ${stage.title === "מתנות ליולדת" ? "מארזים" : "מוצרים"}` : "למוצרים" };
+  });
+
+  const featured = findProduct(products, /olilastic|מתיחה/i) ?? products[0] ?? null;
+  const best = products.slice(0, 4);
+  const gifts = useMemo(() => products.filter((p) => /מתנ|gift|מארז/i.test(`${p.category} ${p.title} ${p.tags.join(" ")}`)).slice(0, 6), [products]);
+
+  useEffect(() => {
+    if (!mobile) return;
+    const t = window.setInterval(() => setMini((i) => (i + 1) % 3), 3200);
+    return () => window.clearInterval(t);
+  }, [mobile]);
+
+  useEffect(() => {
+    if (gifts.length < 2) return;
+    const t = window.setInterval(() => {
+      setGiftFade(true);
+      window.setTimeout(() => {
+        setGift((i) => (i + 1) % gifts.length);
+        setGiftFade(false);
+      }, 220);
+    }, 4500);
+    return () => window.clearInterval(t);
+  }, [gifts.length]);
+
+  const giftMain = gifts[gift] ?? null;
+  const giftSide = gifts.filter((_, i) => i !== gift).slice(0, 2);
 
   return (
     <main>
-      <section style={{ position: "relative", overflow: "hidden", background: "#FBF5EF" }}>
-        <div className="hero-grid" style={{ position: "relative", maxWidth: 1320, margin: "0 auto", padding: "clamp(32px,6vw,64px) clamp(16px,4.5vw,32px) clamp(48px,8vw,88px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,440px),1fr))", gap: "clamp(24px,5vw,56px)", alignItems: "center" }}>
-          <div className="hero-copy" style={{ display: "flex", flexDirection: "column", gap: "clamp(18px,3vw,26px)", maxWidth: 560 }}>
-            <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>ELEVATE YOUR SAFE CARE</span>
-            <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.02em", fontSize: "clamp(38px,5.6vw,76px)", lineHeight: 1.04, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
-            <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
-            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
-              <Hx as={Link} href="/products" style={primary} hover={{ background: "#A85A3A" }}>לכל המוצרים</Hx>
-            </div>
-          </div>
-          <div className="hero-product" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(220px,48vw,600px)" }}>
-            <img src="/assets/olineum-hero.png" alt="Olineum שמן עיסוי להריון" style={{ position: "relative", width: "min(100%,600px,72vw)", height: "auto", mixBlendMode: "multiply", filter: "drop-shadow(0 30px 30px rgba(58,40,38,.18))" }} />
-          </div>
+      <section className="hero-desk" style={{ position: "relative", overflow: "hidden", background: "#FFFFFF", minHeight: "min(86vh,800px)", alignItems: "center" }}>
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "56%" }}>
+          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
+          <span style={{ position: "absolute", inset: 0, background: "linear-gradient(to left,#FFFFFF 0%,rgba(255,255,255,.6) 14%,rgba(255,255,255,0) 38%)", pointerEvents: "none" }} />
+          <span style={{ position: "absolute", inset: "auto 0 0 0", height: "18%", background: "linear-gradient(to top,#FFFFFF,rgba(255,255,255,0))", pointerEvents: "none" }} />
         </div>
-        <style>{`
-          @media (max-width: 759px) {
-            .hero-product { order: -1; }
-          }
-        `}</style>
+        <div style={{ position: "relative", maxWidth: 1320, width: "100%", margin: "0 auto", padding: "clamp(40px,6vw,80px) clamp(16px,4.5vw,32px)" }}>
+          <HeroCopy />
+        </div>
       </section>
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(48px,9vw,88px)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "clamp(20px,4vw,28px)", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <h2 style={h2}>לכל שלב במסע</h2>
-            <p style={{ fontSize: "clamp(15px,2vw,17px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520, textWrap: "pretty" }}>מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב.</p>
-          </div>
-          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
+      <section className="hero-mob" style={{ background: "#FFFFFF", paddingBottom: 56 }}>
+        <div style={{ position: "relative", height: "min(54vh,440px)", overflow: "hidden", margin: "12px 16px 0", borderRadius: "20px 20px 0 0" }}>
+          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
+          <span style={{ position: "absolute", inset: "auto 0 0 0", height: "62%", background: "linear-gradient(to top,#FFFFFF 0%,rgba(255,255,255,.92) 22%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))", gap: "clamp(10px,2vw,20px)" }}>
-          {(groups.length ? groups : [{ key: "all", count: 0 }]).map((group) => (
-            <Hx key={group.key} as={Link} href={group.key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(group.key)} style={stageCard(mobile)} hover={{ transform: "translateY(-4px)" }}>
-              <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "clamp(4px,1vw,8px)" }}>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(26px,6vw,34px)" }}>{group.key === "all" ? "הקטלוג" : group.key}</h3>
-                <span style={{ fontSize: 14, fontWeight: 600, marginTop: "clamp(4px,1.5vw,10px)" }}>{group.count ? group.count + " מוצרים" : "אין מוצרים פעילים"} ←</span>
+        <div style={{ position: "relative", marginTop: -72, padding: "0 16px", display: "flex", flexDirection: "column", gap: 18 }}>
+          <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(40px,10.5vw,56px)", lineHeight: 1.02, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+          <HeroLinks />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", padding: "14px 0", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", marginTop: 6 }}>
+            {["באישור\nמשרד הבריאות", "מבוסס\nמחקרים מדעיים", "לא נוסה\nעל בעלי חיים"].map((label, i) => (
+              <span key={label} style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "4px 6px", fontSize: 12, lineHeight: 1.35, color: "#5E4844", whiteSpace: "pre-line", borderRight: i ? "1px solid #EFE4DC" : undefined }}>{label}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="stages-desk" style={{ maxWidth: 1320, margin: "0 auto", paddingInline: "clamp(16px,4.5vw,32px)", paddingBottom: "clamp(64px,10vw,128px)" }}>
+        <SectionHead title="לכל שלב במסע" text="מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב." href="/products" link="לכל המוצרים" />
+        <div style={{ display: "flex", flexDirection: "column", borderBottom: "1px solid #EFE4DC" }}>
+          {stages.map((s) => (
+            <Hx key={s.n} as={Link} href={s.href} style={stageRow} hover={{ background: "#F8EFE9" }}>
+              <span style={{ gridArea: "n", fontSize: 13, color: "#8A6C64", justifySelf: "start" }}>{s.n}</span>
+              <h3 style={{ gridArea: "t", fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(26px,3.4vw,46px)", lineHeight: 1, textAlign: "right", justifySelf: "start" }}>{s.title}</h3>
+              <div style={{ gridArea: "d", display: "flex", flexDirection: "column", gap: 6, maxWidth: 380 }}>
+                <p style={{ fontSize: "clamp(14px,1.5vw,16px)", lineHeight: 1.55, color: "#5E4844" }}>{s.desc}</p>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{s.count} ←</span>
+              </div>
+              <div style={{ gridArea: "i", position: "relative", aspectRatio: "1/1", borderRadius: 16, background: "#F6EEE8", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={cut(s.img, !!s.wide, !!s.flat)} />
               </div>
             </Hx>
           ))}
         </div>
       </section>
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(24px,5vw,48px) clamp(16px,4.5vw,32px) clamp(56px,9vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,6vw,56px)", alignItems: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-          <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>הריונית יקרה, אולי כאן בשבילך</span>
-          <h2 style={{ ...h2, fontSize: "clamp(28px,6.5vw,44px)", lineHeight: 1.1 }}>מי אנחנו</h2>
-          <p style={body}>אולי סייף קר הוקמה על ידי אופיר וליאור, בנותיו של גניקולוג, בעלות מחויבות איתנה לבריאות האישה. המודעות הגוברת שלהן למחסור במוצרים להריון ובמוצרי טיפוח ללידה, בטוחים וטבעיים, הובילה אותן ליצור את אולי.</p>
-          <p style={body}>על ידי מינוף המומחיות הרפואית של אביהן והתשוקה שלהן למוצרים בעלי רכיבים טבעיים- Oli שואפת לספק מוצרי טיפוח אישי בטוחים, יעילים ומפנקים הנותנים מענה לצרכיהן של נשים במהלך ההריון ולאחריו.</p>
+      <section className="stages-mob" style={{ background: "#F8EFE9", padding: "44px 0 48px", marginBottom: 56 }}>
+        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.03em", fontSize: 34, lineHeight: 1.05 }}>לכל שלב במסע</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב.</p>
         </div>
-        <div style={{ position: "relative", aspectRatio: "16/9", width: "100%", borderRadius: 24, overflow: "hidden", background: "#EBD3C4" }}>
-          <video ref={aboutVid} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-        </div>
-      </section>
-
-      <section style={{ padding: mobile ? "8px 16px 28px" : "8px clamp(20px,4.5vw,40px) 16px" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto", background: "#3A2826", color: "#F6E6DA", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
-        <div style={{ maxWidth: mobile ? 1320 : 1160, margin: "0 auto", padding: mobile ? "clamp(36px,8vw,56px) clamp(16px,4.5vw,28px)" : "52px 40px", display: "grid", gridTemplateColumns: mobile ? "1fr" : "minmax(280px, 420px) minmax(0, 1fr)", gap: mobile ? "clamp(28px,6vw,64px)" : 44, alignItems: "center" }}>
-          <div style={{ aspectRatio: mobile ? "1/1" : "4/5", borderRadius: mobile ? 16 : 22, overflow: "hidden", background: "#4A3532", position: "relative", width: "100%", maxWidth: 420, justifySelf: "center", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-            {leadImage ? <img src={leadImage} alt={lead?.title ?? ""} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(28px,4vw,42px)", textAlign: "center" }}>{lead ? lead.title : "הקטלוג"}</span>}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: mobile ? 24 : 18 }}>
-            <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#E3A783", fontWeight: 600 }}>{lead ? "מהחנות" : "הקטלוג"}</span>
-            <h2 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: mobile ? "clamp(34px,4vw,52px)" : "clamp(30px,2.5vw,42px)", lineHeight: 1.15, textWrap: "balance" }}>{lead ? lead.title : "אין כרגע מוצרים פעילים"}</h2>
-            <p style={{ fontSize: mobile ? 18 : 17, lineHeight: 1.65, color: "#E6D2C6", textWrap: "pretty" }}>{lead ? productBlurb(lead) : "מוצרים פעילים מהחנות יופיעו כאן."}</p>
-            {lead && (
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <Hx as={Link} href={productHref(lead)} style={{ background: "#F3D9C6", color: "#3A2826", border: 0, padding: mobile ? "16px 30px" : "14px 26px", borderRadius: 999, fontSize: mobile ? 16 : 15.5, fontWeight: 600 }} hover={{ background: "#FBF5EF" }}>לפרטים · {fmt(lead.price)}</Hx>
+        <div className="no-scroll" style={{ display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", padding: "0 16px 4px" }}>
+          {stages.map((s) => (
+            <Link key={s.n} href={s.href} style={{ flex: "0 0 72%", scrollSnapAlign: "start", display: "flex", flexDirection: "column", gap: 14, color: "#3A2826", minWidth: 0 }}>
+              <div style={{ position: "relative", aspectRatio: "4/5", borderRadius: 20, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <div style={cut(s.img, !!s.wide, !!s.flat)} />
+                <span style={{ position: "absolute", top: 14, right: 16, fontSize: 12, color: "#8A6C64" }}>{s.n}</span>
+                <span style={{ position: "absolute", bottom: 12, left: 12, width: 38, height: 38, borderRadius: "50%", background: "#3A2826", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>←</span>
               </div>
-            )}
-          </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: 22, lineHeight: 1.15 }}>{s.title}</h3>
+                <p style={{ fontSize: 14, lineHeight: 1.5, color: "#5E4844" }}>{s.desc}</p>
+                <span style={{ fontSize: 13, color: "#8A6C64", marginTop: 2 }}>{s.count}</span>
+              </div>
+            </Link>
+          ))}
         </div>
-        </div>
+        <div style={{ padding: "22px 16px 0" }}><Link href="/products" style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link></div>
       </section>
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
-          <h2 style={h2}>המומלצים שלנו</h2>
-          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
+      <section style={{ maxWidth: 1320, margin: "0 auto", paddingInline: "clamp(16px,4.5vw,32px)", paddingBottom: "clamp(64px,10vw,128px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(32px,6vw,88px)", alignItems: "center" }}>
+        <div style={{ position: "relative", aspectRatio: "4/5", maxHeight: 640, width: "100%", borderRadius: 24, overflow: "hidden", background: "#F6EEE8" }}>
+          <img src={EXPERTISE} alt="מוצרי Oli" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
-        {products.length === 0 ? (
-          <p style={{ fontSize: 18, color: "#5E4844" }}>אין כרגע מוצרים פעילים.</p>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(220px, 1fr))", gap: mobile ? "22px 12px" : "28px 20px" }}>
-            {products.slice(0, 4).map((p) => <CatalogCard key={p.id} p={p} />)}
-          </div>
-        )}
-      </section>
-
-      <section style={{ padding: mobile ? "8px 16px" : "16px clamp(20px,4.5vw,40px)" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto", background: "#F3E2D5", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
-        <div style={{ padding: "clamp(48px,9vw,88px) clamp(20px,4.5vw,40px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,380px),1fr))", gap: "clamp(28px,6vw,56px)" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 440 }}>
-            <h2 style={{ ...h2, fontSize: "clamp(28px,6.5vw,44px)", lineHeight: 1.1 }}>למה Oli</h2>
-            <p style={body}>אנו שמות את רווחת האימהות והתינוקות שלהן בראש סדר העדיפויות. המוצרים שלנו נועדו לפנק אתכן האימהות, בעודם משלבים בתוכם תכונות רפואיות מועילות.</p>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {VALUES.map((v) => (
-              <div key={v.n} style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", padding: "22px 0", borderTop: "1px solid #DCC3B3", alignItems: "baseline" }}>
-                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 15, color: "#A85A3A", flex: "0 0 40px" }}>{v.n}</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(20px,5vw,24px)", flex: "1 0 160px", maxWidth: 200 }}>{v.t}</h3>
-                <p style={{ fontSize: 16, lineHeight: 1.6, color: "#5E4844", flex: "1 1 260px" }}>{v.d}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(22px,3vw,32px)" }}>
+          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.03em", fontSize: "clamp(36px,5.4vw,68px)", lineHeight: 1, textWrap: "balance" }}>המומחיות של Oli</h2>
+          <p style={{ fontSize: "clamp(17px,1.8vw,20px)", lineHeight: 1.65, color: "#3A2826", maxWidth: 520 }}>אופיר וליאור, בנותיו של גניקולוג, גדלו לצד רפואת נשים. כשחיפשו מוצרי טיפוח להריון וללידה שיהיו גם בטוחים וגם טבעיים, גילו שכמעט אין כאלה, ולכן יצרו את Oli.</p>
+          <div className="exp-row">
+            {PILLARS.map((p) => (
+              <div key={p.n} className="exp-item">
+                <span style={{ fontSize: 13, color: "#8A6C64" }}>{p.n}</span>
+                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(19px,2vw,22px)", lineHeight: 1.2 }}>{p.t}</h3>
+                <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>{p.d}</p>
               </div>
             ))}
           </div>
         </div>
+      </section>
+
+      <section style={{ position: "relative", overflow: "hidden", background: "radial-gradient(120% 80% at 50% 78%,#FFFFFF 0%,#F7EFEA 55%,#EFE3DB 100%)" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,7vw,88px) clamp(16px,4.5vw,32px) 0", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".24em", color: "#A85A3A" }}>חדש</span>
+          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.05em", lineHeight: 0.85, fontSize: "clamp(64px,11vw,144px)", direction: "ltr" }}>olimini</h2>
+          <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520 }}>קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים, פרפום ופתלטים.</p>
+        </div>
+        <div className="mini-desk" style={{ position: "relative", maxWidth: 940, margin: "0 auto", padding: "clamp(8px,2vw,20px) clamp(8px,3vw,32px) clamp(48px,7vw,80px)" }}>
+          <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", alignItems: "end", gap: "clamp(0px,1vw,16px)" }}>
+            {MINI.map((item) => {
+              const match = findProduct(products, item.test);
+              const price = match ? match.price : item.price;
+              const old = match?.compareAt && match.compareAt > match.price ? match.compareAt : item.old;
+              const hot = miniHover === item.id;
+              return (
+                <Link key={item.id} href={match ? productHref(match) : "/products"} onMouseEnter={() => setMiniHover(item.id)} onMouseLeave={() => setMiniHover(null)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(14px,2vw,22px)", color: "#3A2826" }}>
+                  <div style={{ position: "relative", width: item.big ? "112%" : "100%", aspectRatio: "1/1", marginBottom: item.big ? "-2%" : 0, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                    <span style={{ position: "absolute", left: "28%", right: "28%", bottom: "5%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.22),transparent)", filter: "blur(4px)" }} />
+                    <span role="img" aria-label={item.name} style={{ position: "relative", width: "100%", height: "84%", backgroundImage: `url("${item.img}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom", transformOrigin: "center bottom", transform: hot ? "scale(1.08)" : "scale(1)", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }} />
+                  </div>
+                  <BottleCaption name={item.name} sub={item.sub} price={fmt(price)} old={old ? fmt(old) : ""} />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mini-mob" onTouchStart={(e) => { (e.currentTarget as HTMLElement).dataset.x = String(e.changedTouches[0].clientX); }} onTouchEnd={(e) => {
+          const start = Number((e.currentTarget as HTMLElement).dataset.x || 0);
+          const dx = e.changedTouches[0].clientX - start;
+          if (Math.abs(dx) > 30) setMini((i) => (i + (dx > 0 ? 1 : 2)) % 3);
+        }} style={{ position: "relative", height: "clamp(420px,118vw,520px)", marginTop: 24, overflow: "hidden" }}>
+          {MINI.map((item, k) => {
+            const d = ((k - mini + 4) % 3) - 1;
+            const on = d === 0;
+            const match = findProduct(products, item.test);
+            const price = match ? match.price : item.price;
+            return (
+              <Link key={item.id} href={match ? productHref(match) : "/products"} style={{ position: "absolute", top: 0, left: "50%", width: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, color: "#3A2826", textAlign: "center", transform: `translateX(calc(-50% + ${-d * 78}%)) scale(${on ? 1 : 0.72})`, transformOrigin: "center 60%", opacity: on ? 1 : 0.5, zIndex: on ? 2 : 1, pointerEvents: on ? "auto" : "none", transition: "transform .8s cubic-bezier(.65,0,.25,1), opacity .6s ease" }}>
+                <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "18px 0 22px" }}>
+                  <span style={{ position: "absolute", left: "30%", right: "30%", bottom: 16, height: 14, borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.2),transparent)", filter: "blur(3px)" }} />
+                  <span role="img" aria-label={item.name} style={{ position: "relative", width: "78%", height: "92%", backgroundImage: `url("${item.img}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom" }} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, opacity: on ? 1 : 0, transition: "opacity .4s ease" }}>
+                  <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 19, lineHeight: 1.2, direction: "ltr", whiteSpace: "nowrap" }}>{item.name}</span>
+                  <span style={{ fontSize: 13, color: "#6E5650" }}>{item.sub}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{fmt(price)}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="mini-dots" style={{ justifyContent: "center", gap: 8, padding: "4px 0 44px" }}>
+          {MINI.map((item, i) => (
+            <button key={item.name} type="button" aria-label={item.name} onClick={() => setMini(i)} style={{ width: mini === i ? 22 : 7, height: 7, borderRadius: 99, border: 0, padding: 0, background: mini === i ? "#3A2826" : "#D8C3B6", transition: "all .35s" }} />
+          ))}
         </div>
       </section>
 
-      {gifts.length > 0 && (
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>מארזים</span>
-            <h2 style={h2}>מתנות</h2>
+      <div style={{ display: "flex", flexDirection: mobile ? "column-reverse" : "column" }}>
+        <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", paddingInline: "clamp(16px,4.5vw,32px)", paddingTop: mobile ? 8 : "clamp(64px,10vw,128px)", paddingBottom: mobile ? 56 : "clamp(64px,10vw,128px)" }}>
+          <SectionHead title="המומלצים שלנו" href="/products" link="לכל המוצרים של Oli" />
+          {best.length === 0 ? <p style={{ color: "#5E4844" }}>אין כרגע מוצרים פעילים.</p> : (
+            <div className={mobile ? "no-scroll" : undefined} style={mobile ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(calc(50% - 7px),240px),1fr))", gap: "clamp(28px,5vw,40px) clamp(12px,3vw,20px)" }}>
+              {best.map((p) => <ProductTile key={p.id} p={p} snap={mobile} onAdd={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: productImage(p) })} />)}
+            </div>
+          )}
+        </section>
+
+        {featured && (
+          <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", padding: mobile ? "48px 16px 40px" : "0 clamp(16px,4.5vw,32px) clamp(64px,10vw,128px)" }}>
+            <div style={{ background: "#F8EFE9", borderRadius: 24, padding: "clamp(16px,2.4vw,28px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "clamp(24px,5vw,72px)", alignItems: "center" }}>
+              <Link href={productHref(featured)} style={{ position: "relative", display: "block", aspectRatio: "4/3", width: "100%", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
+                <img src={productImage(featured) || OLILASTIC} alt={featured.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.06)" }} />
+              </Link>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 500, padding: "clamp(4px,2vw,24px) 0" }}>
+                <span style={{ fontSize: 14, color: "#8A6C64" }}>{featured.title}</span>
+                <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.025em", fontSize: "clamp(26px,2.8vw,38px)", lineHeight: 1.15, textWrap: "balance" }}>{/מתיחה|olilastic/i.test(featured.title) ? "טיפול בסימני מתיחה בהריון, זאת המומחיות שלנו" : featured.title}</h2>
+                <p style={{ fontSize: 16, lineHeight: 1.75, color: "#5E4844" }}>{productBlurb(featured) || featured.description}</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", paddingTop: 20, borderTop: "1px solid #E6D6CB" }}>
+                  <span style={{ fontSize: 20, fontWeight: 500 }}>{fmt(featured.price)}</span>
+                  <Link href={productHref(featured)} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600 }}>
+                    <span style={{ paddingBottom: 3, borderBottom: "1px solid currentColor" }}>לפרטים על המוצר</span>
+                    <span style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid #3A2826", display: "flex", alignItems: "center", justifyContent: "center" }}>←</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      <section style={{ position: "relative", overflow: "hidden", background: "#FBF5F1", color: "#3A2826" }}>
+        <Waves />
+        <Waves flip />
+        <div style={{ position: "relative", maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: "clamp(32px,5vw,56px)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
+            <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", lineHeight: 1, fontSize: "clamp(40px,7vw,64px)" }}>למה Oli</h2>
+            <p style={{ fontSize: 17, lineHeight: 1.75, color: "#5E4844" }}>אנו שמות את רווחת האימהות והתינוקות שלהן בראש סדר העדיפויות. המוצרים שלנו נועדו לפנק אתכן האימהות, בעודם משלבים בתוכם תכונות רפואיות מועילות.</p>
           </div>
-          <Link href="/products" style={{ fontSize: 15, borderBottom: "1px solid currentColor" }}>לכל המוצרים</Link>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3,minmax(0,1fr))", gap: mobile ? 12 : 20 }}>
-          {gifts.map((p) => <GiftCard key={p.id} p={p} />)}
+          <div className="why-desk" style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", borderTop: "1px solid #3A2826" }}>
+            {VALUES.map((v, k) => (
+              <div key={v.n} style={{ display: "flex", flexDirection: "column", gap: 14, padding: "24px 22px 8px", borderLeft: k < VALUES.length - 1 ? "1px solid #E6D2C6" : 0 }}>
+                <span style={{ fontSize: 13, letterSpacing: ".08em", color: "#A85A3A" }}>{v.n}</span>
+                <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: 26, lineHeight: 1.15 }}>{v.t}</h3>
+                <p style={{ fontSize: 15, lineHeight: 1.7, color: "#5E4844" }}>{v.d}</p>
+              </div>
+            ))}
+          </div>
+          <div className="why-mob" style={{ flexDirection: "column", borderTop: "1px solid #3A2826" }}>
+            {VALUES.map((v, k) => {
+              const open = why === k;
+              return (
+                <div key={v.n} style={{ borderBottom: "1px solid #E6D2C6" }}>
+                  <button type="button" onClick={() => setWhy(open ? -1 : k)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "18px 0", border: 0, background: "transparent", color: "#3A2826", textAlign: "right" }}>
+                    <span style={{ fontSize: 12, letterSpacing: ".08em", color: "#A85A3A", width: 22 }}>{v.n}</span>
+                    <span style={{ flex: 1, fontFamily: FF, fontWeight: 400, fontSize: 24 }}>{v.t}</span>
+                    <span style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid #E1CABD", display: "flex", alignItems: "center", justifyContent: "center", transform: open ? "rotate(45deg)" : "none", transition: "transform .35s" }}>+</span>
+                  </button>
+                  <div style={{ display: "grid", gridTemplateRows: open ? "1fr" : "0fr", transition: "grid-template-rows .4s ease" }}>
+                    <p style={{ overflow: "hidden", fontSize: 15, lineHeight: 1.65, color: "#5E4844", padding: open ? "0 36px 20px 0" : "0 36px 0 0", margin: 0 }}>{v.d}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
+
+      {giftMain && (
+        <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) clamp(16px,4.5vw,32px) clamp(64px,10vw,128px)" }}>
+          <SectionHead title="מתנות ליולדת" href={"/products?cat=" + encodeURIComponent(giftMain.category || "")} link="לכל המארזים" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,5vw,64px)", alignItems: "start" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, opacity: giftFade ? 0 : 1, transform: giftFade ? "translateY(8px)" : "none", transition: "opacity .45s ease, transform .45s ease" }}>
+              <Link href={productHref(giftMain)} style={{ display: "flex", flexDirection: "column", gap: 18, color: "#3A2826" }}>
+                <div style={{ position: "relative", aspectRatio: "5/4", borderRadius: 20, overflow: "hidden", background: "#F6EEE8" }}>
+                  {productImage(giftMain) && <img src={productImage(giftMain)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(26px,3.2vw,38px)", lineHeight: 1.05 }}>{productBlurb(giftMain) || giftMain.title}</span>
+                    <span style={{ fontWeight: 600, fontSize: 16 }}>{fmt(giftMain.price)}</span>
+                  </div>
+                  <span style={{ background: "#3A2826", color: "#FFFFFF", padding: "14px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>לצפייה במארז</span>
+                </div>
+              </Link>
+              <div style={{ display: "flex", gap: 6 }}>
+                {gifts.map((p, i) => (
+                  <button key={p.id} type="button" aria-label={p.title} onClick={() => setGift(i)} style={{ width: gift === i ? 28 : 8, height: 3, borderRadius: 2, border: 0, padding: 0, background: gift === i ? "#3A2826" : "#D8C3B6" }} />
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {giftSide.map((p) => (
+                <button key={p.id} type="button" onClick={() => setGift(gifts.indexOf(p))} style={{ display: "grid", gridTemplateColumns: "clamp(96px,22vw,150px) minmax(0,1fr)", gap: "clamp(16px,3vw,24px)", alignItems: "center", padding: "clamp(16px,2.5vw,22px) 0", borderBottom: "1px solid #EFE4DC", color: "#3A2826", background: "transparent", textAlign: "right", borderLeft: 0, borderRight: 0, borderTop: 0 }}>
+                  <div style={{ position: "relative", aspectRatio: "4/5", borderRadius: 14, overflow: "hidden", background: "#F6EEE8" }}>
+                    {productImage(p) && <img src={productImage(p)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                  </div>
+                  <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(18px,2.2vw,22px)" }}>{productBlurb(p) || p.title}</span>
+                    <span style={{ fontWeight: 600, fontSize: 15 }}>{fmt(p.price)}</span>
+                  </span>
+                </button>
+              ))}
+              <p style={{ fontSize: 15, lineHeight: 1.65, color: "#5E4844", paddingTop: "clamp(18px,3vw,26px)" }}>מארזים מפנקים, מוכנים למסירה.</p>
+            </div>
+          </div>
+        </section>
       )}
 
-      <section style={{ padding: mobile ? "8px 16px" : "16px clamp(20px,4.5vw,40px)" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto", background: "#FFFFFF", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
-        <div style={{ padding: "clamp(48px,9vw,88px) clamp(20px,4.5vw,40px)", display: "flex", flexDirection: "column", gap: 36 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 680 }}>
-            <h2 style={{ ...h2, fontSize: "clamp(28px,6.5vw,44px)" }}>המומחים מדברים</h2>
-            <p style={body}>אנו מאמינות כי ידע הוא כוח וחשוב שהידע יגיע ממקור מוסמך ואמין.</p>
+      <section style={{ borderTop: "1px solid #EFE4DC" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) clamp(16px,4.5vw,32px)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 620, marginBottom: "clamp(24px,4vw,44px)" }}>
+            <h2 style={h2}>המומחים מדברים</h2>
+            <p style={{ fontSize: "clamp(15px,2vw,17px)", lineHeight: 1.65, color: "#5E4844" }}>אנו מאמינות כי ידע הוא כוח וחשוב שהידע יגיע ממקור מוסמך ואמין.</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 20 }}>
-            <Hx as={Link} href="/podcast" style={expert} hover={{ background: "#EED7C7" }}>
-              <img src="/assets/eyal-sheiner.png" alt="פרופסור אייל שיינר" style={expertImg} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>פודקאסט</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>&quot;היריון בטוח&quot;</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,4vw,48px)" }}>
+            <Link href="/podcast" style={talk}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 30px rgba(168,90,58,.18)" }}>
+                <img src="/assets/podcast-cover.png" alt="היריון בטוח" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <span style={{ position: "absolute", left: 8, bottom: 8, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,.94)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
+                <span style={{ fontSize: 13, color: "#6E5650" }}>פודקאסט</span>
+                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,4vw,30px)", lineHeight: 1.1 }}>&quot;היריון בטוח&quot;</h3>
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>בהנחיית פרופ&apos; אייל שיינר, מומחה במיילדות וגניקולוגיה, מנהל מחלקת נשים ויולדות ב&apos; בביה&quot;ח סורוקה.</p>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>להאזנה ←</span>
               </div>
-            </Hx>
-            <Hx as="a" href="#" style={expert} hover={{ background: "#EED7C7" }}>
-              <img src="https://static.wixstatic.com/media/db159b_6c6b073be1574602a9937309c3cb2d29~mv2.png" alt="" style={expertImg} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>מאמרים</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: 26 }}>ידע מבוסס מחקר</h3>
+            </Link>
+            <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={talk}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 30px rgba(168,90,58,.14)" }}>
+                <img src="/assets/research-2.png" alt="ידע מבוסס מחקר" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
+                <span style={{ fontSize: 13, color: "#6E5650" }}>מאמרים</span>
+                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,4vw,30px)", lineHeight: 1.1 }}>ידע מבוסס מחקר</h3>
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>הריון, טיפוח העור בהריון, לידה והכנה ללידה, אחרי לידה ותינוקות והורות ראשונית.</p>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>לכל המאמרים ←</span>
               </div>
-            </Hx>
+            </a>
           </div>
-        </div>
         </div>
       </section>
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,9vw,88px) clamp(16px,4.5vw,32px)" }}>
-        <div style={{ position: "relative", borderRadius: 28, overflow: "hidden", padding: "clamp(32px,7vw,64px) clamp(20px,5vw,48px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,360px),1fr))", gap: 32, alignItems: "center" }}>
-          <img src="https://static.wixstatic.com/media/db159b_be6c8692d1084b019a343710fb694324~mv2.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-          <div style={{ position: "absolute", inset: 0, background: "rgba(58,40,38,.55)" }} />
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10, color: "#FBF5EF" }}>
-            <span style={{ fontSize: 15 }}>הרשמי לקבלת עדכונים, טיפים והנחות</span>
-            <h2 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,42px)", lineHeight: 1.1 }}>וקבלי 5% הנחה בהזמנה הראשונה!</h2>
-          </div>
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", gap: 8, background: "#FBF5EF", borderRadius: 999, padding: 6 }}>
-              <input placeholder="כתובת אימייל" style={{ flex: 1, minWidth: 0, border: 0, background: "transparent", padding: "10px 16px", fontFamily: "inherit", fontSize: 16, outline: "none" }} />
-              <button type="button" style={{ background: "#3A2826", color: "#FBF5EF", border: 0, padding: "12px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>הרשמי</button>
-            </div>
-            <label style={{ fontSize: 13, color: "#F6E6DA", display: "flex", gap: 8, alignItems: "center" }}><input type="checkbox" />בהרשמה אני מאשרת קבלת תוכן שיווקי</label>
-          </div>
+      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(8px,2vw,24px) clamp(16px,4.5vw,32px) clamp(64px,10vw,112px)", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(24px,4vw,40px)" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
+          <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#A85A3A", direction: "ltr" }}>@oli_safecare</a>
+          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", lineHeight: 1.05, fontSize: "clamp(30px,5vw,48px)" }}>Oli באינסטגרם</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#6E5650", maxWidth: 420 }}>רגעים קטנים מהמסע, טיפים ומה שחדש אצלנו</p>
         </div>
+        <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(30%,150px),1fr))", gap: "clamp(6px,1vw,12px)" }}>
+          {IG.map((src) => (
+            <a key={src} href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="פוסט באינסטגרם" style={{ position: "relative", aspectRatio: "1/1", borderRadius: "clamp(10px,1.4vw,16px)", overflow: "hidden", background: "#F6EEE8" }}>
+              <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </a>
+          ))}
+        </div>
+        <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, height: 48, padding: "0 24px", borderRadius: 999, border: "1px solid #CDB5A8", fontSize: 15, fontWeight: 500 }}>לעקוב אחרינו</a>
       </section>
+
+      <style>{`
+        .hero-desk { display: flex; }
+        .hero-mob, .stages-mob, .mini-mob, .why-mob, .mini-dots { display: none; }
+        .exp-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 28px; }
+        .exp-item { display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #3A2826; }
+        .why-desk { display: grid; }
+        @media (max-width: 767px) {
+          .hero-desk, .stages-desk, .mini-desk, .why-desk { display: none !important; }
+          .hero-mob, .stages-mob { display: block !important; }
+          .mini-mob { display: block !important; }
+          .mini-dots { display: flex !important; }
+          .why-mob { display: flex !important; }
+          .exp-row { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 4px; }
+          .exp-item { flex: 0 0 74%; scroll-snap-align: start; border-top: 0; border-radius: 16px; background: #F8EFE9; padding: 20px 18px 22px; }
+        }
+      `}</style>
     </main>
   );
 }
 
-const primary: CSSProperties = { background: "#3A2826", color: "#FBF5EF", border: 0, padding: "16px 30px", borderRadius: 999, fontSize: 16, fontWeight: 600, display: "inline-flex" };
-const textLink: CSSProperties = { background: "transparent", color: "#3A2826", border: 0, padding: "8px 2px", fontSize: 16, fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "underline", textUnderlineOffset: 5, textDecorationThickness: 1 };
-const h2: CSSProperties = { fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,40px)" };
-const body: CSSProperties = { fontSize: 18, lineHeight: 1.8, color: "#5E4844", textWrap: "pretty" };
-const expert: CSSProperties = { display: "grid", gridTemplateColumns: "clamp(90px,24vw,150px) minmax(0,1fr)", gap: "clamp(14px,4vw,24px)", padding: "clamp(16px,4vw,24px)", borderRadius: 20, background: "#F3E2D5", alignItems: "center", color: "#3A2826" };
-const expertImg: CSSProperties = { width: "100%", aspectRatio: "150/190", height: "auto", objectFit: "cover", objectPosition: "center 22%", borderRadius: 12, display: "block" };
-
-function stageCard(mobile: boolean): CSSProperties {
-  return {
-    position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between",
-    gap: mobile ? 18 : 0, minHeight: mobile ? 190 : 380, padding: mobile ? "20px 20px 18px" : 28,
-    borderRadius: mobile ? 16 : 20, overflow: "hidden", background: "#F4DECF", transition: "transform .3s", color: "#3A2826",
-  };
+function HeroCopy() {
+  return (
+    <div style={{ maxWidth: "min(600px,48%)", display: "flex", flexDirection: "column", gap: "clamp(20px,2.6vw,30px)" }}>
+      <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(48px,6vw,92px)", lineHeight: 1, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
+      <p style={{ fontSize: "clamp(16px,1.6vw,19px)", lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+      <HeroLinks />
+      <div style={{ display: "flex", gap: "8px 24px", flexWrap: "wrap", paddingTop: 18, borderTop: "1px solid #EFE4DC", fontSize: 14, color: "#6E5650" }}>
+        <span>באישור משרד הבריאות</span><span>מבוסס מחקרים מדעיים</span><span>לא נוסה על בעלי חיים</span>
+      </div>
+    </div>
+  );
 }
 
+function HeroLinks() {
+  return (
+    <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
+      <Hx as={Link} href="/products" style={{ background: "#3A2826", color: "#FFFFFF", border: 0, padding: "17px 32px", borderRadius: 999, fontSize: 16, fontWeight: 600 }} hover={{ background: "#A85A3A" }}>למוצרים של Oli</Hx>
+      <Link href="/products" style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor" }}>מתנות ליולדת</Link>
+    </div>
+  );
+}
+
+function SectionHead({ title, text, href, link }: { title: string; text?: string; href: string; link: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "16px 40px", flexWrap: "wrap", marginBottom: "clamp(24px,4vw,44px)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 620 }}>
+        <h2 style={h2}>{title}</h2>
+        {text && <p style={{ fontSize: "clamp(15px,2vw,17px)", lineHeight: 1.65, color: "#5E4844" }}>{text}</p>}
+      </div>
+      <Link href={href} style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor", whiteSpace: "nowrap" }}>{link}</Link>
+    </div>
+  );
+}
+
+function BottleCaption({ name, sub, price, old }: { name: string; sub: string; price: string; old?: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minHeight: "clamp(96px,11vw,120px)" }}>
+      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(15px,1.8vw,20px)", lineHeight: 1.2, direction: "ltr" }}>{name}</span>
+      <span style={{ fontSize: "clamp(12px,1.3vw,14px)", color: "#6E5650" }}>{sub}</span>
+      <span style={{ display: "flex", gap: 8, alignItems: "baseline", marginTop: 4 }}>
+        <span style={{ fontSize: "clamp(14px,1.5vw,16px)", fontWeight: 600 }}>{price}</span>
+        {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{old}</span> : null}
+      </span>
+    </div>
+  );
+}
+
+function ProductTile({ p, snap, onAdd }: { p: CatalogProduct; snap?: boolean; onAdd: () => void }) {
+  const src = productImage(p);
+  const old = p.compareAt && p.compareAt > p.price ? p.compareAt : null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, ...(snap ? { flex: "0 0 calc(50% - 6px)", scrollSnapAlign: "start" } : null) }}>
+      <div style={{ position: "relative" }}>
+        <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
+          {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
+        </Link>
+        <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
+        <span style={{ fontSize: 14, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(p)}</span>
+        <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
+          <span style={{ fontWeight: 600 }}>{fmt(p.price)}</span>
+          {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const plus: CSSProperties = { position: "absolute", bottom: 10, left: 10, width: 40, height: 40, borderRadius: "50%", border: 0, background: "#FFFFFF", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(58,40,38,.12)" };
+const stageRow: CSSProperties = { display: "grid", alignItems: "center", color: "#3A2826", borderTop: "1px solid #EFE4DC", gridTemplateColumns: "36px minmax(0,1fr) minmax(0,1.2fr) 104px", gridTemplateAreas: '"n t d i"', gap: "clamp(16px,2.6vw,40px)", padding: "16px 12px", transition: "background .3s" };
+const talk: CSSProperties = { display: "grid", gridTemplateColumns: "clamp(96px,22vw,140px) minmax(0,1fr)", gap: "clamp(16px,3vw,28px)", alignItems: "start", color: "#3A2826" };
+
+function cut(src: string, wide: boolean, flat: boolean): CSSProperties {
+  return {
+    position: "relative",
+    width: wide ? "84%" : undefined,
+    height: flat ? "100%" : wide ? undefined : "78%",
+    aspectRatio: wide ? "1450/1080" : "1140/1425",
+    backgroundImage: `url("${src}")`,
+    backgroundSize: "contain",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center",
+    mixBlendMode: flat ? "normal" : "multiply",
+    filter: flat ? "none" : "drop-shadow(0 22px 22px rgba(58,40,38,.16))",
+    backgroundColor: flat ? "#F6EEE8" : undefined,
+  };
+}

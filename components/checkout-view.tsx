@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { readUser, saveOrder } from "@/lib/account-session";
 import { FF, fmt } from "@/lib/format";
 import { trackPurchase } from "@/lib/storely-actions";
 import { useSite } from "@/components/site";
@@ -22,6 +23,19 @@ export function CheckoutView() {
       return;
     }
     setPaid(total);
+    const user = readUser();
+    if (user) {
+      saveOrder(user.phone, {
+        id: String(Date.now()),
+        no: String(Date.now()).slice(-6),
+        date: new Date().toLocaleDateString("he-IL"),
+        status: "new",
+        lines: site.items.map((item) => ({ id: item.id, name: item.name, sub: item.sub, qty: item.qty, price: item.price, image: item.image })),
+        subtotal: total,
+        ship: 0,
+        addr: [user.addr, user.city].filter(Boolean).join(", ") || "הכתובת מהחשבון",
+      });
+    }
     site.clearCart();
     setDone(true);
     setPending(false);

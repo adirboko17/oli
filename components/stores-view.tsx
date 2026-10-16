@@ -23,21 +23,20 @@ export function StoresView() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(24px,5vw,64px)", alignItems: "center", paddingTop: "clamp(20px,4vw,40px)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "clamp(14px,2.5vw,22px)" }}>
             <span style={{ fontSize: 13, letterSpacing: ".14em", color: "#A85A3A", fontWeight: 600 }}>Oli בחנויות</span>
-            <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.02em", fontSize: "clamp(38px,6vw,72px)", lineHeight: 1.04, textWrap: "balance" }}>מהיום קרובות אליכן יותר!</h1>
-            <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>מהלב שלנו למדיפים של שילב! מוצרי oli נמצאים עכשיו על המדף בסניפי שילב נבחרים ברחבי הארץ.</p>
+            <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(38px,6vw,72px)", lineHeight: 1.04, textWrap: "balance" }}>מהיום קרובות אליכן יותר!</h1>
+            <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.65, color: "#5E4844", textWrap: "pretty" }}>מהלב שלנו למדפים של <img src="/assets/shilav-logo.png" alt="שילב" style={{ height: "1.35em", width: "auto", verticalAlign: "-0.32em", display: "inline-block", margin: "0 2px" }} />! מוצרי Oli נמצאים עכשיו על המדף בסניפי שילב נבחרים ברחבי הארץ.</p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href="#branches" style={{ background: "#3A2826", color: "#FBF5EF", padding: "16px 28px", borderRadius: 999, fontSize: 16, fontWeight: 600 }}>לרשימת הסניפים</a>
+              <a href="#branches" style={{ background: "#3A2826", color: "#FFFFFF", padding: "16px 28px", borderRadius: 999, fontSize: 16, fontWeight: 600 }}>לרשימת הסניפים</a>
               <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ border: "1px solid #3A2826", color: "#3A2826", padding: "16px 28px", borderRadius: 999, fontSize: 16, fontWeight: 600 }}>שאלה על סניף? WhatsApp</a>
             </div>
           </div>
-          <div style={{ borderRadius: "clamp(16px,2.5vw,24px)", overflow: "hidden", background: "#F3E4D8", aspectRatio: "703/425" }}>
-            <img src="https://static.wixstatic.com/media/db159b_fe94887c94e742c4aa58ee806fc71371~mv2.png/v1/fill/w_1406,h_850,al_c,q_85,enc_auto/file.png" alt="מוצרי Oli על המדף בשילב" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <div style={{ borderRadius: "clamp(16px,2.5vw,24px)", overflow: "hidden", background: "#F6EEE8", aspectRatio: "1448/1086" }}>
+            <img src="/assets/shilav-banner-2.png" alt="Oli בשילב: מהיום קרובות אליכן יותר" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
         </div>
       </section>
-      <section id="branches" style={{ padding: mobile ? "8px 16px 24px" : "16px clamp(20px,4.5vw,40px) 24px" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto", background: "#FFFFFF", borderRadius: mobile ? 20 : 32, overflow: "hidden" }}>
-        <div style={{ padding: "clamp(40px,8vw,80px) clamp(20px,4.5vw,40px)", display: "flex", flexDirection: "column", gap: "clamp(20px,4vw,32px)" }}>
+      <section id="branches" style={{ background: "#FFFFFF", borderTop: "1px solid #EFE4DC" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(40px,8vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: "clamp(20px,4vw,32px)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <h2 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,44px)", lineHeight: 1.05 }}>לרשימת הסניפים</h2>
@@ -57,7 +56,7 @@ export function StoresView() {
                   <span style={{ fontSize: 13, color: "#6E5650" }}>{g.stores.length} סניפים</span>
                 </div>
                 {g.stores.map(([name, city]) => (
-                  <a key={name} href={"https://www.google.com/maps/search/" + encodeURIComponent(name)} target="_blank" rel="noreferrer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "16px 4px", borderBottom: "1px solid #EADBCF", color: "#3A2826" }}>
+                  <a key={name} href={"https://www.google.com/maps/search/" + encodeURIComponent(name)} target="_blank" rel="noreferrer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "16px 4px", borderBottom: "1px solid #EFE4DC", color: "#3A2826" }}>
                     <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       <span style={{ fontSize: 16, fontWeight: 600 }}>{name}</span>
                       <span style={{ fontSize: 13, color: "#6E5650" }}>{city}</span>
@@ -69,7 +68,6 @@ export function StoresView() {
             ))}
           </div>
           <p style={{ fontSize: 14, color: "#6E5650", lineHeight: 1.6 }}>המלאי משתנה בין הסניפים. מומלץ לבדוק זמינות מול הסניף לפני ההגעה.</p>
-        </div>
         </div>
       </section>
     </main>

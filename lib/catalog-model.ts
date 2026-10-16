@@ -41,6 +41,10 @@ export function findCatalogProduct(products: CatalogProduct[], handle: string) {
   return products.find((product) => product.handle === key || product.id === key) ?? null;
 }
 
+export function categoryLabel(category: string) {
+  return /^oli\s*mini$/i.test(category.trim()) ? "תינוקות · olimini" : category;
+}
+
 export function categoryGroups(products: CatalogProduct[]) {
   const counts = new Map<string, number>();
   for (const product of products) {

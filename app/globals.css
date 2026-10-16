@@ -1,6 +1,6 @@
 html, body {
   margin: 0;
-  background: #fbf5ef;
+  background: #ffffff;
   color: #3a2826;
   font-family: "Google Sans", "Heebo", sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -11,7 +11,7 @@ html, body {
 /* Mobile browser chrome samples fixed edge elements. These stay transparent
    so the address bar stays glass instead of picking up the page background. */
 .chrome-clear { display: none; }
-@media (max-width: 759px) {
+@media (max-width: 767px) {
   .chrome-clear {
     display: block;
     position: fixed;
@@ -34,6 +34,14 @@ a:hover { color: #a85a3a; }
 button { font-family: inherit; cursor: pointer; }
 
 h1, h2, h3, h4, p { margin: 0; }
+
+html[data-a11y-contrast] body *:not(svg):not(path) { color: #000 !important; border-color: #000 !important; }
+html[data-a11y-contrast] body { background: #fff !important; }
+html[data-a11y-links] a { text-decoration: underline !important; text-underline-offset: 3px; outline: 2px solid #a85a3a; outline-offset: 2px; }
+html[data-a11y-font] body * { font-family: Arial, "Heebo", sans-serif !important; letter-spacing: .01em !important; }
+html[data-a11y-still] * { animation: none !important; transition: none !important; }
+
+@keyframes oliPop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 @keyframes oliMarquee {
   from { transform: translateX(0); }

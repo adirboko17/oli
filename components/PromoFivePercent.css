@@ -1,0 +1,63 @@
+/* Oli Safe Care: 5% promo tab + popup. Breakpoint: mobile < 768px */
+.oliPromo-tabWrap{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.oliPromo-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:58px;padding:14px 0 12px;background:#3A2826;color:#FFFFFF;border:0;border-radius:0 18px 18px 0;font-family:inherit;cursor:pointer;box-shadow:6px 8px 24px rgba(42,28,26,.22);transition:width .3s cubic-bezier(.2,.8,.2,1),background .3s}
+.oliPromo-tab:hover{width:64px;background:#A85A3A}
+.oliPromo-tabIcon{width:30px;height:30px;border-radius:50%;background:#F3D9C6;color:#3A2826;display:flex;align-items:center;justify-content:center}
+.oliPromo-tabPct{font-family:'Google Sans','Heebo',sans-serif;font-size:19px;font-weight:500;line-height:1;letter-spacing:-.02em}
+.oliPromo-tabLbl{font-size:11px;letter-spacing:.06em;color:#F3D9C6;line-height:1}
+.oliPromo-tabHide{width:24px;height:24px;margin-left:8px;border-radius:50%;border:1px solid #CDB5A8;background:#FFFFFF;color:#6E5650;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+
+.oliPromo-backdrop{position:fixed;inset:0;z-index:72;background:rgba(42,28,26,.42);opacity:0;pointer-events:none;transition:opacity .35s ease}
+.oliPromo-backdrop.is-open{opacity:1;pointer-events:auto;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+
+/* desktop: centered pop */
+.oliPromo-panel{position:fixed;top:50%;left:50%;width:min(780px,92vw);max-height:92vh;overflow-y:auto;overflow-x:hidden;z-index:73;background:#FFFFFF;color:#3A2826;border-radius:28px;box-shadow:0 30px 80px rgba(42,28,26,.28);opacity:0;pointer-events:none;transform:translate(-50%,-46%) scale(.96);transition:opacity .3s ease,transform .45s cubic-bezier(.32,1.2,.4,1)}
+.oliPromo-panel.is-open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+
+.oliPromo-close{position:absolute;top:14px;left:14px;z-index:2;width:38px;height:38px;border-radius:999px;border:0;background:rgba(255,255,255,.92);color:#3A2826;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(42,28,26,.12);transition:background .2s,color .2s}
+.oliPromo-close:hover{background:#3A2826;color:#FFFFFF}
+.oliPromo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+
+.oliPromo-mHead{display:none}
+.oliPromo-handle{display:flex;justify-content:center;padding-top:10px}
+.oliPromo-handle span{width:44px;height:4px;border-radius:2px;background:#D8C3B6}
+.oliPromo-mHeadInner{padding:22px 28px 0;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.oliPromo-mPct{font-family:'Google Sans','Heebo',sans-serif;font-weight:400;font-size:96px;line-height:.9;letter-spacing:-.045em;color:#3A2826}
+.oliPromo-mTitle{font-family:'Google Sans','Heebo',sans-serif;font-weight:400;font-size:22px;line-height:1.25}
+.oliPromo-mSub{font-size:15px;line-height:1.55;color:#6E5650;max-width:300px;text-wrap:pretty}
+
+.oliPromo-media{position:relative;min-height:clamp(180px,30vw,100%);background:#F3D9C6;overflow:hidden}
+.oliPromo-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.oliPromo-mediaShade{position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(to top,rgba(58,40,38,.55),transparent)}
+.oliPromo-mediaText{position:absolute;right:24px;bottom:22px;display:flex;flex-direction:column;gap:2px;color:#FFFFFF}
+.oliPromo-mediaPct{font-family:'Google Sans','Heebo',sans-serif;font-weight:400;font-size:clamp(64px,10vw,88px);line-height:.85;letter-spacing:-.04em}
+.oliPromo-mediaLbl{font-size:14px;letter-spacing:.06em}
+
+.oliPromo-body{padding:clamp(20px,5vw,44px) clamp(24px,4.5vw,40px) calc(clamp(28px,5vw,44px) + env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;justify-content:center;gap:22px;text-align:right}
+.oliPromo-stack{display:flex;flex-direction:column;gap:22px}
+.oliPromo-dHead{display:flex;flex-direction:column;gap:10px}
+.oliPromo-eyebrow{font-size:13px;font-weight:600;letter-spacing:.08em;color:#A85A3A}
+.oliPromo-mHead .oliPromo-eyebrow{font-size:12px;letter-spacing:.12em}
+.oliPromo-title{font-family:'Google Sans','Heebo',sans-serif;font-weight:400;font-size:clamp(26px,4vw,32px);line-height:1.15;letter-spacing:-.015em;text-wrap:balance}
+.oliPromo-text{font-size:15px;line-height:1.6;color:#5E4844;text-wrap:pretty}
+.oliPromo-field{display:flex;flex-direction:column;gap:10px}
+.oliPromo-input{height:56px;border:0;border-bottom:1.5px solid #CDB5A8;border-radius:0;padding:0 2px;font-size:17px;font-family:inherit;color:#3A2826;outline:none;width:100%;background:transparent;text-align:right;transition:border-color .2s}
+.oliPromo-input:focus{border-bottom-color:#3A2826}
+.oliPromo-cta{height:56px;border-radius:999px;border:0;margin-top:8px;background:#3A2826;color:#FFFFFF;font-size:17px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .25s,opacity .25s}
+.oliPromo-cta:hover:not(:disabled){background:#A85A3A}
+.oliPromo-cta:disabled{opacity:.35;cursor:default}
+.oliPromo-no{align-self:center;background:transparent;border:0;padding:0;font-size:13px;color:#8A6C64;font-family:inherit;text-decoration:underline;cursor:pointer}
+.oliPromo-code{height:64px;border:1.5px dashed #A85A3A;border-radius:16px;background:#F8EFE9;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-family:inherit;color:#3A2826;cursor:pointer}
+.oliPromo-codeVal{font-family:'Google Sans','Heebo',sans-serif;font-size:24px;font-weight:500;letter-spacing:.14em;direction:ltr}
+.oliPromo-codeCopy{font-size:14px;font-weight:600;color:#A85A3A}
+.oliPromo-shop{height:56px;border-radius:999px;border:0;background:#3A2826;color:#FFFFFF;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .25s}
+.oliPromo-shop:hover{background:#A85A3A}
+
+/* mobile: bottom sheet */
+@media (max-width:767px){
+  .oliPromo-panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:92dvh;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(42,28,26,.25);opacity:1;transform:translateY(104%);transition:transform .55s cubic-bezier(.32,1.2,.4,1)}
+  .oliPromo-panel.is-open{transform:translateY(0)}
+  .oliPromo-mHead{display:block}
+  .oliPromo-media{display:none}
+  .oliPromo-dHead:not(.is-always){display:none}
+}

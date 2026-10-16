@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { FF } from "@/lib/format";
+import { findGroup, productsInGroup, shopGroups } from "@/lib/shop-groups";
 import { CatalogCard } from "@/components/cards";
 import { useSite } from "@/components/site";
 
-function pill(on: boolean, mobile: boolean): CSSProperties {
+function filterStyle(on: boolean): CSSProperties {
   return {
-    padding: mobile ? "7px 13px" : "9px 18px",
-    borderRadius: 999,
-    border: "1px solid " + (on ? "#3A2826" : "#CDB5A8"),
-    background: on ? "#3A2826" : "transparent",
-    color: on ? "#FBF5EF" : "#3A2826",
-    fontSize: mobile ? 13 : 14,
-    fontWeight: 600,
+    padding: "8px 0",
+    border: 0,
+    borderBottom: "1px solid " + (on ? "#3A2826" : "transparent"),
+    background: "transparent",
+    color: on ? "#3A2826" : "#6E5650",
+    fontSize: 15,
+    fontWeight: on ? 600 : 500,
     whiteSpace: "nowrap",
     flexShrink: 0,
   };
@@ -25,46 +26,47 @@ export function CategoryView() {
   const sp = useSearchParams();
   const router = useRouter();
   const { mobile, headerH, products } = useSite();
-  const categories = useMemo(() => [...new Set(products.map((product) => product.category.trim()).filter(Boolean))], [products]);
+  const groups = useMemo(() => shopGroups(products), [products]);
   const requested = sp.get("cat") || "all";
-  const [cat, setCat] = useState(requested === "all" || categories.includes(requested) ? requested : "all");
+  const [cat, setCat] = useState(requested);
   const [sort, setSort] = useState("rec");
 
   useEffect(() => {
-    const next = sp.get("cat") || "all";
-    setCat(next === "all" || categories.includes(next) ? next : "all");
-  }, [sp, categories]);
+    setCat(sp.get("cat") || "all");
+  }, [sp]);
 
   const list = useMemo(() => {
-    let rows = products.filter((product) => cat === "all" || product.category === cat);
+    let rows = productsInGroup(products, cat);
     if (sort === "low") rows = [...rows].sort((a, b) => a.price - b.price);
     if (sort === "high") rows = [...rows].sort((a, b) => b.price - a.price);
     return rows;
   }, [products, cat, sort]);
 
-  const label = cat === "all" ? "כל המוצרים" : cat;
+  const group = cat === "all" ? null : findGroup(cat);
+  const label = cat === "all" ? "כל המוצרים" : group?.label || cat;
+  const blurb = group?.blurb || "מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.";
 
   return (
     <main style={{ maxWidth: 1320, width: "100%", margin: "0 auto", padding: "clamp(16px,4vw,32px) clamp(16px,4.5vw,32px) clamp(53px,9vw,96px)" }}>
       <div style={{ fontSize: "clamp(12px,3.2vw,14px)", color: "#8A6C64", display: "flex", gap: 8, whiteSpace: "nowrap", overflow: "hidden" }}>
         <Link href="/" style={{ color: "#8A6C64" }}>דף הבית</Link><span>/</span><span style={{ color: "#3A2826" }}>{label}</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "16px clamp(28px,6vw,64px)", alignItems: "end", padding: "clamp(14px,4vw,28px) 0 clamp(16px,4vw,36px)", borderBottom: "1px solid #EADBCF" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(2px,1vw,8px)" }}>
-          <h1 style={{ fontFamily: FF, fontWeight: 500, letterSpacing: "-.015em", fontSize: "clamp(32px,8vw,64px)", lineHeight: 1.05 }}>{label}</h1>
-        </div>
-        <p style={{ fontSize: "clamp(14px,3.8vw,17px)", lineHeight: 1.7, color: "#5E4844", maxWidth: 520, textWrap: "pretty" }}>{products.length ? "המוצרים הפעילים של החנות." : "אין כרגע מוצרים פעילים."}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "clamp(8px,1.6vw,14px)", padding: "clamp(18px,4vw,40px) 0 clamp(20px,4vw,40px)", maxWidth: 640 }}>
+        <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.03em", fontSize: "clamp(40px,8vw,80px)", lineHeight: 1 }}>{label}</h1>
+        <p style={{ fontSize: "clamp(15px,3.8vw,17px)", lineHeight: 1.65, color: "#5E4844" }}>{products.length ? blurb : "אין כרגע מוצרים פעילים."}</p>
       </div>
 
-      <div style={{ position: "sticky", top: headerH > 20 ? headerH : 64, zIndex: 10, background: "#FBF5EF", display: "flex", justifyContent: "space-between", alignItems: "center", gap: mobile ? 8 : 16, padding: mobile ? "10px 0" : "18px 0", flexWrap: mobile ? "nowrap" : "wrap", borderBottom: "1px solid #EADBCF", margin: mobile ? "0 -16px" : 0, paddingInline: mobile ? 16 : 0 }}>
-        <div className="no-scroll" style={{ display: "flex", gap: 8, overflowX: "auto", maxWidth: "100%", flex: "1 1 auto", minWidth: 0 }}>
-          {["all", ...categories].map((k) => (
-            <button key={k} type="button" onClick={() => { setCat(k); router.replace(k === "all" ? "/products" : "/products?cat=" + encodeURIComponent(k), { scroll: false }); }} style={pill(cat === k, mobile)}>{k === "all" ? "כל המוצרים" : k}</button>
+      <div style={{ position: "sticky", top: headerH > 20 ? headerH : 64, zIndex: 10, background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, padding: "10px 0", borderBottom: "1px solid #EFE4DC" }}>
+        <div className="no-scroll" style={{ display: "flex", gap: "clamp(18px,3vw,32px)", overflowX: "auto", maxWidth: "100%", flex: "1 1 auto", minWidth: 0 }}>
+          {[{ id: "all", label: "הכל", count: products.length }, ...groups.map((item) => ({ id: item.id, label: item.label, count: item.count }))].map((item) => (
+            <button key={item.id} type="button" onClick={() => { setCat(item.id); router.replace(item.id === "all" ? "/products" : "/products?cat=" + encodeURIComponent(item.id), { scroll: false }); }} style={filterStyle(cat === item.id || (item.id !== "all" && findGroup(cat)?.id === item.id))}>
+              {item.label}<span style={{ fontSize: 11, color: "#9C847C", marginInlineStart: 4, verticalAlign: "super" }}>{item.count}</span>
+            </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 14, color: "#6E5650", flexShrink: 0 }}>
           {!mobile && <span>{list.length} מוצרים</span>}
-          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="מיון" style={{ fontFamily: "inherit", fontSize: mobile ? 13 : 14, padding: mobile ? "7px 10px" : "9px 14px", borderRadius: 999, border: "1px solid #CDB5A8", background: "#FBF5EF", color: "#3A2826", maxWidth: mobile ? 104 : "none" }}>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="מיון" style={{ fontFamily: "inherit", fontSize: 14, padding: "8px 4px", border: 0, background: "transparent", color: "#6E5650" }}>
             <option value="rec">מומלצים</option>
             <option value="low">מחיר: מהנמוך לגבוה</option>
             <option value="high">מחיר: מהגבוה לנמוך</option>
@@ -72,7 +74,7 @@ export function CategoryView() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(220px, 1fr))", gap: mobile ? "22px 12px" : "40px 20px", paddingTop: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(calc(50% - 7px),250px),1fr))", gap: "clamp(24px,5vw,40px) clamp(12px,3vw,20px)", paddingTop: 32 }}>
         {list.length === 0 ? <p style={{ gridColumn: "1 / -1", fontSize: 18, color: "#5E4844" }}>אין כרגע מוצרים פעילים.</p> : list.map((p) => <CatalogCard key={p.id} p={p} />)}
       </div>
     </main>
