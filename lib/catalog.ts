@@ -78,6 +78,8 @@ async function parseMedia(value: unknown): Promise<CatalogMedia | null> {
 
 async function reachableImage(path: string) {
   if (!/^https?:\/\//i.test(path)) return null;
+  const mediaRoot = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/storage/v1/object/public/product-media/`;
+  if (path.startsWith(mediaRoot)) return path;
   try {
     const response = await fetch(path, { method: "HEAD", redirect: "follow", cache: "no-store" });
     const type = response.headers.get("content-type") ?? "";
