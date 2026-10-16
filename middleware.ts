@@ -4,6 +4,7 @@ import { ensureVisitor, trackPageView, VISITOR_COOKIE, visitorCookieOptions } fr
 
 function photosProCatalogRequest(request: NextRequest) {
   if (request.nextUrl.pathname !== "/products") return false;
+  if (request.method === "POST") return true;
   if (request.method !== "GET" && request.method !== "HEAD") return false;
   if (request.headers.has("x-api-key")) return true;
   const accept = request.headers.get("accept") ?? "";
