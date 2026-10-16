@@ -13,6 +13,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-model";
+import { trackAddToCart } from "@/lib/storely-actions";
 
 export type CartItem = {
   id: string;
@@ -52,6 +53,7 @@ type Site = {
   cartCount: number;
   add: (item: CartDraft, qty?: number) => void;
   setQty: (id: string, d: number) => void;
+  clearCart: () => void;
 };
 
 const Ctx = createContext<Site | null>(null);
@@ -166,11 +168,15 @@ export function SiteProvider({ children, products, storeName }: { children: Reac
     });
     setCartOpen(true);
     setMenu(false);
+    void trackAddToCart();
   }, []);
 
   const setQty = useCallback((id: string, d: number) => {
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, qty: x.qty + d } : x)).filter((x) => x.qty > 0));
+    if (d > 0) void trackAddToCart();
   }, []);
+
+  const clearCart = useCallback(() => setItems([]), []);
 
   const cartCount = items.reduce((a, x) => a + x.qty, 0);
 
@@ -179,9 +185,9 @@ export function SiteProvider({ children, products, storeName }: { children: Reac
       mobile, wide, headerH, setHeaderH, headerRef, menu, toggleMenu,
       closeMenu: () => setMenu(false),
       search, q, setQ, openSearch, account, accTab, setAccTab, openAccount,
-      cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty,
+      cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty, clearCart,
     }),
-    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty],
+    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, storeName, items, cartCount, add, setQty, clearCart],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

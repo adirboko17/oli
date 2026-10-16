@@ -3,6 +3,7 @@ import "./globals.css";
 import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { trackRenderedPageView } from "@/lib/storely-track";
 
 export async function generateMetadata(): Promise<Metadata> {
   const result = await loadPublicCatalog();
@@ -20,6 +21,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await trackRenderedPageView();
   const result = await loadPublicCatalog();
   return (
     <html lang="he" dir="rtl">
