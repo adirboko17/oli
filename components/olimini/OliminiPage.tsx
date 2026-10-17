@@ -39,7 +39,7 @@ export default function OliminiPage({ products, onAdd, formatPrice = n => '₪' 
 
         <div className="om-hero__text">
           <span className="om-pill">חדש · BABY CARE</span>
-          <h1 className="om-wordmark">olimini</h1>
+          <h1 className="om-wordmark"><img src="/assets/olimini-logo.svg" alt="olimini" /></h1>
           <p className="om-hero__sub">קו הטיפוח הראשון שלנו לתינוקות</p>
           <p className="om-hero__lead">על בסיס רכיבים טבעיים, לעור העדין של התינוק מגיל לידה.</p>
           <div className="om-free">

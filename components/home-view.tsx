@@ -212,7 +212,7 @@ export function HomeView() {
       <section style={{ position: "relative", overflow: "hidden", background: "radial-gradient(120% 80% at 50% 78%,#FFFFFF 0%,#F7EFEA 55%,#EFE3DB 100%)" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,7vw,88px) var(--page-pad) 0", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".24em", color: "#A85A3A" }}>חדש</span>
-          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.05em", lineHeight: 0.85, fontSize: "clamp(64px,11vw,144px)", direction: "ltr" }}>olimini</h2>
+          <h2 style={{ width: "min(92vw,720px)", margin: 0, lineHeight: 0 }}><img src="/assets/olimini-logo.svg" alt="olimini" style={{ display: "block", width: "100%", height: "auto" }} /></h2>
           <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520 }}>קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים, פרפום ופתלטים.</p>
         </div>
         <div className="mini-desk" style={{ position: "relative", maxWidth: 940, margin: "0 auto", padding: "clamp(8px,2vw,20px) clamp(8px,3vw,32px) clamp(48px,7vw,80px)" }}>
