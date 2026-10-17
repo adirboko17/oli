@@ -37,6 +37,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const sections = product.page.panels;
   const featured = product.page.reviews[0];
   const more = product.page.reviews.slice(1);
+  const score = reviewScore(product.page.reviews);
   const stories = product.page.stories.filter((item) => item.url);
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
@@ -119,7 +120,8 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             {blurb && blurb !== product.title && <p style={{ fontSize: "clamp(18px,2.4vw,21px)", color: "#5E4844" }}>{blurb}</p>}
             {product.page.reviews.length > 0 && (
               <a href="#reviews" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#5E4844", marginTop: 4 }}>
-                <span style={{ color: "#A85A3A", letterSpacing: 2 }}>★★★★★</span>5.0 · {product.page.reviews.length} ביקורות
+                <Stars value={score} />
+                {score.toFixed(1)} · {product.page.reviews.length} ביקורות
               </a>
             )}
           </div>
@@ -280,28 +282,28 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <h2 style={h2}>לקוחות ממליצות</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 14, color: "#6E5650" }}>
-                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 28, color: "#3A2826", lineHeight: 1 }}>5.0</span>
-                <span style={{ color: "#A85A3A", letterSpacing: 2, fontSize: 15 }}>★★★★★</span>
+                <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 28, color: "#3A2826", lineHeight: 1 }}>{score.toFixed(1)}</span>
+                <Stars value={score} size={15} />
                 <span>{product.page.reviews.length} ביקורות</span>
               </div>
             </div>
           </div>
           <figure style={{ margin: 0, display: "grid", gap: 20 }}>
+            <Stars value={featured.rating} size={18} />
+            {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: "clamp(20px,3vw,26px)", lineHeight: 1.3 }}>{featured.title}</h3> : null}
             <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
-            <figcaption style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#6E5650" }}>
-              <span style={avatar(40)}>{featured.initial}</span>
-              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ color: "#3A2826", fontWeight: 600, fontSize: 15 }}>{featured.name}</span><span>{featured.meta}</span></span>
+            <figcaption>
+              <ReviewByline review={featured} size={40} />
             </figcaption>
           </figure>
           <div className={mobile ? "no-scroll" : undefined} style={mobile ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 20 }}>
-            {more.map((review) => (
-              <div key={review.name + review.title} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
-                <span style={{ color: "#A85A3A", letterSpacing: 2, fontSize: 13 }}>★★★★★</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(18px,4.4vw,21px)", lineHeight: 1.3 }}>{review.title}</h3>
+            {more.map((review, index) => (
+              <div key={`${review.name}-${index}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
+                <Stars value={review.rating} size={13} />
+                {review.title ? <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(18px,4.4vw,21px)", lineHeight: 1.3, margin: 0 }}>{review.title}</h3> : null}
                 <p style={{ fontSize: 15, lineHeight: 1.65, color: "#5E4844", flex: 1, margin: 0, whiteSpace: "pre-line" }}>{review.body}</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6E5650", paddingTop: 14, borderTop: "1px solid #EFE4DC" }}>
-                  <span style={avatar(32)}>{review.initial}</span>
-                  <span style={{ display: "flex", flexDirection: "column" }}><span style={{ color: "#3A2826", fontWeight: 600 }}>{review.name}</span><span>{review.meta}</span></span>
+                <div style={{ paddingTop: 14, borderTop: "1px solid #EFE4DC" }}>
+                  <ReviewByline review={review} size={32} />
                 </div>
               </div>
             ))}
@@ -376,6 +378,48 @@ const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.0
 const qtyBtn: CSSProperties = { width: 46, height: 54, border: 0, background: "transparent", fontSize: 20, color: "#3A2826" };
 const storyNav: CSSProperties = { width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,.4)", background: "transparent", color: "#FFFFFF", fontSize: 20 };
 const relBtn: CSSProperties = { width: 44, height: 44, borderRadius: 999, border: 0, background: "#F6EEE8", color: "#3A2826", fontSize: 17 };
+
+function reviewScore(reviews: { rating: number }[]) {
+  if (!reviews.length) return 0;
+  return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+}
+
+function Stars({ value, size = 14 }: { value: number; size?: number }) {
+  const score = Math.max(0, Math.min(5, value));
+  const filled = Math.round(score);
+  return (
+    <span aria-label={`${score.toFixed(1)} מתוך 5`} style={{ display: "inline-flex", gap: 1, color: "#A85A3A", fontSize: size, letterSpacing: 1, lineHeight: 1 }}>
+      {[1, 2, 3, 4, 5].map((star) => <span key={star} aria-hidden>{star <= filled ? "★" : "☆"}</span>)}
+    </span>
+  );
+}
+
+function ReviewByline({ review, size }: { review: { name: string; initial: string; date: string; verified: boolean }; size: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: size > 36 ? 12 : 10, fontSize: size > 36 ? 14 : 13, color: "#6E5650" }}>
+      <span style={avatar(size)}>{review.initial}</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ color: "#3A2826", fontWeight: 600, fontSize: size > 36 ? 15 : 13 }}>{review.name}</span>
+          {review.verified ? <VerifiedCustomer /> : null}
+        </span>
+        {review.date ? <span>{review.date}</span> : null}
+      </span>
+    </div>
+  );
+}
+
+function VerifiedCustomer() {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3A2826", fontWeight: 600 }}>
+      <svg width="15" height="15" viewBox="0 0 22 22" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
+        <circle cx="11" cy="11" r="11" fill="#0095F6" />
+        <path d="M6.2 11.3 9.4 14.5 15.8 7.6" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      לקוחה מאומתת
+    </span>
+  );
+}
 
 function avatar(size: number): CSSProperties {
   return { width: size, height: size, borderRadius: "50%", background: "#F3D9C6", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: size > 36 ? 15 : 13, flexShrink: 0 };

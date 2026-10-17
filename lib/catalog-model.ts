@@ -23,7 +23,7 @@ export type CatalogPage = {
   steps: { title: string; body: string }[];
   ingredientsIntro: string;
   ingredients: { en: string; he: string; body: string }[];
-  reviews: { name: string; title: string; body: string; initial: string; meta: string }[];
+  reviews: { name: string; title: string; body: string; initial: string; date: string; rating: number; verified: boolean }[];
 };
 
 export type CatalogProduct = {

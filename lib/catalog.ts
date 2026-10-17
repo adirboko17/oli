@@ -200,9 +200,9 @@ function parsePage(value: unknown): CatalogPage {
     const name = text(item.name);
     const body = text(item.body);
     if (!name || !body) return [];
-    const date = text(item.date);
-    const verified = item.verified === true ? " · רכישה מאומתת" : "";
-    return [{ name, title: text(item.title), body, initial: name.trim()[0]?.toUpperCase() || "•", meta: date + verified }];
+    const raw = Number(item.rating);
+    const rating = Number.isInteger(raw) && raw >= 1 && raw <= 5 ? raw : 5;
+    return [{ name, title: text(item.title), body, initial: name.trim()[0]?.toUpperCase() || "•", date: text(item.date), rating, verified: item.verified === true }];
   });
   return page;
 }
