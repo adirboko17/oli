@@ -1,0 +1,44 @@
+/* Oli Safe Care: filter & sort. Mobile < 768px = bottom sheet, desktop = right drawer */
+.oliF-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-top:1px solid #EFE4DC;border-bottom:1px solid #EFE4DC;flex-wrap:wrap}
+.oliF-barStart{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.oliF-btn{display:flex;align-items:center;gap:10px;height:46px;padding:0 20px;border-radius:999px;border:1px solid #3A2826;background:#FFFFFF;color:#3A2826;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .2s,color .2s}
+.oliF-btn:hover{background:#3A2826;color:#FFFFFF}
+.oliF-badge{min-width:20px;height:20px;border-radius:999px;background:#A85A3A;color:#FFFFFF;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.oliF-chip{display:flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:0;background:#F8EFE9;color:#3A2826;font-size:14px;font-family:inherit;cursor:pointer;transition:background .2s}
+.oliF-chip:hover{background:#F3D9C6}
+.oliF-chipX{font-size:11px;color:#6E5650}
+.oliF-count{font-size:14px;color:#6E5650}
+
+.oliF-backdrop{position:fixed;inset:0;z-index:72;background:rgba(42,28,26,.42);opacity:0;pointer-events:none;transition:opacity .35s ease}
+.oliF-backdrop.is-open{opacity:1;pointer-events:auto;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+
+.oliF-panel{position:fixed;top:0;bottom:0;right:0;width:min(420px,92vw);z-index:73;background:#FFFFFF;color:#3A2826;display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(42,28,26,.2);transform:translateX(104%);transition:transform .55s cubic-bezier(.7,0,.2,1)}
+.oliF-panel.is-open{transform:translateX(0)}
+.oliF-handle{display:none;justify-content:center;padding-top:10px}
+.oliF-handle span{width:44px;height:4px;border-radius:2px;background:#D8C3B6}
+.oliF-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 12px}
+.oliF-title{font-family:'Google Sans','Heebo',sans-serif;font-size:26px;letter-spacing:-.01em}
+.oliF-close{width:40px;height:40px;border-radius:999px;border:1px solid #E6D2C6;background:transparent;color:#3A2826;font-size:14px;cursor:pointer;transition:all .2s}
+.oliF-close:hover{background:#3A2826;color:#FFFFFF;border-color:#3A2826}
+.oliF-scroll{flex:1;overflow-y:auto;padding:4px 24px 20px;display:flex;flex-direction:column;gap:26px}
+.oliF-group{display:flex;flex-direction:column}
+.oliF-groupLbl{font-size:12px;font-weight:600;letter-spacing:.1em;color:#A85A3A;padding-bottom:6px}
+.oliF-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 4px;border:0;border-bottom:1px solid #F6EEE8;background:transparent;font-family:inherit;color:#3A2826;font-size:16px;text-align:right;cursor:pointer;transition:padding .2s}
+.oliF-opt:hover{padding-right:8px}
+.oliF-optMain{display:flex;align-items:center;gap:12px}
+.oliF-optCount{font-size:13px;color:#8A6C64}
+.oliF-radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #CDB5A8;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s}
+.oliF-radio.is-on{border-color:#3A2826}
+.oliF-radioDot{width:10px;height:10px;border-radius:50%;background:#3A2826;transform:scale(0);transition:transform .25s cubic-bezier(.32,1.4,.4,1)}
+.oliF-radio.is-on .oliF-radioDot{transform:scale(1)}
+.oliF-foot{display:flex;gap:10px;padding:16px 24px calc(18px + env(safe-area-inset-bottom));border-top:1px solid #F1E5DD}
+.oliF-reset{height:54px;padding:0 20px;border-radius:999px;border:1px solid #CDB5A8;background:transparent;color:#3A2826;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .2s}
+.oliF-reset:hover{background:#F8EFE9}
+.oliF-apply{flex:1;height:54px;border-radius:999px;border:0;background:#3A2826;color:#FFFFFF;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .25s}
+.oliF-apply:hover{background:#A85A3A}
+
+@media (max-width:767px){
+  .oliF-panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:88dvh;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(42,28,26,.25);transform:translateY(104%);transition:transform .55s cubic-bezier(.32,1.2,.4,1)}
+  .oliF-panel.is-open{transform:translateY(0)}
+  .oliF-handle{display:flex}
+}

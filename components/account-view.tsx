@@ -104,7 +104,7 @@ export function AccountView() {
               <button type="button" onClick={() => setOpenId(open ? null : order.id)} style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,150px),1fr))", gap: "14px 24px", alignItems: "center", padding: "clamp(18px,3vw,24px) clamp(18px,3vw,28px)", border: 0, background: "transparent", color: "#3A2826", textAlign: "right" }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><span style={{ fontSize: 17, fontWeight: 600 }}>הזמנה {order.no}</span><span style={{ fontSize: 14, color: "#6E5650" }}>{order.date}</span></span>
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {order.lines.slice(0, 3).map((line) => <span key={line.id} style={{ width: 40, height: 48, borderRadius: 10, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "cover" }} />)}
+                  {order.lines.slice(0, 3).map((line) => <span key={line.id} style={{ width: 40, height: 48, borderRadius: 10, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />)}
                   <span style={{ fontSize: 13, color: "#6E5650" }}>{order.lines.length} פריטים</span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: order.status === "done" ? "#6E9B6A" : "#D99A4E" }} />{STATUS[order.status]}</span>
@@ -118,7 +118,7 @@ export function AccountView() {
                       const review = reviews[key];
                       return (
                         <div key={line.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 16, padding: "14px 0", borderBottom: "1px solid #F6EEE8" }}>
-                          <span style={{ width: 64, height: 80, borderRadius: 12, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "cover" }} />
+                          <span style={{ width: 64, height: 80, borderRadius: 12, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />
                           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <span style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 16, fontWeight: 600 }}>{line.name}</span><span style={{ fontSize: 15, fontWeight: 600 }}>{fmt(line.price * line.qty)}</span></span>
                             <span style={{ fontSize: 13, color: "#6E5650" }}>{line.sub} · כמות {line.qty}</span>
@@ -218,7 +218,7 @@ function ReviewModal({ name, sub, image, initial, onClose, onSave }: { name: str
       <div role="dialog" aria-label="כתיבת ביקורת" style={{ position: "fixed", zIndex: 81, background: "#FFFFFF", color: "#3A2826", width: "min(440px,92vw)", maxHeight: "90vh", overflow: "auto", borderRadius: 28, top: "50%", left: "50%", transform: "translate(-50%,-50%)", boxShadow: "0 30px 80px rgba(42,28,26,.28)" }}>
         <div style={{ position: "relative", background: "#FBF3EE", padding: "28px 24px 26px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
           <button type="button" onClick={onClose} aria-label="סגירה" style={{ position: "absolute", top: 14, left: 14, width: 36, height: 36, borderRadius: 999, border: 0, background: "#FFFFFF" }}>✕</button>
-          <span style={{ width: 76, height: 92, borderRadius: 16, background: "#FFFFFF", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "cover" }} />
+          <span style={{ width: 76, height: 92, borderRadius: 16, background: "#F6EEE8", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />
           <span style={{ fontFamily: FF, fontSize: 24, lineHeight: 1.15 }}>{name}</span>
           <span style={{ fontSize: 14, color: "#6E5650" }}>{sub}</span>
         </div>

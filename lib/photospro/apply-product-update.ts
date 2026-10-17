@@ -57,7 +57,7 @@ async function storeCurrency(supabase: SupabaseClient, storeId: string) {
 
 export async function listPhotosProProducts(config: PhotosProConfig) {
   const supabase = adminClient(config);
-  const { data: products, error } = await supabase.from("products").select("id, title").eq("store_id", config.storeId).order("title");
+  const { data: products, error } = await supabase.from("products").select("id, title, price, compare_at").eq("store_id", config.storeId).order("title");
   if (error) throw new PhotosProError(500, "לא הצלחנו לקרוא את המוצרים");
   const ids = (products ?? []).map((product) => product.id);
   const mediaByProduct = new Map<string, { url: string; position: number }[]>();
@@ -77,7 +77,14 @@ export async function listPhotosProProducts(config: PhotosProConfig) {
   }
   return (products ?? []).map((product) => {
     const images = mediaByProduct.get(product.id) ?? [];
-    return { id: product.id, title: product.title, image_url: images[0]?.url ?? null, images };
+    return {
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      compare_at: product.compare_at,
+      image_url: images[0]?.url ?? null,
+      images,
+    };
   });
 }
 
@@ -105,7 +112,11 @@ export async function applyPhotosProUpdate(config: PhotosProConfig, update: Phot
 
   const { data: priced, error: priceError } = await supabase
     .from("products")
-    .update({ price: update.price, updated_at: new Date().toISOString() })
+    .update({
+      price: update.price,
+      ...(update.compareAt !== undefined ? { compare_at: update.compareAt } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("store_id", config.storeId)
     .eq("id", product.id)
     .select("id");
@@ -232,7 +243,7 @@ export async function createPhotosProProduct(config: PhotosProConfig, update: Ph
 
   const { data: created, error: createError } = await supabase
     .from("products")
-    .insert({ store_id: config.storeId, title, price: update.price, status: "active" })
+    .insert({ store_id: config.storeId, title, price: update.price, compare_at: update.compareAt ?? null, status: "active" })
     .select("id, title")
     .single();
   if (createError || !created) throw new PhotosProError(500, "יצירת המוצר נכשלה");

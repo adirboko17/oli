@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { STORE_ID } from "@/lib/store";
-import type { CatalogMedia, CatalogProduct, CatalogVariant, PublicCatalog } from "@/lib/catalog-model";
+import { emptyCatalogPage, type CatalogBundle, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
 
 export type CatalogLoad =
   | { status: "ready"; catalog: PublicCatalog }
@@ -51,6 +51,8 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
     variants: variants.sort((a, b) => a.position - b.position),
     media: media.sort((a, b) => a.position - b.position),
+    bundles: parseBundles(row.merch),
+    page: parsePage(row.merch),
   };
 }
 
@@ -69,17 +71,19 @@ function parseVariant(value: unknown): CatalogVariant | null {
 async function parseMedia(value: unknown): Promise<CatalogMedia | null> {
   const row = record(value);
   if (!row || typeof row.id !== "string" || typeof row.path !== "string") return null;
+  const kind = /\.(mp4|webm|mov)(\?|$)/i.test(row.path) ? "video" : "image";
   return {
     id: row.id,
     position: money(row.position) ?? 0,
-    src: await reachableImage(row.path),
+    src: await reachableMedia(row.path, kind),
+    kind,
   };
 }
 
-async function reachableImage(path: string) {
+async function reachableMedia(path: string, kind: "image" | "video") {
   if (!/^https?:\/\//i.test(path)) return null;
   const mediaRoot = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/storage/v1/object/public/product-media/`;
-  if (path.startsWith(mediaRoot)) return path;
+  if (path.startsWith(mediaRoot) || kind === "video") return path;
   try {
     const response = await fetch(path, { method: "HEAD", redirect: "follow", cache: "no-store" });
     const type = response.headers.get("content-type") ?? "";
@@ -87,6 +91,69 @@ async function reachableImage(path: string) {
   } catch {
     return null;
   }
+}
+
+function parseBundles(value: unknown): CatalogBundle[] {
+  const merch = record(value);
+  if (!Array.isArray(merch?.bundles)) return [];
+  const seen = new Set<number>();
+  const bundles: CatalogBundle[] = [];
+  for (const item of merch.bundles) {
+    const row = record(item);
+    const qty = money(row?.qty);
+    const price = money(row?.price);
+    if (qty == null || price == null || !Number.isInteger(qty) || qty < 1 || qty > 99 || price < 0) continue;
+    if (seen.has(qty)) continue;
+    seen.add(qty);
+    bundles.push({ qty, price, label: text(row?.label) || `קנה ${qty}` });
+  }
+  return bundles.sort((a, b) => a.qty - b.qty);
+}
+
+function parsePage(value: unknown): CatalogPage {
+  const merch = record(value);
+  const row = record(merch?.page);
+  const page = emptyCatalogPage();
+  if (!row) return page;
+  page.panels = objects(row.panels, 8).flatMap((item) => {
+    const title = text(item.title);
+    const paras = text(item.body).split("\n").map((part) => part.trim()).filter(Boolean);
+    return title && paras.length ? [{ title, paras }] : [];
+  });
+  page.stories = objects(row.stories, 20).flatMap((item) => {
+    const handle = text(item.handle);
+    const url = /^https:\/\/([a-z0-9-]+\.)*instagram\.com\/\S+$/i.test(text(item.url)) ? text(item.url) : "";
+    return handle ? [{ handle, url }] : [];
+  });
+  page.steps = objects(row.steps, 8).flatMap((item) => {
+    const title = text(item.title);
+    const body = text(item.body);
+    return title && body ? [{ title, body }] : [];
+  });
+  page.ingredientsIntro = text(row.ingredientsIntro);
+  page.ingredients = objects(row.ingredients, 12).flatMap((item) => {
+    const en = text(item.en);
+    const he = text(item.he);
+    const body = text(item.body);
+    return (en || he) && body ? [{ en, he, body }] : [];
+  });
+  page.reviews = objects(row.reviews, 30).flatMap((item) => {
+    const name = text(item.name);
+    const body = text(item.body);
+    if (!name || !body) return [];
+    const date = text(item.date);
+    const verified = item.verified === true ? " · רכישה מאומתת" : "";
+    return [{ name, title: text(item.title), body, initial: name.trim()[0]?.toUpperCase() || "•", meta: date + verified }];
+  });
+  return page;
+}
+
+function objects(value: unknown, limit: number) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, limit).flatMap((item) => {
+    const row = record(item);
+    return row ? [row] : [];
+  });
 }
 
 function record(value: unknown) {

@@ -12,10 +12,10 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
   const src = productImage(p);
   const old = p.compareAt && p.compareAt > p.price ? p.compareAt : null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", minWidth: 0 }}>
+    <div data-cms="product" data-cms-id="product" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", minWidth: 0 }}>
       <div style={{ position: "relative" }}>
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-          {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
+          {src ? <img src={src} alt="" style={productPhoto} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
         </Link>
         <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -32,6 +32,10 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
     </div>
   );
 }
+
+const productPhoto: CSSProperties = {
+  position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken",
+};
 
 const plus: CSSProperties = {
   position: "absolute", bottom: 10, left: 10, width: 40, height: 40, borderRadius: "50%", border: 0,

@@ -7,6 +7,8 @@ export type IncomingImage = {
 export type PhotosProUpdate = {
   title: string;
   price: number;
+  /** Crossed-out regular price. Undefined leaves the current value unchanged. */
+  compareAt?: number | null;
   currency: string | null;
   images: IncomingImage[];
 };
@@ -80,6 +82,19 @@ export function parsePhotosProBody(body: unknown): { ok: true; value: PhotosProU
 
   const price = typeof record.price === "number" ? record.price : typeof record.price === "string" ? Number(record.price) : Number.NaN;
   if (!Number.isFinite(price) || price < 0 || price > 1_000_000) return { ok: false, error: "מחיר לא תקין" };
+  const roundedPrice = Math.round(price * 100) / 100;
+
+  let compareAt: number | null | undefined;
+  if (!("compare_at" in record) || record.compare_at === undefined) {
+    compareAt = undefined;
+  } else if (record.compare_at == null || record.compare_at === "") {
+    compareAt = null;
+  } else {
+    const compare = typeof record.compare_at === "number" ? record.compare_at : typeof record.compare_at === "string" ? Number(record.compare_at) : Number.NaN;
+    if (!Number.isFinite(compare) || compare < 0 || compare > 1_000_000) return { ok: false, error: "מחיר רגיל לא תקין" };
+    compareAt = Math.round(compare * 100) / 100;
+    if (compareAt <= roundedPrice) return { ok: false, error: "מחיר המבצע צריך להיות נמוך מהמחיר הרגיל" };
+  }
 
   const currency = typeof record.currency === "string" && record.currency.trim() ? record.currency.trim().toUpperCase() : null;
   const images: IncomingImage[] = [];
@@ -118,7 +133,8 @@ export function parsePhotosProBody(body: unknown): { ok: true; value: PhotosProU
     ok: true,
     value: {
       title,
-      price: Math.round(price * 100) / 100,
+      price: roundedPrice,
+      compareAt,
       currency,
       images,
     },

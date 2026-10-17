@@ -1,0 +1,42 @@
+[
+  { "type": "nav", "id": "home", "label": "דף הבית", "file": "components/shell.tsx" },
+  { "type": "nav", "id": "products", "label": "המוצרים של Oli", "file": "components/shell.tsx" },
+  { "type": "nav", "id": "all-products", "label": "כל המוצרים", "file": "components/shell.tsx", "parent": "products" },
+  { "type": "nav", "id": "gifts", "label": "מתנות ליולדת", "file": "components/shell.tsx" },
+  { "type": "nav", "id": "stores", "label": "Oli בחנויות", "file": "components/shell.tsx" },
+  { "type": "nav", "id": "podcast", "label": "פודקאסט", "file": "components/shell.tsx" },
+  { "type": "category", "id": "best", "label": "המומלצים ביותר", "file": "lib/shop-groups.ts", "parent": "products" },
+  { "type": "category", "id": "preg", "label": "הריון", "file": "lib/shop-groups.ts", "parent": "products" },
+  { "type": "category", "id": "birth", "label": "לידה ואחרי לידה", "file": "lib/shop-groups.ts", "parent": "products" },
+  { "type": "category", "id": "baby", "label": "תינוקות · olimini", "file": "lib/shop-groups.ts", "parent": "products" },
+  { "type": "category", "id": "gift", "label": "מתנה ליולדת", "file": "lib/shop-groups.ts", "parent": "products" },
+  {
+    "type": "product",
+    "id": "product",
+    "label": "מוצר",
+    "file": "components/cards.tsx",
+    "template": "app/product/[handle]/page.tsx",
+    "source": "CatalogProduct",
+    "fields": {
+      "title": "title",
+      "category": "category",
+      "price": "price",
+      "compareAt": "compareAt",
+      "image": "media[0]",
+      "description": "description"
+    }
+  },
+  {
+    "type": "article",
+    "id": "journal",
+    "label": "מאמר",
+    "file": "app/journal/[slug]/page.tsx",
+    "fields": {
+      "title": "title",
+      "excerpt": "excerpt",
+      "body": "body",
+      "image": "image",
+      "category": "category"
+    }
+  }
+]

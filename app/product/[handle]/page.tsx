@@ -10,5 +10,9 @@ export default async function Page({ params }: { params: Promise<{ handle: strin
   const product = findCatalogProduct(result.catalog.products, handle);
   if (!product) notFound();
   const related = result.catalog.products.filter((item) => item.id !== product.id);
-  return <ProductView product={product} related={related} />;
+  return (
+    <div data-cms="product" data-cms-id="product" style={{ display: "contents" }}>
+      <ProductView product={product} related={related} />
+    </div>
+  );
 }

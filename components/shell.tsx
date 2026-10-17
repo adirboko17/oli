@@ -110,11 +110,11 @@ function Header() {
   }, [site]);
 
   const links = [
-    { href: "/", label: "דף הבית" },
-    { href: "/products", label: "המוצרים של Oli" },
-    { href: groupHref("gift"), label: "מתנות ליולדת" },
-    { href: "/stores", label: "Oli בחנויות" },
-    { href: "/podcast", label: "פודקאסט" },
+    { id: "home", href: "/", label: "דף הבית" },
+    { id: "products", href: "/products", label: "המוצרים של Oli" },
+    { id: "gifts", href: groupHref("gift"), label: "מתנות ליולדת" },
+    { id: "stores", href: "/stores", label: "Oli בחנויות" },
+    { id: "podcast", href: "/podcast", label: "פודקאסט" },
   ];
 
   return (
@@ -122,21 +122,21 @@ function Header() {
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(255,255,255,.94)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EFE4DC" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", alignItems: "center", minWidth: 0 }}>
-          <Link href="/" style={nav(home)}>דף הבית</Link>
+          <Link href="/" data-cms="nav" data-cms-id="home" style={nav(home)}>דף הבית</Link>
           <div onMouseEnter={() => { window.clearTimeout(hideProd.current); setProdOpen(true); }} onMouseLeave={() => { hideProd.current = window.setTimeout(() => setProdOpen(false), 120); }} style={{ position: "relative", display: "flex", alignItems: "center", gap: 4, padding: "12px 0", margin: "-12px 0" }}>
-            <Link href="/products" style={nav(prod)}>המוצרים של Oli</Link>
+            <Link href="/products" data-cms="nav" data-cms-id="products" style={nav(prod)}>המוצרים של Oli</Link>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .3s", transform: prodOpen ? "rotate(180deg)" : "none", opacity: 0.7 }}><path d="M6 9l6 6 6-6" /></svg>
             <div style={{ position: "absolute", top: "100%", right: -14, minWidth: 260, background: "#FFFFFF", borderRadius: 16, boxShadow: "0 18px 50px rgba(42,28,26,.14)", border: "1px solid #EFE4DC", padding: 8, display: "flex", flexDirection: "column", zIndex: 30, opacity: prodOpen ? 1 : 0, transform: prodOpen ? "translateY(0)" : "translateY(-6px)", pointerEvents: prodOpen ? "auto" : "none", transition: "opacity .25s ease, transform .3s cubic-bezier(.2,.8,.2,1)" }}>
-              <Hx as={Link} href="/products" style={dropLink} hover={{ background: "#F8EFE9" }}>כל המוצרים<span style={{ fontSize: 12, color: "#8A6C64" }}>{site.products.length}</span></Hx>
+              <Hx as={Link} href="/products" data-cms="nav" data-cms-id="all-products" style={dropLink} hover={{ background: "#F8EFE9" }}>כל המוצרים<span style={{ fontSize: 12, color: "#8A6C64" }}>{site.products.length}</span></Hx>
               {groups.map((group) => (
-                <Hx key={group.id} as={Link} href={groupHref(group.id)} style={dropLink} hover={{ background: "#F8EFE9" }}>
+                <Hx key={group.id} as={Link} href={groupHref(group.id)} data-cms="category" data-cms-id={group.id} style={dropLink} hover={{ background: "#F8EFE9" }}>
                   {group.label}<span style={{ fontSize: 12, color: "#8A6C64" }}>{group.count}</span>
                 </Hx>
               ))}
             </div>
           </div>
-          <Link href="/stores" style={nav(stores)}>Oli בחנויות</Link>
-          <Link href="/podcast" style={nav(pod)}>פודקאסט</Link>
+          <Link href="/stores" data-cms="nav" data-cms-id="stores" style={nav(stores)}>Oli בחנויות</Link>
+          <Link href="/podcast" data-cms="nav" data-cms-id="podcast" style={nav(pod)}>פודקאסט</Link>
         </nav>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
           <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
@@ -189,13 +189,13 @@ function Header() {
             return (
               <div key={l.href}>
                 {products ? (
-                  <button type="button" onClick={() => setSubOpen((v) => !v)} style={menuLink(site.menu, i)}>
+                  <button type="button" onClick={() => setSubOpen((v) => !v)} data-cms="nav" data-cms-id={l.id} style={menuLink(site.menu, i)}>
                     <span style={menuNum}>0{i + 1}</span>
                     <span style={{ flex: 1 }}>{l.label}</span>
                     <span style={{ fontSize: 24, color: "#C9A08A", fontWeight: 300, transform: subOpen ? "rotate(45deg)" : "none", transition: "transform .35s" }}>+</span>
                   </button>
                 ) : (
-                  <Link href={l.href} style={menuLink(site.menu, i)}>
+                  <Link href={l.href} data-cms="nav" data-cms-id={l.id} style={menuLink(site.menu, i)}>
                     <span style={menuNum}>0{i + 1}</span>
                     <span style={{ flex: 1 }}>{l.label}</span>
                     <span style={{ fontSize: 20, color: "#C9A08A" }}>←</span>
@@ -203,9 +203,9 @@ function Header() {
                 )}
                 {products && (
                   <div style={{ maxHeight: subOpen ? (groups.length + 1) * 46 : 0, overflow: "hidden", transition: "max-height .5s cubic-bezier(.2,.8,.2,1)" }}>
-                    <Link href="/products" style={subLink}>כל המוצרים<span>{site.products.length}</span></Link>
+                    <Link href="/products" data-cms="nav" data-cms-id="all-products" style={subLink}>כל המוצרים<span>{site.products.length}</span></Link>
                     {groups.map((group) => (
-                      <Link key={group.id} href={groupHref(group.id)} style={subLink}>{group.label}<span>{group.count}</span></Link>
+                      <Link key={group.id} href={groupHref(group.id)} data-cms="category" data-cms-id={group.id} style={subLink}>{group.label}<span>{group.count}</span></Link>
                     ))}
                   </div>
                 )}
@@ -404,10 +404,12 @@ function thumbStyle(src: string | null) {
     height: 64,
     borderRadius: 10,
     flexShrink: 0,
-    backgroundColor: "#F3E4D8",
+    backgroundColor: "#F6EEE8",
     backgroundImage: src ? `url("${src}")` : undefined,
-    backgroundSize: "cover" as const,
+    backgroundSize: "contain" as const,
+    backgroundRepeat: "no-repeat" as const,
     backgroundPosition: "center" as const,
+    backgroundBlendMode: "darken" as const,
   };
 }
 
@@ -615,7 +617,7 @@ function CartDrawer() {
             <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px", display: "flex", flexDirection: "column" }}>
               {site.items.map((x, i) => (
                 <div key={x.id} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: "1px solid #F1E5DD", opacity: open ? 1 : 0, transform: open ? "none" : "translateY(14px)", transition: `opacity .45s ease ${open ? 0.2 + i * 0.06 : 0}s, transform .5s cubic-bezier(.2,.8,.2,1) ${open ? 0.2 + i * 0.06 : 0}s` }}>
-                  <div style={{ ...thumbStyle(x.image), width: 88, height: 110, borderRadius: 14, backgroundColor: "#F6EEE8" }} />
+                  <div style={{ ...thumbStyle(x.image), width: 88, height: 110, borderRadius: 14 }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, flex: 1 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                       <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18, lineHeight: 1.2 }}>{x.name}</span>

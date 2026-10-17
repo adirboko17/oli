@@ -10,6 +10,18 @@ export type CatalogMedia = {
   id: string;
   position: number;
   src: string | null;
+  kind: "image" | "video";
+};
+
+export type CatalogBundle = { qty: number; price: number; label: string };
+
+export type CatalogPage = {
+  panels: { title: string; paras: string[] }[];
+  stories: { handle: string; url: string }[];
+  steps: { title: string; body: string }[];
+  ingredientsIntro: string;
+  ingredients: { en: string; he: string; body: string }[];
+  reviews: { name: string; title: string; body: string; initial: string; meta: string }[];
 };
 
 export type CatalogProduct = {
@@ -24,7 +36,13 @@ export type CatalogProduct = {
   tags: string[];
   variants: CatalogVariant[];
   media: CatalogMedia[];
+  bundles: CatalogBundle[];
+  page: CatalogPage;
 };
+
+export function emptyCatalogPage(): CatalogPage {
+  return { panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], reviews: [] };
+}
 
 export type PublicCatalog = {
   name: string;
@@ -56,7 +74,7 @@ export function categoryGroups(products: CatalogProduct[]) {
 }
 
 export function productImage(product: CatalogProduct) {
-  return product.media.find((item) => item.src)?.src ?? null;
+  return product.media.find((item) => item.src && item.kind !== "video")?.src ?? null;
 }
 
 export function productBlurb(product: CatalogProduct) {

@@ -284,7 +284,7 @@ export function HomeView() {
           <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", padding: mobile ? "48px 16px 40px" : "0 clamp(16px,4.5vw,32px) clamp(64px,10vw,128px)" }}>
             <div style={{ background: "#F8EFE9", borderRadius: 24, padding: "clamp(16px,2.4vw,28px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "clamp(24px,5vw,72px)", alignItems: "center" }}>
               <Link href={productHref(featured)} style={{ position: "relative", display: "block", aspectRatio: "4/3", width: "100%", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-                <img src={productImage(featured) || OLILASTIC} alt={featured.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.06)" }} />
+                <img src={productImage(featured) || OLILASTIC} alt={featured.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />
               </Link>
               <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 500, padding: "clamp(4px,2vw,24px) 0" }}>
                 <span style={{ fontSize: 14, color: "#8A6C64" }}>{featured.title}</span>
@@ -347,7 +347,7 @@ export function HomeView() {
             <div style={{ display: "flex", flexDirection: "column", gap: 18, opacity: giftFade ? 0 : 1, transform: giftFade ? "translateY(8px)" : "none", transition: "opacity .45s ease, transform .45s ease" }}>
               <Link href={productHref(giftMain)} style={{ display: "flex", flexDirection: "column", gap: 18, color: "#3A2826" }}>
                 <div style={{ position: "relative", aspectRatio: "5/4", borderRadius: 20, overflow: "hidden", background: "#F6EEE8" }}>
-                  {productImage(giftMain) && <img src={productImage(giftMain)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                  {productImage(giftMain) && <img src={productImage(giftMain)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -367,7 +367,7 @@ export function HomeView() {
               {giftSide.map((p) => (
                 <button key={p.id} type="button" onClick={() => setGift(gifts.indexOf(p))} style={{ display: "grid", gridTemplateColumns: "clamp(96px,22vw,150px) minmax(0,1fr)", gap: "clamp(16px,3vw,24px)", alignItems: "center", padding: "clamp(16px,2.5vw,22px) 0", borderBottom: "1px solid #EFE4DC", color: "#3A2826", background: "transparent", textAlign: "right", borderLeft: 0, borderRight: 0, borderTop: 0 }}>
                   <div style={{ position: "relative", aspectRatio: "4/5", borderRadius: 14, overflow: "hidden", background: "#F6EEE8" }}>
-                    {productImage(p) && <img src={productImage(p)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                    {productImage(p) && <img src={productImage(p)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
                   </div>
                   <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(18px,2.2vw,22px)" }}>{productBlurb(p) || p.title}</span>
@@ -505,7 +505,7 @@ function ProductTile({ p, snap, onAdd }: { p: CatalogProduct; snap?: boolean; on
     <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, ...(snap ? { flex: "0 0 calc(50% - 6px)", scrollSnapAlign: "start" } : null) }}>
       <div style={{ position: "relative" }}>
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-          {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
+          {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
         </Link>
         <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>
       </div>
