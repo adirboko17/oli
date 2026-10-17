@@ -78,6 +78,7 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     page: parsePage(row.merch),
     badge: badgeLabel(row.merch),
     badgeHidden: badgeHidden(row.merch),
+    headline: parseHeadline(row.merch),
   };
 }
 
@@ -125,6 +126,12 @@ function badgeLabel(value: unknown) {
 
 function badgeHidden(value: unknown) {
   return record(record(value)?.badge)?.hidden === true;
+}
+
+function parseHeadline(value: unknown) {
+  const headline = record(record(value)?.headline);
+  const subtitle = text(headline?.subtitle).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
+  return { mode: headline?.mode === "split" ? "split" as const : "single" as const, subtitle };
 }
 
 function parseBundles(value: unknown): CatalogBundle[] {

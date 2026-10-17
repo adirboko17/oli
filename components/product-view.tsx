@@ -110,6 +110,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(48px,10vw,84px)", lineHeight: 0.95 }}>{product.title}</h1>
+            {product.headline.mode === "split" && product.headline.subtitle ? <p style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(20px,3vw,30px)", lineHeight: 1.25, color: "#5E4844", margin: 0 }}>{product.headline.subtitle}</p> : null}
             {productBadges(product).length > 0 && (
               <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {productBadges(product).map((label) => (

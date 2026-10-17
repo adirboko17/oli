@@ -43,6 +43,7 @@ export type CatalogProduct = {
   page: CatalogPage;
   badge: string;
   badgeHidden: boolean;
+  headline: { mode: "single" | "split"; subtitle: string };
 };
 
 export function emptyCatalogPage(): CatalogPage {
