@@ -74,6 +74,7 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     variants: variants.sort((a, b) => a.position - b.position),
     media: media.sort((a, b) => a.position - b.position),
     bundles: parseBundles(row.merch),
+    faq: parseFaq(row.merch),
     page: parsePage(row.merch),
     badge: badgeLabel(row.merch),
     badgeHidden: badgeHidden(row.merch),
@@ -141,6 +142,22 @@ function parseBundles(value: unknown): CatalogBundle[] {
     bundles.push({ qty, price, label: text(row?.label) || `קנה ${qty}` });
   }
   return bundles.sort((a, b) => a.qty - b.qty);
+}
+
+function parseFaq(value: unknown) {
+  const merch = record(value);
+  if (!Array.isArray(merch?.faq)) return [];
+  const allowed = new Set(["use", "ing", "post", "buy"]);
+  const items: { q: string; a: string; tag: string }[] = [];
+  for (const item of merch.faq) {
+    const row = record(item);
+    const q = text(row?.q).trim();
+    const a = text(row?.a).trim();
+    const tag = text(row?.tag).trim();
+    if (!q || !a || !allowed.has(tag)) continue;
+    items.push({ q, a, tag });
+  }
+  return items;
 }
 
 function parsePage(value: unknown): CatalogPage {

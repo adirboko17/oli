@@ -14,7 +14,9 @@ import {
 import { useSite } from "@/components/site";
 import { A11yWidget } from "@/components/widgets";
 import MobileMenu from "@/components/MobileMenu";
+import { PodcastNavDropdown } from "@/components/podcasts/PodcastMenu";
 import PromoFivePercent from "@/components/PromoFivePercent";
+import { HeaderContactLink } from "@/components/contact/ContactPage";
 
 const PROMO = ["משלוח חינם בהזמנה מעל 250 ש״ח", "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
 const POPULAR = ["סימני מתיחה", "שמן עיסוי", "הנקה", "מארזי מתנה", "ספרים"];
@@ -135,12 +137,13 @@ function Header() {
           </div>
           <Link href="/stores" data-cms="nav" data-cms-id="stores" style={nav(stores)}>Oli בחנויות</Link>
           <Link href="/articles" data-cms="nav" data-cms-id="articles" style={nav(articlesOn)}>מאמרים</Link>
-          <Link href="/podcast" data-cms="nav" data-cms-id="podcast" style={nav(pod)}>פודקאסט</Link>
+          <PodcastNavDropdown active={pod} />
         </nav>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
           <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
         </Link>
         <div style={{ display: "flex", gap: "clamp(10px,1.4vw,18px)", justifyContent: "flex-end", alignItems: "center", fontSize: 14, whiteSpace: "nowrap" }}>
+          <HeaderContactLink showLabel={site.wide} />
           <Hx as="button" onClick={site.openSearch} style={iconLink} hover={{ background: "#F8EFE9" }}>
             <IconSearch /><span>חיפוש</span>
           </Hx>
@@ -221,8 +224,9 @@ function Footer() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
           <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>צרי קשר</span>
-          <a href="mailto:contact@olisafecare.com" style={{ color: "#5E4844" }}>contact@olisafecare.com</a>
-          <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ color: "#5E4844" }}>WhatsApp ‎+972559739670</a>
+          <Link href="/contact" style={{ color: "#5E4844" }}>טופס יצירת קשר</Link>
+          <a href="mailto:info@olisafecare.com" style={{ color: "#5E4844" }}>info@olisafecare.com</a>
+          <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ color: "#5E4844" }}>+972 55-973-9670</a>
           <span style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
             <Hx as="a" href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="Instagram" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconInstagram /></Hx>
             <Hx as="a" href="https://www.facebook.com/profile.php?id=100093537736476" target="_blank" rel="noreferrer" aria-label="Facebook" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconFacebook /></Hx>
@@ -649,7 +653,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <CartDrawer />
       <A11yWidget />
       <PromoFivePercent
-        hidden={!!user || site.menu || site.search || site.account || site.cartOpen}
+        hidden={pathname === "/contact" || !!user || site.menu || site.search || site.account || site.cartOpen}
         code="OLI5"
         onShop={() => router.push("/products")}
       />

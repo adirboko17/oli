@@ -14,6 +14,7 @@ export type CatalogMedia = {
 };
 
 export type CatalogBundle = { qty: number; price: number; label: string };
+export type CatalogFaq = { q: string; a: string; tag: string };
 
 export type CatalogPage = {
   highlights: string[];
@@ -38,6 +39,7 @@ export type CatalogProduct = {
   variants: CatalogVariant[];
   media: CatalogMedia[];
   bundles: CatalogBundle[];
+  faq: CatalogFaq[];
   page: CatalogPage;
   badge: string;
   badgeHidden: boolean;

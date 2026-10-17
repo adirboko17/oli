@@ -5,10 +5,9 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { VALUES } from "@/lib/data";
 import { categoryGroups, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
-import { ARTICLES } from "@/components/articles/articles";
 import { BestLoop, ProductTile } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
-import ExpertsMobile from "@/components/ExpertsMobile";
+import PodcastsSection from "@/components/podcasts/PodcastsSection";
 import { Hx } from "@/components/hx";
 import { IconInstagram } from "@/components/icons";
 import { useSite } from "@/components/site";
@@ -379,40 +378,7 @@ export function HomeView() {
         </section>
       )}
 
-      <section style={{ borderTop: "1px solid #EFE4DC" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) var(--page-pad)" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 620, marginBottom: "clamp(24px,4vw,44px)" }}>
-            <h2 style={h2}>המומחים מדברים</h2>
-            <p style={{ fontSize: "clamp(15px,2vw,17px)", lineHeight: 1.65, color: "#5E4844" }}>אנו מאמינות כי ידע הוא כוח וחשוב שהידע יגיע ממקור מוסמך ואמין.</p>
-          </div>
-          <ExpertsMobile articlesCount={ARTICLES.length} />
-          <div className="experts-desk" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,4vw,48px)" }}>
-            <Link href="/podcast" style={talk}>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 30px rgba(168,90,58,.18)" }}>
-                <img src="/assets/podcast-cover.png" alt="היריון בטוח" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <span style={{ position: "absolute", left: 8, bottom: 8, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,.94)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
-                <span style={{ fontSize: 13, color: "#6E5650" }}>פודקאסט</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,4vw,30px)", lineHeight: 1.1 }}>&quot;היריון בטוח&quot;</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>בהנחיית פרופ&apos; אייל שיינר, מומחה במיילדות וגניקולוגיה, מנהל מחלקת נשים ויולדות ב&apos; בביה&quot;ח סורוקה.</p>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>להאזנה ←</span>
-              </div>
-            </Link>
-            <Link href="/articles" style={talk}>
-              <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 30px rgba(168,90,58,.14)" }}>
-                <img src="/assets/research-2.png" alt="ידע מבוסס מחקר" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
-                <span style={{ fontSize: 13, color: "#6E5650" }}>מאמרים</span>
-                <h3 style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,4vw,30px)", lineHeight: 1.1 }}>ידע מבוסס מחקר</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>הריון, טיפוח העור בהריון, לידה והכנה ללידה, אחרי לידה ותינוקות והורות ראשונית.</p>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>לכל המאמרים ←</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PodcastsSection />
 
       <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(8px,2vw,24px) var(--page-pad) clamp(64px,10vw,112px)", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(24px,4vw,40px)" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
@@ -442,7 +408,7 @@ export function HomeView() {
         .why-desk { display: grid; }
         @media (max-width: 767px) {
           .home { --page-pad: 28px; }
-          .hero-desk, .stages-desk, .mini-desk, .why-desk, .experts-desk { display: none !important; }
+          .hero-desk, .stages-desk, .mini-desk, .why-desk { display: none !important; }
           .hero-mob, .stages-mob { display: block !important; }
           .mini-mob { display: block !important; }
           .mini-dots { display: flex !important; }
@@ -516,8 +482,6 @@ function BottleCaption({ name, sub, price, old }: { name: string; sub: string; p
 }
 
 const stageRow: CSSProperties = { display: "grid", alignItems: "center", color: "#3A2826", borderTop: "1px solid #EFE4DC", gridTemplateColumns: "36px minmax(0,1fr) minmax(0,1.2fr) 104px", gridTemplateAreas: '"n t d i"', gap: "clamp(16px,2.6vw,40px)", padding: "16px 12px", transition: "background .3s" };
-const talk: CSSProperties = { display: "grid", gridTemplateColumns: "clamp(96px,22vw,140px) minmax(0,1fr)", gap: "clamp(16px,3vw,28px)", alignItems: "start", color: "#3A2826" };
-
 function cut(src: string, wide: boolean, flat: boolean): CSSProperties {
   return {
     position: "relative",

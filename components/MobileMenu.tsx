@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { menuHref } from "@/lib/catalog-menu";
 import { useSite } from "@/components/site";
+import { PodcastMenuSub } from "@/components/podcasts/PodcastMenu";
 import "./MobileMenu.css";
 
 export type MenuCategory = {
@@ -26,6 +27,7 @@ const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
   { id: "stores", label: "Oli בחנויות", href: "/stores", match: ["/stores"] },
   { id: "articles", label: "מאמרים", href: "/articles", match: ["/articles", "/journal"] },
   { id: "podcast", label: "פודקאסט", href: "/podcast", match: ["/podcast"] },
+  { id: "contact", label: "צרי קשר", href: "/contact", match: ["/contact"] },
 ];
 
 const isActive = (path: string, match: string[]) =>
@@ -35,10 +37,11 @@ export default function MobileMenu({ categories, onAccount }: Props) {
   const site = useSite();
   const open = site.menu;
   const [sub, setSub] = useState(false);
+  const [podOpen, setPodOpen] = useState(false);
   const path = usePathname() || "/";
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSub(false); }, [path]);
+  useEffect(() => { setSub(false); setPodOpen(false); }, [path]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +73,18 @@ export default function MobileMenu({ categories, onAccount }: Props) {
           {LINKS.map((link, index) => {
             const active = isActive(path, link.match);
             const style = { ["--i" as string]: index } as React.CSSProperties;
+
+            if (link.id === "podcast") {
+              return (
+                <div key={link.href}>
+                  <button className={`om-item${active ? " is-active" : ""}`} style={style} aria-expanded={podOpen} data-cms="nav" data-cms-id={link.id} onClick={() => setPodOpen((value) => !value)} type="button">
+                    <span>{link.label}</span>
+                    <span className={`om-plus${podOpen ? " is-open" : ""}`}>+</span>
+                  </button>
+                  <PodcastMenuSub open={podOpen} onNavigate={close} />
+                </div>
+              );
+            }
 
             if (link.id === "products") {
               return (

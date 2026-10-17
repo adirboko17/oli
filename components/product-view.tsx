@@ -5,6 +5,7 @@ import { useRef, useState, type CSSProperties } from "react";
 import { categoryLabel, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
+import ProductFAQ, { OLILASTIC_FAQ } from "@/components/contact/ProductFAQ";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -34,6 +35,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
   const category = categoryLabel(product.category) || "המוצרים של Oli";
+  const faq = product.faq.length > 0 ? product.faq : /olilastic/i.test(`${product.handle ?? ""} ${product.title}`) ? OLILASTIC_FAQ : [];
   const highlights = product.page.highlights.slice(0, 4);
 
   function scrollRel(dir: number) {
@@ -255,6 +257,8 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
           </div>
         </div>
       </section>}
+
+      {faq.length > 0 && <ProductFAQ items={faq} />}
 
       {related.length > 0 && (
         <section style={{ maxWidth: 1320, margin: "0 auto", padding: mobile ? "44px var(--page-pad) 48px" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", ["--page-pad" as string]: "28px" }}>
