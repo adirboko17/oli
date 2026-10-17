@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { categoryLabel, paragraphs, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -23,6 +23,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const [openAcc, setOpenAcc] = useState(0);
   const [story, setStory] = useState<number | null>(null);
   const relRef = useRef<HTMLDivElement>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
   const variant = product.variants[0] ?? null;
   const unit = variant?.price ?? product.price;
   const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
@@ -31,17 +32,21 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const line = bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const active = images[thumb] ?? images[0];
-  const description = product.description.split("\n").map((part) => part.trim()).filter(Boolean);
+  const description = paragraphs(product.description);
   const blurb = productBlurb(product);
   const sections = product.page.panels;
   const featured = product.page.reviews[0];
   const more = product.page.reviews.slice(1);
-  const stories = product.page.stories;
+  const stories = product.page.stories.filter((item) => item.url);
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
   const category = categoryLabel(product.category) || "המוצרים של Oli";
   const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
+
+  useEffect(() => {
+    thumbsRef.current?.querySelector<HTMLElement>(`[data-i="${thumb}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [thumb]);
 
   function scrollRel(dir: number) {
     relRef.current?.scrollBy({ left: dir * (relRef.current.clientWidth * 0.8), behavior: "smooth" });
@@ -55,22 +60,50 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
         <span style={{ color: "#3A2826" }}>{product.title}</span>
       </div>
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(44px,9vw,80px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,480px),1fr))", gap: "clamp(28px,6vw,56px)", alignItems: "start" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "clamp(52px,13vw,72px) minmax(0,1fr)", gap: "clamp(8px,2vw,14px)", position: mobile ? "relative" : "sticky", top: mobile ? "auto" : 100 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(images.length ? images : [{ id: "ph", src: null, kind: "image" as const }]).map((item, index) => (
-              <button key={item.id} type="button" onClick={() => setThumb(index)} style={{ width: "100%", aspectRatio: "4/5", padding: 0, borderRadius: 10, overflow: "hidden", border: "2px solid " + (thumb === index ? "#3A2826" : "transparent"), background: "#F6EEE8" }}>
-                {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : null}
-                {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
-              </button>
-            ))}
+      <section className="product-hero" style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(44px,9vw,80px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,480px),1fr))", gap: "clamp(28px,6vw,56px)", alignItems: "start", minWidth: 0 }}>
+        <div className="pg">
+          <div className="pg-rail">
+            <div className="pg-thumbs" ref={thumbsRef}>
+              {(images.length ? images : [{ id: "ph", src: null, kind: "image" as const }]).map((item, index) => (
+                <button key={item.id} type="button" data-i={index} onClick={() => setThumb(index)} aria-label={"תמונה " + (index + 1)} style={{ aspectRatio: "4/5", padding: 0, borderRadius: 10, overflow: "hidden", border: "2px solid " + (thumb === index ? "#3A2826" : "transparent"), background: "#F6EEE8" }}>
+                  {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : null}
+                  {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ position: "relative", aspectRatio: "4/5", borderRadius: 20, overflow: "hidden", background: "#F6EEE8" }}>
+          <div className="pg-main">
             {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} /> : null}
             {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
             {!active?.src ? <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FF, fontSize: "clamp(32px,6vw,56px)", textAlign: "center", padding: 24 }}>{product.title}</span> : null}
             <ProductBadges product={product} />
+            {images.length > 1 && (
+              <>
+                <button type="button" className="pg-nav pg-nav--prev" aria-label="התמונה הקודמת" onClick={() => setThumb((index) => (index - 1 + images.length) % images.length)}>‹</button>
+                <button type="button" className="pg-nav pg-nav--next" aria-label="התמונה הבאה" onClick={() => setThumb((index) => (index + 1) % images.length)}>›</button>
+                <span className="pg-count">{thumb + 1} / {images.length}</span>
+              </>
+            )}
           </div>
+          <style>{`
+            .pg { display:grid; grid-template-columns:72px minmax(0,1fr); gap:14px; position:sticky; top:100px; }
+            .pg-main { grid-column:2; grid-row:1; position:relative; aspect-ratio:4/5; border-radius:20px; overflow:hidden; background:#F6EEE8; }
+            .pg-rail { grid-column:1; grid-row:1; position:relative; align-self:stretch; min-height:0; }
+            .pg-thumbs { position:absolute; inset:0; display:flex; flex-direction:column; gap:10px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#CDB5A8 transparent; }
+            .pg-thumbs button { flex:0 0 auto; width:100%; }
+            .pg-nav { position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; border:0; border-radius:999px; background:rgba(255,255,255,.92); color:#3A2826; font-size:26px; line-height:1; cursor:pointer; box-shadow:0 2px 10px rgba(42,28,26,.12); }
+            .pg-nav--prev { right:12px; }
+            .pg-nav--next { left:12px; }
+            .pg-count { position:absolute; left:14px; bottom:14px; height:28px; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.9); color:#3A2826; font-size:13px; font-weight:600; display:flex; align-items:center; direction:ltr; }
+            @media (max-width:767px) {
+              .product-hero { overflow-x:clip; }
+              .pg { grid-template-columns:minmax(0,1fr); position:relative; top:auto; gap:10px; width:100%; min-width:0; max-width:100%; }
+              .pg-main { grid-column:1; grid-row:1; width:100%; min-width:0; }
+              .pg-rail { grid-column:1; grid-row:2; height:72px; width:100%; min-width:0; overflow:hidden; }
+              .pg-thumbs { position:relative; inset:auto; flex-direction:row; width:100%; height:72px; overflow-x:auto; overflow-y:hidden; }
+              .pg-thumbs button { width:58px; height:72px; aspect-ratio:auto; flex:0 0 58px; }
+            }
+          `}</style>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -90,7 +123,11 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               </a>
             )}
           </div>
-          <p style={{ fontSize: 17, lineHeight: 1.7, color: "#5E4844" }}>{description[0] || blurb}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {(description.length ? description : [blurb]).filter(Boolean).map((paragraph, index) => (
+              <p key={index} style={{ fontSize: 17, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{paragraph}</p>
+            ))}
+          </div>
           {highlights.length > 0 ? (
             <div className="product-highlights" style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", fontSize: 14, color: "#5E4844" }}>
               {highlights.map((tag, i) => (
@@ -152,7 +189,8 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                   </button>
                   {open && (
                     <div style={{ padding: "0 0 22px", display: "flex", flexDirection: "column", gap: 12 }}>
-                      {section.paras.map((text) => <p key={text} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844" }}>{text}</p>)}
+                      {section.paras.map((text, paraIndex) => <p key={paraIndex} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{text}</p>)}
+                      {section.link ? <PanelLink link={section.link} /> : null}
                     </div>
                   )}
                 </div>
@@ -171,8 +209,9 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
           <div className="no-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 calc(-1 * clamp(16px,4.5vw,32px))", paddingInline: "clamp(16px,4.5vw,32px)" }}>
             {stories.map((item, index) => (
               <button key={item.handle + index} type="button" onClick={() => setStory(index)} style={{ flex: "0 0 clamp(170px,42vw,240px)", aspectRatio: "9/16", position: "relative", border: 0, padding: 0, borderRadius: 14, overflow: "hidden", background: "#F3E6DE", scrollSnapAlign: "start", color: "#3A2826" }}>
+                {isStoryVideo(item.url) ? <video src={item.url} muted playsInline preload="metadata" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null}
                 <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,.9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, paddingLeft: 3 }}>▶</span></span>
-                <span style={{ position: "absolute", right: 12, bottom: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,255,255,.9)", borderRadius: 999, padding: "6px 12px" }}>{item.handle}</span>
+                {item.handle ? <span style={{ position: "absolute", right: 12, bottom: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,255,255,.9)", borderRadius: 999, padding: "6px 12px" }}>{item.handle}</span> : null}
               </button>
             ))}
           </div>
@@ -181,13 +220,17 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
       {story !== null && stories[story] && (
         <div onClick={() => setStory(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(30,20,18,.92)", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
           <button type="button" onClick={(e) => { e.stopPropagation(); setStory((story + 1) % stories.length); }} style={storyNav}>›</button>
-          <div onClick={(e) => e.stopPropagation()} style={{ height: "min(86vh,760px)", aspectRatio: "9/16", borderRadius: 16, background: "#3A2826", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 16, color: "#FFFFFF" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ height: "min(86vh,760px)", aspectRatio: "9/16", position: "relative", borderRadius: 16, overflow: "hidden", background: "#3A2826", color: "#FFFFFF" }}>
+            {isStoryVideo(stories[story].url) ? (
+              <video key={stories[story].url} src={stories[story].url} controls autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", background: "#3A2826" }} />
+            ) : (
+              <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: 15, opacity: 0.8, padding: 24 }}>{stories[story].handle}{stories[story].url ? <a href={stories[story].url} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 8, color: "#FFFFFF" }}>לעמוד באינסטגרם</a> : null}</span>
+            )}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, fontSize: 14, background: "linear-gradient(rgba(30,20,18,.45), transparent)" }}>
               <span>{story + 1} / {stories.length}</span>
               <button type="button" onClick={() => setStory(null)} style={{ background: "transparent", border: 0, color: "#FFFFFF", fontSize: 24 }}>×</button>
             </div>
-            <span style={{ textAlign: "center", fontSize: 15, opacity: 0.8 }}>{stories[story].handle}{stories[story].url ? <a href={stories[story].url} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 8, color: "#FFFFFF" }}>לעמוד באינסטגרם</a> : null}</span>
-            <span />
+            {isStoryVideo(stories[story].url) && stories[story].handle ? <span style={{ position: "absolute", right: 16, bottom: 56, fontSize: 14, fontWeight: 500 }}>{stories[story].handle}</span> : null}
           </div>
           <button type="button" onClick={(e) => { e.stopPropagation(); setStory((story + stories.length - 1) % stories.length); }} style={storyNav}>‹</button>
         </div>
@@ -201,7 +244,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               <div key={`${step.title}-${index}`} style={mobile ? { display: "flex", flexDirection: "column", gap: 6, padding: "0 26px 30px 0", position: "relative" } : { display: "flex", flexDirection: "column", gap: 10, padding: "28px 0 0 24px", position: "relative" }}>
                 <span style={mobile ? { position: "absolute", top: 6, right: -9, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" } : { position: "absolute", top: -9, right: 0, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" }} />
                 <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,5.5vw,32px)", lineHeight: 1.15 }}>{step.title}</span>
-                <p style={{ fontSize: 16, lineHeight: 1.6, color: "#5E4844" }}>{step.body}</p>
+                <p style={{ fontSize: 16, lineHeight: 1.6, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{step.body}</p>
               </div>
             ))}
           </div>
@@ -211,7 +254,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
       {ingredients.length > 0 && <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexWrap: "wrap", gap: "clamp(20px,5vw,72px)", alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: "1 1 300px", alignSelf: "flex-start", position: wide ? "sticky" : "relative", top: wide ? (headerH > 20 ? headerH + 16 : 110) : "auto" }}>
           <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(32px,6.5vw,52px)", lineHeight: 1.05 }}>רכיבי מפתח</h2>
-          {product.page.ingredientsIntro ? <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 380 }}>{product.page.ingredientsIntro}</p> : null}
+          {product.page.ingredientsIntro ? <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 380, margin: 0, whiteSpace: "pre-line" }}>{product.page.ingredientsIntro}</p> : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", borderBottom: "1px solid #EFE4DC", flex: "999 1 560px", minWidth: 0 }}>
           {ingredients.map((item, index) => (
@@ -223,7 +266,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                   <h3 style={{ fontSize: 15, fontWeight: 500, color: "#6E5650" }}>{item.he}</h3>
                 </div>
               </div>
-              <p style={{ fontSize: 16, lineHeight: 1.65, color: "#5E4844", paddingRight: 38 }}>{item.body}</p>
+              <p style={{ fontSize: 16, lineHeight: 1.65, color: "#5E4844", paddingRight: 38, margin: 0, whiteSpace: "pre-line" }}>{item.body}</p>
             </div>
           ))}
         </div>
@@ -242,7 +285,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             </div>
           </div>
           <figure style={{ margin: 0, display: "grid", gap: 20 }}>
-            <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980 }}>״{featured.body}״</blockquote>
+            <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
             <figcaption style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#6E5650" }}>
               <span style={avatar(40)}>{featured.initial}</span>
               <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ color: "#3A2826", fontWeight: 600, fontSize: 15 }}>{featured.name}</span><span>{featured.meta}</span></span>
@@ -253,7 +296,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               <div key={review.name + review.title} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
                 <span style={{ color: "#A85A3A", letterSpacing: 2, fontSize: 13 }}>★★★★★</span>
                 <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(18px,4.4vw,21px)", lineHeight: 1.3 }}>{review.title}</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.65, color: "#5E4844", flex: 1 }}>{review.body}</p>
+                <p style={{ fontSize: 15, lineHeight: 1.65, color: "#5E4844", flex: 1, margin: 0, whiteSpace: "pre-line" }}>{review.body}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6E5650", paddingTop: 14, borderTop: "1px solid #EFE4DC" }}>
                   <span style={avatar(32)}>{review.initial}</span>
                   <span style={{ display: "flex", flexDirection: "column" }}><span style={{ color: "#3A2826", fontWeight: 600 }}>{review.name}</span><span>{review.meta}</span></span>
@@ -306,6 +349,25 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
       )}
     </main>
   );
+}
+
+function PanelLink({ link }: { link: { kind: "url" | "article"; label: string; href: string } }) {
+  const card: CSSProperties = { display: "flex", alignItems: "center", gap: 12, marginTop: 4, padding: "14px 16px", borderRadius: 16, background: "#F8EFE9", color: "#3A2826", textDecoration: "none" };
+  const body = (
+    <>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, textAlign: "right" }}>
+        <span style={{ fontSize: 12, color: "#A85A3A" }}>{link.kind === "article" ? "מאמר באתר" : "לקריאה נוספת"}</span>
+        <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.35 }}>{link.label}</span>
+      </span>
+      <span aria-hidden style={{ fontSize: 18, flexShrink: 0 }}>←</span>
+    </>
+  );
+  if (/^https:\/\//i.test(link.href)) return <a href={link.href} target="_blank" rel="noreferrer" style={card}>{body}</a>;
+  return <Link href={link.href} style={card}>{body}</Link>;
+}
+
+function isStoryVideo(url: string) {
+  return /\.(mp4|webm|mov)(\?|$)/i.test(url);
 }
 
 const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,40px)", lineHeight: 1.15, margin: 0 };

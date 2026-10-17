@@ -51,7 +51,7 @@ export default function ProductFAQ({ items = [], whatsapp = 'https://wa.me/97255
                     <span className={`pfq__plus${on ? ' is-on' : ''}`} aria-hidden>+</span>
                   </button>
                   <div className={`pfq__a${on ? ' is-on' : ''}`}>
-                    <div><p>{x.a}</p></div>
+                    <div><p style={{ whiteSpace: "pre-line" }}>{x.a}</p></div>
                   </div>
                 </div>
               );

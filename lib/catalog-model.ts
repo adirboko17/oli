@@ -18,7 +18,7 @@ export type CatalogFaq = { q: string; a: string; tag: string };
 
 export type CatalogPage = {
   highlights: string[];
-  panels: { title: string; paras: string[] }[];
+  panels: { title: string; paras: string[]; link?: { kind: "url" | "article"; label: string; href: string } }[];
   stories: { handle: string; url: string }[];
   steps: { title: string; body: string }[];
   ingredientsIntro: string;
@@ -102,6 +102,14 @@ export function productBadges(product: Pick<CatalogProduct, "badge" | "badgeHidd
   if (custom) labels.push(custom);
   if (product.compareAt != null && product.compareAt > product.price && !labels.includes("מבצע")) labels.push("מבצע");
   return labels;
+}
+
+export function paragraphs(value: string) {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .split(/\n[ \t]*\n/)
+    .map((part) => part.replace(/[ \t]+$/gm, "").replace(/^\n+|\n+$/g, ""))
+    .filter((part) => part.trim());
 }
 
 export function productBlurb(product: CatalogProduct) {

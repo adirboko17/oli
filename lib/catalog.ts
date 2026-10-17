@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { STORE_ID } from "@/lib/store";
-import { emptyCatalogPage, type CatalogBundle, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
+import { emptyCatalogPage, paragraphs, type CatalogBundle, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
 
 export type CatalogLoad =
   | { status: "ready"; catalog: PublicCatalog }
@@ -169,13 +169,20 @@ function parsePage(value: unknown): CatalogPage {
   page.highlights = highlightLabels(row.highlights);
   page.panels = objects(row.panels, 8).flatMap((item) => {
     const title = text(item.title);
-    const paras = text(item.body).split("\n").map((part) => part.trim()).filter(Boolean);
-    return title && paras.length ? [{ title, paras }] : [];
+    const paras = paragraphs(text(item.body));
+    const link = panelLink(item.link);
+    return title && paras.length ? [{ title, paras, ...(link ? { link } : {}) }] : [];
   });
   page.stories = objects(row.stories, 20).flatMap((item) => {
     const handle = text(item.handle);
-    const url = /^https:\/\/([a-z0-9-]+\.)*instagram\.com\/\S+$/i.test(text(item.url)) ? text(item.url) : "";
-    return handle ? [{ handle, url }] : [];
+    const raw = text(item.url).trim();
+    const video = (raw.split("?")[0] ?? "");
+    const url = /^https:\/\/([a-z0-9-]+\.)*instagram\.com\/\S+$/i.test(raw)
+      ? raw
+      : /^https:\/\/[a-z0-9.-]+\/storage\/v1\/object\/public\/product-media\/[a-z0-9._/-]+\.(mp4|webm|mov)$/i.test(video) && !video.includes("..")
+        ? video
+        : "";
+    return handle || url ? [{ handle, url }] : [];
   });
   page.steps = objects(row.steps, 8).flatMap((item) => {
     const title = text(item.title);
@@ -229,6 +236,17 @@ function record(value: unknown) {
 
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function panelLink(value: unknown) {
+  const row = record(value);
+  if (!row) return null;
+  const label = text(row.label).trim().slice(0, 120);
+  const href = text(row.href).trim().slice(0, 300);
+  if (!label || !href || href.includes("..")) return null;
+  if (row.kind === "article" && /^\/articles\/[a-z0-9-]+$/.test(href)) return { kind: "article" as const, label, href };
+  if (row.kind === "url" && (/^https:\/\/\S+$/i.test(href) || /^\/[^/\s]/.test(href))) return { kind: "url" as const, label, href };
+  return null;
 }
 
 function money(value: unknown) {

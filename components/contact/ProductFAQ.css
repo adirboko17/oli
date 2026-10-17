@@ -30,4 +30,4 @@
 .pfq__a { display:grid; grid-template-rows:0fr; opacity:0; transition:grid-template-rows .45s cubic-bezier(.2,.8,.2,1), opacity .35s ease; }
 .pfq__a.is-on { grid-template-rows:1fr; opacity:1; }
 .pfq__a > div { min-height:0; overflow:hidden; }
-.pfq__a p { font-size:15.5px; line-height:1.75; color:#5E4844; text-wrap:pretty; padding:0 0 clamp(18px,2.6vw,24px); max-width:720px; }
+.pfq__a p { font-size:15.5px; line-height:1.75; color:#5E4844; text-wrap:pretty; padding:0 0 clamp(18px,2.6vw,24px); max-width:720px; white-space:pre-line; }

@@ -6,6 +6,10 @@
 .oliPromo-tabWrap .oliPromo-tabHide{opacity:0;transition:opacity .4s ease 1s}
 .oliPromo-tabWrap.is-in .oliPromo-tabHide{opacity:1}
 @keyframes oliPromoWiggle{0%,100%{transform:rotate(0) scale(1)}15%{transform:rotate(-14deg) scale(1.15)}30%{transform:rotate(12deg) scale(1.15)}45%{transform:rotate(-8deg) scale(1.08)}60%{transform:rotate(5deg)}75%{transform:rotate(-2deg)}}
+@media (max-width:767px){
+  .oliPromo-tabWrap{top:auto;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateY(0) translateX(-120%)}
+  .oliPromo-tabWrap.is-in{transform:translateY(0) translateX(0)}
+}
 @media (prefers-reduced-motion:reduce){.oliPromo-tabWrap{transition:opacity .3s}.oliPromo-tabWrap.is-in .oliPromo-tabIcon{animation:none}}
 .oliPromo-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:58px;padding:14px 0 12px;background:#3A2826;color:#FFFFFF;border:0;border-radius:0 18px 18px 0;font-family:inherit;cursor:pointer;box-shadow:6px 8px 24px rgba(42,28,26,.22);transition:width .3s cubic-bezier(.2,.8,.2,1),background .3s}
 .oliPromo-tab:hover{background:#A85A3A}
