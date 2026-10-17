@@ -1,15 +1,82 @@
 [
-  { "type": "nav", "id": "home", "label": "דף הבית", "file": "components/shell.tsx" },
-  { "type": "nav", "id": "products", "label": "המוצרים של Oli", "file": "components/shell.tsx" },
-  { "type": "nav", "id": "all-products", "label": "כל המוצרים", "file": "components/shell.tsx", "parent": "products" },
-  { "type": "nav", "id": "gifts", "label": "מתנות ליולדת", "file": "components/shell.tsx" },
-  { "type": "nav", "id": "stores", "label": "Oli בחנויות", "file": "components/shell.tsx" },
-  { "type": "nav", "id": "podcast", "label": "פודקאסט", "file": "components/shell.tsx" },
-  { "type": "category", "id": "best", "label": "המומלצים ביותר", "file": "lib/shop-groups.ts", "parent": "products" },
-  { "type": "category", "id": "preg", "label": "הריון", "file": "lib/shop-groups.ts", "parent": "products" },
-  { "type": "category", "id": "birth", "label": "לידה ואחרי לידה", "file": "lib/shop-groups.ts", "parent": "products" },
-  { "type": "category", "id": "baby", "label": "תינוקות · olimini", "file": "lib/shop-groups.ts", "parent": "products" },
-  { "type": "category", "id": "gift", "label": "מתנה ליולדת", "file": "lib/shop-groups.ts", "parent": "products" },
+  {
+    "type": "nav",
+    "id": "home",
+    "label": "דף הבית",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "nav",
+    "id": "products",
+    "label": "המוצרים של Oli",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "nav",
+    "id": "all-products",
+    "label": "כל המוצרים",
+    "file": "components/shell.tsx",
+    "parent": "products"
+  },
+  {
+    "type": "nav",
+    "id": "gifts",
+    "label": "מתנות ליולדת",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "nav",
+    "id": "stores",
+    "label": "Oli בחנויות",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "nav",
+    "id": "articles",
+    "label": "מאמרים",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "nav",
+    "id": "podcast",
+    "label": "פודקאסט",
+    "file": "components/shell.tsx"
+  },
+  {
+    "type": "category",
+    "id": "best",
+    "label": "המומלצים ביותר",
+    "file": "lib/shop-groups.ts",
+    "parent": "products"
+  },
+  {
+    "type": "category",
+    "id": "preg",
+    "label": "הריון",
+    "file": "lib/shop-groups.ts",
+    "parent": "products"
+  },
+  {
+    "type": "category",
+    "id": "birth",
+    "label": "לידה ואחרי לידה",
+    "file": "lib/shop-groups.ts",
+    "parent": "products"
+  },
+  {
+    "type": "category",
+    "id": "baby",
+    "label": "תינוקות · olimini",
+    "file": "lib/shop-groups.ts",
+    "parent": "products"
+  },
+  {
+    "type": "category",
+    "id": "gift",
+    "label": "מתנה ליולדת",
+    "file": "lib/shop-groups.ts",
+    "parent": "products"
+  },
   {
     "type": "product",
     "id": "product",
@@ -28,15 +95,320 @@
   },
   {
     "type": "article",
-    "id": "journal",
-    "label": "מאמר",
-    "file": "app/journal/[slug]/page.tsx",
-    "fields": {
-      "title": "title",
-      "excerpt": "excerpt",
-      "body": "body",
-      "image": "image",
-      "category": "category"
-    }
+    "id": "stretch-marks",
+    "label": "סימני מתיחה בהיריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "perineal-massage",
+    "label": "עיסוי פרינאום",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "swelling-in-pregnancy",
+    "label": "כפות רגליים נפוחות בהריון: טיפים להקלה ושיפור",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "preparing-the-perineum",
+    "label": "הכנת הפרינאום ללידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "perineal-massage-after-birth",
+    "label": "עיסוי פרינאום אחרי לידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "breastfeeding-mistakes",
+    "label": "טעויות נפוצות בהנקה שעלולות לפגוע בתהליך ההנקה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "face-cream-in-pregnancy",
+    "label": "איך לבחור קרם פנים בהריון?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "retinoids-in-pregnancy",
+    "label": "רטינואידים בהריון: מה חשוב לדעת על רטינול וויטמין A בזמן ההריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "pregnancy-side-effects",
+    "label": "תופעות לוואי בהריון: כל מה שצריך לדעת כדי לעבור אותן בשלום",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "skin-hair-nails-in-pregnancy",
+    "label": "עור, שיער, ציפורניים ומה שביניהם - מה משתנה בהם בזמן ההריון?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "first-days-after-cesarean",
+    "label": "טיפים חשובים לימים הראשונים אחרי ניתוח קיסרי",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "breastfeeding-complex",
+    "label": "הנקה במצבים מורכבים: הנקה אחרי קיסרי, פגות או הפרדה מהתינוק והנקה במצבי סטרס-\nהאם זה אפשרי?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "delivery-room-decisions",
+    "label": "איך לקבל החלטות בחדר לידה?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "wonders-of-breastfeeding",
+    "label": "פלאי ההנקה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "prenatal-care-by-week",
+    "label": "בדיקות בהריון לפי שבועות- המדריך המלא למעקב הריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "stages-of-labor",
+    "label": "הלידה שלך- שלב אחרי שלב:\nמדריך שלבי הלידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "baby-massage-stress",
+    "label": "עיסוי תינוקות: לבחור להעניק דווקא בתוך הכאוס",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "assisted-delivery",
+    "label": "לידה מכשירנית- מתי משתמשים בוואקום בלידה ומה חשוב לדעת?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "infant-sleep",
+    "label": "שנת תינוקות ופעוטות: הבסיס הרגשי לשינה רגועה ולבית מאוזן",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "birth-to-discharge",
+    "label": "מיום הלידה ועד השחרור: כל מה שצריך לדעת",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "body-changes-in-pregnancy",
+    "label": "הגוף שלך יוצר חיים אבל למה זה חייב לכאוב? במדריך לשינויים בגוף (והדרך להקל עליהם)",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "atopic-dermatitis",
+    "label": "אטופיק דרמטיטיס- אסטמת עור.\nמהי? איך מתאפיין? באיזה גיל? מה יש לעשות כדי לנסות למנוע?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "seborrheic-dermatitis",
+    "label": "סבוריאה דרמטיטיס-\nSeborrheic dermatitis",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "infections-in-pregnancy",
+    "label": "זיהומים בהריון: מדריך מעשי לבריאותך ולבריאות העובר",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "water-breaking-without-contractions",
+    "label": "ירידת מים ללא צירים – מה עושים ומתי לגשת לבית החולים?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "abdominal-massage-after-cesarean",
+    "label": "עיסוי בטן להחזרת התחושה התקינה אחרי ניתוח קיסרי",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "sexuality-in-pregnancy",
+    "label": "מיניות בהריון ולאחר לידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "mindfulness-in-pregnancy",
+    "label": "מיינדפולנס בהריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "pelvic-floor-load",
+    "label": "איך לזהות עומס על רצפת האגן בהריון ואחרי לידה – ומה ניתן לעשות",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "vocalization-in-labor",
+    "label": "הפקת קול בלידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "summer-foods-in-pregnancy",
+    "label": "5 סוגי מזונות שנשים בהריון צריכות להיזהר מהם בקיץ החם",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "sids-and-cpr",
+    "label": "כל מה שצריך לדעת על מניעת מוות בעריסה ועל ביצוע החייאה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "sibling-quality-time",
+    "label": "רעיונות לזמן איכות בין אחים: פעילות משותפת לתינוקות ופעוטות",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "movement-at-work",
+    "label": "5 טיפים לשמירה על תנועתיות בהריון במהלך יום עבודה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "perineal-oil-bottles",
+    "label": "כמה בקבוקי שמן לעיסוי הפרינאום את באמת צריכה?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "exercise-in-pregnancy",
+    "label": "פעילות גופנית הריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "summer-vacation-in-pregnancy",
+    "label": "טיפים לחופשת הקיץ ההריונית שלך",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "zika-travel-in-pregnancy",
+    "label": "המלצות לנשים בהריון הנוסעות לאזורים נגועים בנגיף הזיקה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "enema-before-labor",
+    "label": "חוקן לפני לידה",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "oxytocin-in-labor",
+    "label": "איך לייצר סביבה תומכת אוקסיטוצין בלידה?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "infant-hip-ultrasound",
+    "label": "אולטרסאונד פרקי ירך לתינוקות",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "symphysis-pubis",
+    "label": "סימפיזיוליזיס בהיריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "apgar-score",
+    "label": "אפגר: המבחן הראשון של התינוק שלך",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "amniotic-and-foodborne-infection",
+    "label": "זיהום מי שפיר וזיהום מזון בהריון",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "pregnancy-after-40",
+    "label": "היריון בגיל 40 פלוס - מה הסיכוי?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "early-pregnancy-bleeding",
+    "label": "דימום בתחילת היריון: מה זה אומר?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "obesity-in-pregnancy",
+    "label": "השמנת יתר בהריון: אל תאכלי בשביל שניים",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "shoulder-dystocia",
+    "label": "פרע כתפיים (כליאת כתפיים): מה עושים כשהתינוק תקוע?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "amniotic-fluid-embolism",
+    "label": "תסחיף מי שפיר",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "acne-in-pregnancy",
+    "label": "אקנה בהריון: למה זה קורה ומה אפשר לעשות?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "pigmentation-in-pregnancy",
+    "label": "פיגמנטציה בהריון: מה את צריכה לדעת ואיך לטפל בזה בבטחה?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "sensory-regulation",
+    "label": "ויסות חושי אצל תינוקות: למה התינוק שלי כל כך רגיש?",
+    "file": "lib/journal.json"
+  },
+  {
+    "type": "article",
+    "id": "salicylic-acid-in-pregnancy",
+    "label": "חומצה סליצילית בהריון: האם בטוח להשתמש?",
+    "file": "lib/journal.json"
   }
 ]

@@ -72,6 +72,7 @@ function Header() {
   const home = path === "/";
   const prod = path.startsWith("/products") || path.startsWith("/product");
   const stores = path.startsWith("/stores");
+  const articlesOn = path.startsWith("/articles") || path.startsWith("/journal");
   const pod = path.startsWith("/podcast");
   const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const, color: "#3A2826" });
   const [menuTop, setMenuTop] = useState(108);
@@ -114,6 +115,7 @@ function Header() {
     { id: "products", href: "/products", label: "המוצרים של Oli" },
     { id: "gifts", href: groupHref("gift"), label: "מתנות ליולדת" },
     { id: "stores", href: "/stores", label: "Oli בחנויות" },
+    { id: "articles", href: "/articles", label: "מאמרים" },
     { id: "podcast", href: "/podcast", label: "פודקאסט" },
   ];
 
@@ -136,6 +138,7 @@ function Header() {
             </div>
           </div>
           <Link href="/stores" data-cms="nav" data-cms-id="stores" style={nav(stores)}>Oli בחנויות</Link>
+          <Link href="/articles" data-cms="nav" data-cms-id="articles" style={nav(articlesOn)}>מאמרים</Link>
           <Link href="/podcast" data-cms="nav" data-cms-id="podcast" style={nav(pod)}>פודקאסט</Link>
         </nav>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
@@ -292,7 +295,7 @@ function Footer() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
           <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>ידע</span>
-          <a href="https://instagram.com/oli_safecare" style={{ color: "#5E4844" }}>מאמרים</a>
+          <Link href="/articles" style={{ color: "#5E4844" }}>מאמרים</Link>
           <Link href="/podcast" style={{ color: "#5E4844" }}>היריון בטוח, פרופ׳ שיינר</Link>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>

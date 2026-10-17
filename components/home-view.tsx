@@ -400,7 +400,7 @@ export function HomeView() {
                 <span style={{ fontSize: 14, fontWeight: 600 }}>להאזנה ←</span>
               </div>
             </Link>
-            <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={talk}>
+            <Link href="/articles" style={talk}>
               <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 30px rgba(168,90,58,.14)" }}>
                 <img src="/assets/research-2.png" alt="ידע מבוסס מחקר" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
@@ -410,7 +410,7 @@ export function HomeView() {
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>הריון, טיפוח העור בהריון, לידה והכנה ללידה, אחרי לידה ותינוקות והורות ראשונית.</p>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>לכל המאמרים ←</span>
               </div>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
