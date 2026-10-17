@@ -73,6 +73,40 @@ html[data-a11y-still] * { animation: none !important; transition: none !importan
 .no-scroll { scrollbar-width: none; }
 .no-scroll::-webkit-scrollbar { display: none; }
 
+.pacc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .5s cubic-bezier(.22, 1, .36, 1);
+}
+.pacc-body.is-open { grid-template-rows: 1fr; }
+.pacc-clip { overflow: hidden; }
+.pacc-inner {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .28s ease, transform .5s cubic-bezier(.22, 1, .36, 1);
+}
+.pacc-body.is-open .pacc-inner {
+  opacity: 1;
+  transform: none;
+  transition-delay: .05s;
+}
+.pacc-plus {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  color: #3A2826;
+  transition: transform .42s cubic-bezier(.22, 1, .36, 1), color .3s ease;
+}
+.pacc-plus.is-open { transform: rotate(45deg); color: #A85A3A; }
+@media (prefers-reduced-motion: reduce) {
+  .pacc-body, .pacc-inner, .pacc-plus { transition: none; }
+}
+
 input, select, textarea { font-family: inherit; }
 
 .gift-go {

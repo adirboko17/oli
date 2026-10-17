@@ -184,15 +184,17 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               const open = openAcc === index;
               return (
                 <div key={section.title} style={{ borderBottom: "1px solid #EFE4DC" }}>
-                  <button type="button" onClick={() => setOpenAcc(open ? -1 : index)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 0", background: "transparent", border: 0, fontSize: 17, fontWeight: 600, color: "#3A2826", textAlign: "right" }}>
-                    {section.title}<span style={{ fontSize: 20, fontWeight: 300 }}>{open ? "–" : "+"}</span>
+                  <button type="button" aria-expanded={open} onClick={() => setOpenAcc(open ? -1 : index)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 0", background: "transparent", border: 0, fontSize: 17, fontWeight: 600, color: "#3A2826", textAlign: "right" }}>
+                    {section.title}<span className={open ? "pacc-plus is-open" : "pacc-plus"} aria-hidden>+</span>
                   </button>
-                  {open && (
-                    <div style={{ padding: "0 0 22px", display: "flex", flexDirection: "column", gap: 12 }}>
-                      {section.paras.map((text, paraIndex) => <p key={paraIndex} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{text}</p>)}
-                      {section.link ? <PanelLink link={section.link} /> : null}
+                  <div className={open ? "pacc-body is-open" : "pacc-body"}>
+                    <div className="pacc-clip">
+                      <div className="pacc-inner" style={{ padding: "0 0 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+                        {section.paras.map((text, paraIndex) => <p key={paraIndex} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{text}</p>)}
+                        {section.link ? <PanelLink link={section.link} /> : null}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
