@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadPublicCatalog } from "@/lib/catalog";
-import type { CatalogProduct } from "@/lib/catalog-model";
+import { OPEN_GIFT_MAX, openGiftMax, type CatalogProduct } from "@/lib/catalog-model";
 import { consumePromo, promoPercent } from "@/lib/promo-leads";
 
 const FREE_FROM = 250;
@@ -11,6 +11,20 @@ const PHONE_RE = /^05\d{8}$/;
 type Method = keyof typeof SHIPPING;
 
 function resolvePrice(products: CatalogProduct[], id: string) {
+  const card = /^oli-gift:(\d+(?:\.\d+)?)$/.exec(id);
+  if (card) {
+    const amount = Math.round(Number(card[1]) * 100) / 100;
+    if (!Number.isFinite(amount) || amount < 50 || amount > OPEN_GIFT_MAX) return null;
+    return amount;
+  }
+  const gift = /^(.*):gift:(\d+(?:\.\d+)?)$/.exec(id);
+  if (gift) {
+    const amount = Math.round(Number(gift[2]) * 100) / 100;
+    const product = products.find((item) => item.id === gift[1]);
+    if (!product || openGiftMax(product.tags) == null) return null;
+    if (!Number.isFinite(amount) || amount < 1 || amount > OPEN_GIFT_MAX) return null;
+    return amount;
+  }
   const bundle = /^(.+):x(\d+)$/.exec(id);
   const baseId = bundle?.[1] ?? id;
   const bundleQty = bundle ? Number(bundle[2]) : null;

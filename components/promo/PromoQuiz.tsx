@@ -32,11 +32,13 @@ function Options({ opts, value, onPick }: { opts: Opt[]; value?: string; onPick:
   );
 }
 
-// The quiz popup: 3 questions → details → code + recommended products.
+const INTRO_PILLS = ['3 שאלות קצרות', 'פחות מדקה', 'המלצות אישיות'];
+
+// The quiz popup: welcome → 3 questions → details → code + recommended products.
 // Desktop: image on the side. Mobile: a centered popup with an image banner on top and the progress dots at the bottom.
 export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddToCart, onShop,
   image = 'https://static.wixstatic.com/media/db159b_023efbddb9054a1695b0af97979b8d28f000.jpg' }: Props) {
-  const [step, setStep] = useState(1); // 1-3 questions, 4 details, 5 done
+  const [step, setStep] = useState(0); // 0 welcome, 1-3 questions, 4 details, 5 done
   const [a, setA] = useState<{ a1?: string; a2?: string; a3?: string }>({});
   const [f, setF] = useState({ name: '', phone: '', email: '' });
   const [err, setErr] = useState('');
@@ -92,14 +94,27 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
           </div>
 
           <div className="pq-body">
-            {step < 5 ? (
+            {step === 0 && (
+              <div className="pq-intro">
+                <div className="pq-intro__copy">
+                  <span className="pq-intro__eyebrow">מתנת הצטרפות</span>
+                  <h3 className="pq-intro__title">ענו על 3 שאלות<br />וקבלו 5% הנחה</h3>
+                  <p className="pq-intro__text">לרכישה הקרובה שלכן באתר. ובדרך נתאים לכן את המוצרים שהכי מתאימים לתקופה שלכן.</p>
+                </div>
+                <div className="pq-pills">
+                  {INTRO_PILLS.map(label => <span key={label} className="pq-pill">{label}</span>)}
+                </div>
+                <button className="pq-cta" onClick={() => setStep(1)}>בואו נתחיל</button>
+              </div>
+            )}
+            {step > 0 && step < 5 && (
               <div className="pq-flow">
                 <div className="pq-progress">
                   <div className="pq-progress__left">
                     <div className="pq-dots">{[1, 2, 3, 4].map(n => <span key={n} className={`pq-dot${n === step ? ' is-cur' : n < step ? ' is-done' : ''}`} />)}</div>
                     <span className="pq-progress__lbl">{step < 4 ? `${step} / 3` : 'כמעט סיימנו'}</span>
                   </div>
-                  {step > 1 && <button className="pq-back" onClick={() => setStep(step - 1)}>→ חזרה</button>}
+                  <button className="pq-back" onClick={() => setStep(step - 1)}>→ חזרה</button>
                 </div>
 
                 {step === 1 && <div key="s1" className="pq-step"><h3 className="pq-q">{Q1_TITLE}</h3><Options opts={Q1} value={a.a1} onPick={pick('a1', 2)} /></div>}
@@ -120,7 +135,8 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+            {step === 5 && (
               <div className="pq-step pq-done">
                 <div className="pq-form-head">
                   <span className="pq-eyebrow">ברוכה הבאה, {first}</span>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, paragraphs, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, giftAmountsFromTags, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -20,16 +20,26 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const images = product.media.filter((item) => item.src);
   const [thumb, setThumb] = useState(0);
   const [qty, setQty] = useState(1);
+  const [giftAmount, setGiftAmount] = useState("");
+  const [giftPick, setGiftPick] = useState<number | "custom" | null>(null);
   const [openAcc, setOpenAcc] = useState(0);
   const [story, setStory] = useState<number | null>(null);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const relRef = useRef<HTMLDivElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const variant = product.variants[0] ?? null;
+  const giftAmounts = giftAmountsFromTags(product.tags);
+  const giftMax = openGiftMax(product.tags);
+  const giftChoice = giftPick ?? giftAmounts[0] ?? (giftMax != null ? "custom" : null);
+  const giftNumber = Number(giftAmount);
+  const giftValue = giftAmount.trim() && Number.isFinite(giftNumber) ? Math.round(giftNumber * 100) / 100 : null;
+  const giftReady = giftValue != null && giftValue >= 1 && giftMax != null && giftValue <= giftMax;
+  const giftSelected = giftChoice === "custom" ? (giftReady ? giftValue : null) : giftChoice;
   const unit = variant?.price ?? product.price;
   const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
   const bundles = product.bundles;
   const bundle = bundles.find((item) => item.qty === qty) ?? null;
-  const line = bundle ? bundle.price : unit * qty;
+  const line = giftSelected != null ? giftSelected * qty : bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const active = images[thumb] ?? images[0];
   const description = paragraphs(product.description);
@@ -44,6 +54,9 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const category = categoryLabel(product.category) || "המוצרים של Oli";
   const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
+  const fewStories = !mobile && stories.length > 0 && stories.length <= 3;
+  const visibleReviews = mobile || showAllReviews || more.length <= 6 ? more : more.slice(0, 6);
+  const hiddenReviews = more.length - visibleReviews.length;
 
   useEffect(() => {
     thumbsRef.current?.querySelector<HTMLElement>(`[data-i="${thumb}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
@@ -109,6 +122,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {product.category.trim() ? <Link href={"/products?cat=" + encodeURIComponent(product.category)} style={{ width: "fit-content", fontSize: 14, fontWeight: 600, color: "#A85A3A" }}>{category}</Link> : null}
             <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(48px,10vw,84px)", lineHeight: 0.95 }}>{product.title}</h1>
             {product.headline.mode === "split" && product.headline.subtitle ? <p style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(20px,3vw,30px)", lineHeight: 1.25, color: "#5E4844", margin: 0 }}>{product.headline.subtitle}</p> : null}
             {productBadges(product).length > 0 && (
@@ -118,7 +132,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                 ))}
               </span>
             )}
-            {blurb && blurb !== product.title && <p style={{ fontSize: "clamp(18px,2.4vw,21px)", color: "#5E4844" }}>{blurb}</p>}
+            {blurb && blurb !== product.title && blurb !== product.category && <p style={{ fontSize: "clamp(18px,2.4vw,21px)", color: "#5E4844" }}>{blurb}</p>}
             {product.page.reviews.length > 0 && (
               <a href="#reviews" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#5E4844", marginTop: 4 }}>
                 <Stars value={score} />
@@ -140,12 +154,46 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-            <span style={{ fontWeight: 700, fontSize: "clamp(28px,4vw,36px)", letterSpacing: "-.02em" }}>{fmt(unit)}</span>
-            {compareAt ? <span style={{ fontSize: 18, color: "#9C847C", textDecoration: "line-through" }}>{fmt(compareAt)}</span> : null}
-          </div>
+          {giftAmounts.length > 0 || giftMax != null ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>סכום הכרטיס</span>
+              {giftAmounts.map((amount) => {
+                const on = giftChoice === amount;
+                return (
+                  <button key={amount} type="button" onClick={() => setGiftPick(amount)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
+                    <span style={{ display: "flex", gap: 12, alignItems: "center", fontWeight: 600, fontSize: 16 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
+                      {fmt(amount)}
+                    </span>
+                  </button>
+                );
+              })}
+              {giftMax != null ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (giftChoice === "custom" ? "#3A2826" : "#E1CDC0"), background: giftChoice === "custom" ? "#FFFFFF" : "transparent" }}>
+                  <button type="button" onClick={() => setGiftPick("custom")} style={{ display: "flex", alignItems: "center", gap: 12, border: 0, background: "transparent", color: "#3A2826", textAlign: "right", padding: 0, fontWeight: 600, fontSize: 16 }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{giftChoice === "custom" && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
+                    סכום אחר
+                  </button>
+                  {giftChoice === "custom" ? (
+                    <>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8, height: 46, border: "1px solid #CDB5A8", borderRadius: 12, padding: "0 14px" }}>
+                        <span style={{ color: "#8A6C64" }}>₪</span>
+                        <input inputMode="decimal" value={giftAmount} onChange={(event) => setGiftAmount(event.target.value.replace(/[^\d.]/g, ""))} placeholder="150" style={{ flex: 1, minWidth: 0, border: 0, background: "transparent", fontSize: 18, fontWeight: 700, outline: "none" }} />
+                      </span>
+                      <span style={{ fontSize: 13, color: giftAmount && !giftReady ? "#A85A3A" : "#6E5650" }}>{giftAmount && !giftReady ? `אפשר בין ${fmt(1)} ל־${fmt(giftMax)}` : `כל סכום בין ${fmt(1)} ל־${fmt(giftMax)}`}</span>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+              <span style={{ fontWeight: 700, fontSize: "clamp(28px,4vw,36px)", letterSpacing: "-.02em" }}>{fmt(unit)}</span>
+              {compareAt ? <span style={{ fontSize: 18, color: "#9C847C", textDecoration: "line-through" }}>{fmt(compareAt)}</span> : null}
+            </div>
+          )}
 
-          {bundles.length > 0 && (
+          {giftAmounts.length === 0 && giftMax == null && bundles.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>בחרי כמות</span>
               {bundles.map((item) => {
@@ -177,7 +225,14 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               <span style={{ minWidth: 24, textAlign: "center", fontWeight: 600 }}>{qty}</span>
               <button type="button" onClick={() => setQty((value) => Math.max(1, value - 1))} style={qtyBtn}>−</button>
             </div>
-            <Hx as="button" onClick={() => add({ id: bundle ? `${variant?.id ?? product.id}:x${bundle.qty}` : (variant?.id ?? product.id), name: product.title, sub: bundle ? bundle.label : (variant?.title || blurb), price: bundle ? bundle.price : unit, image: productImage(product) }, bundle ? 1 : qty)} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54 }} hover={{ background: "#A85A3A" }}>הוספה לסל · {fmt(line)}</Hx>
+            <Hx as="button" onClick={() => {
+              if (giftAmounts.length > 0 || giftMax != null) {
+                if (giftSelected == null) return;
+                add({ id: `${product.id}:gift:${giftSelected}`, name: product.title, sub: `כרטיס מתנה · ${fmt(giftSelected)}`, price: giftSelected, image: productImage(product) }, qty);
+                return;
+              }
+              add({ id: bundle ? `${variant?.id ?? product.id}:x${bundle.qty}` : (variant?.id ?? product.id), name: product.title, sub: bundle ? bundle.label : (variant?.title || blurb), price: bundle ? bundle.price : unit, image: productImage(product) }, bundle ? 1 : qty);
+            }} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54, opacity: (giftAmounts.length > 0 || giftMax != null) && giftSelected == null ? 0.4 : 1 }} hover={{ background: "#A85A3A" }}>הוספה לסל · {fmt(line)}</Hx>
           </div>
           <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= 250 ? "✓ מגיע לך משלוח חינם" : "משלוח חינם בהזמנה מעל 250 ש״ח"}</span>
           {!user && !finished && <FirstOrderLine onOpen={openQuiz} />}
@@ -207,11 +262,14 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
 
       {stories.length > 0 && <section style={{ background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: 32 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16 }}>
-            <h2 style={h2}>אמהות משתמשות</h2>
-            <span style={{ fontSize: 14, color: "#6E5650" }}>גללי לצד לצפייה</span>
+          <div style={{ display: "flex", justifyContent: fewStories ? "center" : "space-between", alignItems: "flex-end", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: fewStories ? "center" : "flex-start", textAlign: fewStories ? "center" : "right" }}>
+              <h2 style={h2}>אמהות משתמשות</h2>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "#6E5650" }}>סרטונים אמיתיים של אמהות מהקהילה</p>
+            </div>
+            {fewStories ? null : <span style={{ fontSize: 14, color: "#6E5650" }}>גללי לצד לצפייה</span>}
           </div>
-          <div className="no-scroll" style={{ display: "flex", gap: 14, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 calc(-1 * clamp(16px,4.5vw,32px))", paddingInline: "clamp(16px,4.5vw,32px)" }}>
+          <div className="no-scroll" style={{ display: "flex", gap: 14, justifyContent: fewStories ? "center" : undefined, overflowX: fewStories ? "visible" : "auto", scrollSnapType: fewStories ? undefined : "x mandatory", margin: fewStories ? undefined : "0 calc(-1 * clamp(16px,4.5vw,32px))", paddingInline: fewStories ? undefined : "clamp(16px,4.5vw,32px)" }}>
             {stories.map((item, index) => (
               <button key={item.handle + index} type="button" onClick={() => setStory(index)} style={{ flex: "0 0 clamp(170px,42vw,240px)", aspectRatio: "9/16", position: "relative", border: 0, padding: 0, borderRadius: 14, overflow: "hidden", background: "#F3E6DE", scrollSnapAlign: "start", color: "#3A2826" }}>
                 {isStoryVideo(item.url) ? <video src={item.url} muted playsInline preload="metadata" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null}
@@ -298,7 +356,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             </figcaption>
           </figure>
           <div className={mobile ? "no-scroll" : undefined} style={mobile ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 20 }}>
-            {more.map((review, index) => (
+            {visibleReviews.map((review, index) => (
               <div key={`${review.name}-${index}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
                 <Stars value={review.rating} size={13} />
                 {review.title ? <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(18px,4.4vw,21px)", lineHeight: 1.3, margin: 0 }}>{review.title}</h3> : null}
@@ -309,6 +367,12 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               </div>
             ))}
           </div>
+          {hiddenReviews > 0 ? (
+            <Hx as="button" onClick={() => setShowAllReviews(true)} style={{ alignSelf: "center", display: "inline-flex", alignItems: "center", gap: 12, height: 52, padding: "0 22px 0 8px", borderRadius: 999, border: "1px solid #3A2826", background: "#FFFFFF", color: "#3A2826", fontSize: 16, fontWeight: 600 }} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
+              {hiddenReviews === 1 ? "הצג עוד המלצה" : `הצג עוד ${hiddenReviews} המלצות`}
+              <span aria-hidden style={{ width: 36, height: 36, borderRadius: "50%", background: "#A85A3A", color: "#FFFFFF", display: "grid", placeItems: "center", fontSize: 22, lineHeight: 1 }}>+</span>
+            </Hx>
+          ) : null}
         </div>
       </section>}
 
@@ -341,7 +405,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                     <Link href={productHref(item)} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#3A2826" }}>
                       <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
                         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{item.title}</span>
-                        <span style={{ fontSize: 14, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(item)}</span>
+                        <span style={{ fontSize: 14, color: "#6E5650", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{productCardSub(item)}</span>
                       </span>
                       <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{fmt(item.price)}{old ? <span style={{ display: "block", fontSize: 12, color: "#9C847C", textDecoration: "line-through", fontWeight: 400 }}>{fmt(old)}</span> : null}</span>
                     </Link>
@@ -399,12 +463,14 @@ function ReviewByline({ review, size }: { review: { name: string; initial: strin
   return (
     <div style={{ display: "flex", alignItems: "center", gap: size > 36 ? 12 : 10, fontSize: size > 36 ? 14 : 13, color: "#6E5650" }}>
       <span style={avatar(size)}>{review.initial}</span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ color: "#3A2826", fontWeight: 600, fontSize: size > 36 ? 15 : 13 }}>{review.name}</span>
-          {review.verified ? <VerifiedCustomer /> : null}
-        </span>
-        {review.date ? <span>{review.date}</span> : null}
+      <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+        <span style={{ color: "#3A2826", fontWeight: 600, fontSize: size > 36 ? 15 : 13 }}>{review.name}</span>
+        {review.date || review.verified ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {review.date ? <span>{review.date}</span> : null}
+            {review.verified ? <VerifiedCustomer /> : null}
+          </span>
+        ) : null}
       </span>
     </div>
   );
@@ -412,12 +478,12 @@ function ReviewByline({ review, size }: { review: { name: string; initial: strin
 
 function VerifiedCustomer() {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3A2826", fontWeight: 600 }}>
-      <svg width="15" height="15" viewBox="0 0 22 22" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#6E5650", fontSize: 12, fontWeight: 600, lineHeight: 1, whiteSpace: "nowrap" }}>
+      <svg width="14" height="14" viewBox="0 0 22 22" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
         <circle cx="11" cy="11" r="11" fill="#0095F6" />
         <path d="M6.2 11.3 9.4 14.5 15.8 7.6" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      לקוחה מאומתת
+      מאומתת
     </span>
   );
 }

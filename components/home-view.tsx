@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
-import { categoryGroups, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryGroups, paragraphs, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { BestLoop, ProductTile } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
+import GiftCardSection from "@/components/gift-card/GiftCardSection";
 import PodcastsSection from "@/components/podcasts/PodcastsSection";
 import { Hx } from "@/components/hx";
 import { IconInstagram } from "@/components/icons";
@@ -281,13 +282,14 @@ export function HomeView() {
         {featured && (
           <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", padding: mobile ? "48px var(--page-pad) 40px" : "0 var(--page-pad) clamp(64px,10vw,128px)" }}>
             <div style={{ background: "#F8EFE9", borderRadius: 24, padding: "clamp(16px,2.4vw,28px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "clamp(24px,5vw,72px)", alignItems: "center" }}>
-              <Link href={productHref(featured)} style={{ position: "relative", display: "block", aspectRatio: "4/3", width: "100%", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-                <img src={productImage(featured) || OLILASTIC} alt={featured.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />
+              <Link href={productHref(featured)} style={{ position: "relative", display: "block", aspectRatio: "4/3", width: "100%", borderRadius: 18, overflow: "hidden", background: "#FFFFFF" }}>
+                <img src={productImage(featured) || OLILASTIC} alt={featured.title} style={{ position: "absolute", top: "8%", left: "8%", width: "84%", height: "84%", objectFit: "contain", mixBlendMode: "darken" }} />
               </Link>
               <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 500, padding: "clamp(4px,2vw,24px) 0" }}>
                 <span style={{ fontSize: 14, color: "#8A6C64" }}>{featured.title}</span>
                 <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.025em", fontSize: "clamp(26px,2.8vw,38px)", lineHeight: 1.15, textWrap: "balance" }}>{/מתיחה|olilastic/i.test(featured.title) ? "טיפול בסימני מתיחה בהריון, זאת המומחיות שלנו" : featured.title}</h2>
-                <p style={{ fontSize: 16, lineHeight: 1.75, color: "#5E4844" }}>{productBlurb(featured) || featured.description}</p>
+                {featured.page.reviews.length > 0 ? <FeaturedRating product={featured} /> : null}
+                {featuredExcerpt(featured) ? <p style={{ fontSize: 16, lineHeight: 1.75, color: "#5E4844", margin: 0, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-line" }}>{featuredExcerpt(featured)}</p> : null}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", paddingTop: 20, borderTop: "1px solid #E6D6CB" }}>
                   <span style={{ fontSize: 20, fontWeight: 500 }}>{fmt(featured.price)}</span>
                   <Link href={productHref(featured)} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 600 }}>
@@ -378,6 +380,8 @@ export function HomeView() {
         </section>
       )}
 
+      <GiftCardSection />
+
       <PodcastsSection />
 
       <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(8px,2vw,24px) var(--page-pad) clamp(64px,10vw,112px)", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(24px,4vw,40px)" }}>
@@ -466,6 +470,28 @@ function SectionHead({ title, text, href, link }: { title: string; text?: string
       <Link href={href} style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor", whiteSpace: "nowrap" }}>{link}</Link>
     </div>
   );
+}
+
+function FeaturedRating({ product }: { product: CatalogProduct }) {
+  const reviews = product.page.reviews;
+  const score = Math.max(0, Math.min(5, reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length));
+  const quote = reviews.find((review) => review.title.trim());
+  return (
+    <Hx as={Link} href={productHref(product) + "#reviews"} style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 14px 8px 12px", borderRadius: 999, background: "#FFFFFF", border: "1px solid #EAD8CC", boxShadow: "0 6px 18px rgba(168,90,58,.08)", color: "#3A2826", fontSize: 13, lineHeight: 1.2, transition: "transform .3s ease, box-shadow .3s ease" }} hover={{ transform: "translateY(-1px)", boxShadow: "0 10px 24px rgba(168,90,58,.14)", color: "#3A2826" }}>
+      <span aria-label={`${score.toFixed(1)} מתוך 5`} style={{ display: "inline-flex", gap: 1, color: "#A85A3A", fontSize: 14, letterSpacing: 1 }}>
+        {[1, 2, 3, 4, 5].map((star) => <span key={star} aria-hidden>{star <= Math.round(score) ? "★" : "☆"}</span>)}
+      </span>
+      <span style={{ fontWeight: 700 }}>{score.toFixed(1)}</span>
+      <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#C9A08A" }} aria-hidden />
+      <span style={{ color: "#6E5650" }}>{reviews.length} ביקורות</span>
+      {quote ? <span style={{ color: "#8A6C64", fontStyle: "italic", maxWidth: 190, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>״{quote.title.trim()}״</span> : null}
+    </Hx>
+  );
+}
+
+function featuredExcerpt(product: CatalogProduct) {
+  return paragraphs(product.description)[0]?.trim()
+    || (product.headline.mode === "split" ? product.headline.subtitle.trim() : "");
 }
 
 function BottleCaption({ name, sub, price, old }: { name: string; sub: string; price: string; old?: string }) {

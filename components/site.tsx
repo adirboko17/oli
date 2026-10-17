@@ -82,7 +82,7 @@ export function SiteProvider({ children, products, collections, storeName }: { c
       const m = window.innerWidth < 768;
       setMobile(m);
       setWide(window.innerWidth >= 1024);
-      if (!m) setMenu(false);
+      if (window.innerWidth >= 1200) setMenu(false);
     };
     onResize();
     window.addEventListener("resize", onResize);

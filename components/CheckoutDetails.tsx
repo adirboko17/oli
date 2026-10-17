@@ -8,10 +8,13 @@ import './CheckoutDetails.css';
 export type CheckoutItem = { id: string; name: string; sub: string; price: number; qty: number; image: string };
 export type ShippingMethod = 'home' | 'pickup';
 
+export type GiftDetails = { name: string; phone: string; message: string };
+
 export type CheckoutPayload = {
   name: string; phone: string; email: string;
   method: ShippingMethod; city: string; street: string; apt: string; floor: string; zip: string; notes: string;
   newsletter: boolean; coupon: string | null;
+  gift: GiftDetails | null;
   subtotal: number; shipping: number; discount: number; total: number;
 };
 
@@ -34,6 +37,16 @@ const LockIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></svg>
 );
 
+const GiftIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="3.5" y="10" width="17" height="10.5" rx="2" />
+    <path d="M3.5 14.5h17" />
+    <path d="M12 10v10.5" />
+    <path d="M12 10c0-3.2-1.2-5.5-3.4-5.5S5.8 7 8.2 9.2 12 10 12 10z" />
+    <path d="M12 10c0-3.2 1.2-5.5 3.4-5.5S18.2 7 15.8 9.2 12 10 12 10z" />
+  </svg>
+);
+
 function Field({ label, optional, className = '', ...input }: { label: string; optional?: boolean; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className={`ck-field ${className}`}>
@@ -52,6 +65,8 @@ export default function CheckoutDetails({
     city: user?.city || '', street: user?.street || '', apt: '', floor: '', zip: '', notes: '',
   });
   const [method, setMethod] = useState<ShippingMethod>('home');
+  const [gift, setGift] = useState(false);
+  const [to, setTo] = useState({ name: '', phone: '', message: '' });
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -73,16 +88,19 @@ export default function CheckoutDetails({
   }, [user]);
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); setErr(''); };
+  const setGiftField = (k: keyof typeof to) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setTo({ ...to, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
   const shipping = subtotal >= freeShippingFrom ? 0 : shippingPrices[method];
   const discount = applied ? Math.round(subtotal * applied.percent) / 100 : 0;
   const total = subtotal + shipping - discount;
 
+  const giftPhone = to.phone.replace(/\D/g, '');
+  const giftReady = !gift || (!!to.name.trim() && PHONE_RE.test(giftPhone));
   const valid = useMemo(() =>
     !!f.name.trim() && PHONE_RE.test(f.phone.replace(/\D/g, '')) && EMAIL_RE.test(f.email) &&
-    !!f.city.trim() && (method !== 'home' || !!f.street.trim()) && terms,
-  [f, method, terms]);
+    !!f.city.trim() && (method !== 'home' || !!f.street.trim()) && terms && giftReady,
+  [f, method, terms, giftReady]);
 
   const applyCoupon = async () => {
     const code = coupon.trim().toUpperCase();
@@ -93,10 +111,19 @@ export default function CheckoutDetails({
   };
 
   const pay = async () => {
+    if (gift && !giftReady) { setErr('נא למלא שם וטלפון של מי שמקבלת את המתנה'); return; }
     if (!valid) { setErr('נא למלא את כל השדות ולאשר את התקנון'); return; }
     setBusy(true);
     try {
-      await onPay({ ...f, phone: f.phone.replace(/\D/g, ''), method, newsletter: news, coupon: applied?.code || null, subtotal, shipping, discount, total });
+      await onPay({
+        ...f,
+        phone: f.phone.replace(/\D/g, ''),
+        method,
+        newsletter: news,
+        coupon: applied?.code || null,
+        gift: gift ? { name: to.name.trim(), phone: giftPhone, message: to.message.trim() } : null,
+        subtotal, shipping, discount, total,
+      });
     } catch {
       setErr('לא הצלחנו להמשיך לתשלום. נסי שוב.');
     } finally { setBusy(false); }
@@ -164,11 +191,47 @@ export default function CheckoutDetails({
                   ))}
                 </div>
 
+                <label className={`ck-gift${gift ? ' is-on' : ''}`}>
+                  <input type="checkbox" checked={gift} onChange={e => {
+                    const on = e.target.checked;
+                    setGift(on);
+                    setErr('');
+                    if (on && user && f.city === (user.city || '') && f.street === (user.street || '')) {
+                      setF({ ...f, city: '', street: '', apt: '', floor: '', zip: '' });
+                    }
+                  }} />
+                  <span className="ck-gift__tick" aria-hidden><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.2 6.1 4.7 8.6 9.8 3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                  <span className="ck-gift__icon"><GiftIcon /></span>
+                  <span className="ck-gift__copy">
+                    <span className="ck-gift__title">האם זו מתנה?</span>
+                    <span className="ck-gift__sub">נשלח אל מישהי אחרת, עם ברכה אישית</span>
+                  </span>
+                </label>
+
+                {gift && (
+                  <div className="ck-gift-panel" id="ck-gift-panel">
+                    <div className="ck-gift-panel__head">
+                      <span className="ck-gift-panel__kicker">למי השמחה</span>
+                      <span className="ck-gift-panel__hint">הקבלה נשארת אצלך. המשלוח יוצא אל המקבלת.</span>
+                    </div>
+                    <div className="ck-row ck-row--auto">
+                      <Field label="שם המקבלת" value={to.name} onChange={setGiftField('name')} autoComplete="off" placeholder="שם מלא" />
+                      <Field label="טלפון של המקבלת" className="is-ltr" value={to.phone} onChange={setGiftField('phone')} type="tel" inputMode="numeric" autoComplete="off" placeholder="050-000-0000" />
+                    </div>
+                    <label className="ck-field">
+                      <span>ברכה למשלוח<span className="ck-field__opt"> (לא חובה)</span></span>
+                      <textarea className="ck-input ck-textarea" rows={2} value={to.message} onChange={setGiftField('message')} placeholder="מזל טוב, שיהיה רך ומתוק…" />
+                    </label>
+                  </div>
+                )}
+
+                {gift && <span className="ck-gift-where">{method === 'home' ? 'כתובת למשלוח המתנה' : 'איסוף עבור המקבלת'}</span>}
+
                 {method === 'home' ? (
                   <div className="ck-stack">
                     <div className="ck-row ck-row--city">
-                      <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="address-level2" placeholder="עיר" />
-                      <Field label="רחוב ומספר" value={f.street} onChange={set('street')} autoComplete="street-address" placeholder="רחוב ומספר" />
+                      <Field label="עיר" value={f.city} onChange={set('city')} autoComplete={gift ? 'off' : 'address-level2'} placeholder="עיר" />
+                      <Field label="רחוב ומספר" value={f.street} onChange={set('street')} autoComplete={gift ? 'off' : 'street-address'} placeholder="רחוב ומספר" />
                     </div>
                     <div className="ck-row ck-row--3">
                       <Field label="דירה" value={f.apt} onChange={set('apt')} placeholder="—" />

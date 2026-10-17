@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { usePathname, useRouter } from "next/navigation";
 import { findUser, formatPhone, saveUser, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
-import { customerTags, productBlurb, productHref, productImage } from "@/lib/catalog-model";
+import { customerTags, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
@@ -178,7 +178,7 @@ function Header() {
       </div>
       <style>{`
         .mob-nav { display: none; }
-        @media (max-width: 767px) {
+        @media (max-width: 1199px) {
           .desk-nav { display: none !important; }
           .mob-nav { display: grid !important; }
         }
@@ -265,7 +265,7 @@ function SearchOverlay() {
                     <div style={thumbStyle(productImage(p))} />
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
                       <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 17 }}>{p.title}</span>
-                      <span style={{ fontSize: 13, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(p)}</span>
+                      <span style={{ fontSize: 13, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productCardSub(p)}</span>
                     </div>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{fmt(p.price)}</span>
                   </Hx>

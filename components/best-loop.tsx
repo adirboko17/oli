@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ProductBadges } from "@/components/cards";
 import { Hx } from "@/components/hx";
-import { productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 
 export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAdd: (p: CatalogProduct) => void }) {
@@ -151,7 +151,7 @@ export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
-        <span style={{ fontSize: 14, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(p)}</span>
+        <span style={cardSub(p.headline.mode === "split" && !!p.headline.subtitle.trim())}>{productCardSub(p)}</span>
         <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
           <span style={{ fontWeight: 600 }}>{fmt(p.price)}</span>
           {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
@@ -167,6 +167,13 @@ function Plus() {
       <path d="M12 5v14M5 12h14" />
     </svg>
   );
+}
+
+function cardSub(split: boolean): CSSProperties {
+  const shared: CSSProperties = { fontSize: 14, color: "#6E5650", lineHeight: 1.4 };
+  return split
+    ? { ...shared, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }
+    : { ...shared, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 }
 
 const plus: CSSProperties = { position: "absolute", bottom: 10, left: 10, width: 40, height: 40, borderRadius: "50%", border: 0, background: "#FFFFFF", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(58,40,38,.12)" };

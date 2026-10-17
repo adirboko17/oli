@@ -78,6 +78,24 @@ export function categoryLabel(category: string) {
   return /^oli\s*mini$/i.test(category.trim()) ? "תינוקות · olimini" : category;
 }
 
+export const OPEN_GIFT_TAG = "\u0001gift:open";
+export const GIFT_AMOUNT_PREFIX = "\u0001gift:amt:";
+export const OPEN_GIFT_MAX = 2500;
+
+export function openGiftMax(tags: string[]) {
+  return tags.includes(OPEN_GIFT_TAG) ? OPEN_GIFT_MAX : null;
+}
+
+export function giftAmountsFromTags(tags: string[]) {
+  const amounts: number[] = [];
+  tags.forEach((tag) => {
+    if (!tag.startsWith(GIFT_AMOUNT_PREFIX)) return;
+    const value = Number(tag.slice(GIFT_AMOUNT_PREFIX.length));
+    if (value > 0 && value <= 1_000_000) amounts.push(Math.round(value * 100) / 100);
+  });
+  return [...new Set(amounts)].sort((a, b) => a - b);
+}
+
 export function customerTags(tags: string[]) {
   return tags.filter((tag) => tag.trim() && !tag.startsWith("\u0001"));
 }
@@ -116,4 +134,9 @@ export function paragraphs(value: string) {
 export function productBlurb(product: CatalogProduct) {
   const line = product.description.split("\n").map((part) => part.trim()).find(Boolean);
   return product.category || line || product.vendor;
+}
+
+export function productCardSub(product: CatalogProduct) {
+  if (product.headline.mode === "split" && product.headline.subtitle.trim()) return product.headline.subtitle.trim();
+  return productBlurb(product);
 }

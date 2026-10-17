@@ -59,6 +59,26 @@
 .ck-ship__sub { font-size:13px; color:#6E5650; }
 .ck-ship__price { font-size:15px; font-weight:600; white-space:nowrap; }
 
+/* Gift toggle */
+.ck-gift { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; border:1.5px solid #F1E5DD; background:#FBF5F1; cursor:pointer; transition:border-color .2s, background .2s; }
+.ck-gift.is-on { border-color:#3A2826; background:#fff; }
+.ck-gift input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
+.ck-gift__tick { width:22px; height:22px; border-radius:7px; border:1.5px solid #CDB5A8; background:#fff; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-sizing:border-box; transition:background .2s, border-color .2s; }
+.ck-gift.is-on .ck-gift__tick { background:#3A2826; border-color:#3A2826; }
+.ck-gift__tick svg { opacity:0; transform:scale(.6); transition:opacity .2s, transform .25s cubic-bezier(.32,1.4,.4,1); }
+.ck-gift.is-on .ck-gift__tick svg { opacity:1; transform:scale(1); }
+.ck-gift__icon { width:42px; height:42px; border-radius:14px; background:#F3E4DA; color:#A85A3A; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ck-gift.is-on .ck-gift__icon { background:#3A2826; color:#F6EEE8; }
+.ck-gift__copy { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ck-gift__title { font-size:16px; font-weight:600; color:#3A2826; }
+.ck-gift__sub { font-size:13px; color:#6E5650; line-height:1.4; }
+.ck-gift-panel { display:flex; flex-direction:column; gap:12px; padding:16px; border-radius:16px; background:linear-gradient(180deg,#FBF5F1 0%,#fff 72%); border:1px solid #F1E5DD; animation:ck-gift-in .32s ease; }
+@keyframes ck-gift-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+.ck-gift-panel__head { display:flex; flex-direction:column; gap:3px; }
+.ck-gift-panel__kicker { font-size:15px; font-weight:600; color:#3A2826; }
+.ck-gift-panel__hint { font-size:13px; color:#6E5650; line-height:1.45; }
+.ck-gift-where { font-size:13px; font-weight:600; letter-spacing:.02em; color:#A85A3A; }
+
 /* Checkboxes */
 .ck-check { display:flex; gap:12px; align-items:flex-start; font-size:14px; line-height:1.55; color:#4E3B37; cursor:pointer; }
 .ck-check input { width:18px; height:18px; margin-top:2px; accent-color:#3A2826; flex-shrink:0; }

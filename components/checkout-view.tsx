@@ -67,9 +67,10 @@ export function CheckoutView() {
     const account = readUser();
     if (account) {
       const prices = new Map((body.lines ?? []).map((line) => [line.id, line.price]));
-      const addr = data.method === "pickup"
+      const place = data.method === "pickup"
         ? ["נקודת איסוף", data.city].filter(Boolean).join(", ")
         : [data.street, data.apt && "דירה " + data.apt, data.floor && "קומה " + data.floor, data.city].filter(Boolean).join(", ");
+      const addr = data.gift ? ["מתנה · " + data.gift.name, place].filter(Boolean).join(" · ") : place;
       saveOrder(account.phone, {
         id: body.orderId,
         no: body.orderId.slice(-6),

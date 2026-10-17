@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oli Gift Card Section</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Oli Gift Card section ===== */
+.oli-gc{--ink:#3A2826;--ink-2:#5E4844;--muted:#6E5650;--accent:#A85A3A;--blush:#F3D9C6;--error:#A33A2A;
+  position:relative;overflow:hidden;color:var(--ink);font-family:'Google Sans','Heebo',sans-serif;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F7EDE6 38%,#F1E2D8 100%)}
+.oli-gc *{box-sizing:border-box;margin:0}
+.oli-gc__waves{position:absolute;left:0;right:0;width:100%;height:clamp(120px,20vw,260px);pointer-events:none;fill:none;stroke:#E2C2AE;stroke-width:1}
+.oli-gc__waves--top{top:0;transform:scaleY(-1);opacity:.5}
+.oli-gc__waves--bottom{bottom:0;opacity:.8}
+.oli-gc__inner{position:relative;max-width:900px;margin:0 auto;padding:clamp(48px,6vw,80px) clamp(16px,4.5vw,32px);
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(14px,2vw,22px)}
+.oli-gc__eyebrow{font-size:12px;font-weight:600;letter-spacing:.24em;color:var(--accent)}
+.oli-gc__title{font-weight:400;letter-spacing:-.03em;line-height:1;font-size:clamp(36px,5vw,56px);text-wrap:balance}
+.oli-gc__text{font-size:17px;line-height:1.7;color:var(--ink-2);max-width:520px;text-wrap:pretty}
+.oli-gc__card{position:relative;width:min(100%,380px);display:flex;justify-content:center}
+.oli-gc__card::after{content:"";position:absolute;left:12%;right:12%;bottom:2%;height:14%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(58,40,38,.28),transparent);filter:blur(10px);z-index:0}
+.oli-gc__card img{position:relative;z-index:1;width:100%;height:auto;filter:drop-shadow(0 24px 30px rgba(58,40,38,.18));
+  transform-origin:50% 60%;animation:oliCardSway 14s ease-in-out infinite}
+@keyframes oliCardSway{
+  0%,100%{transform:perspective(900px) rotateY(0) rotateX(0) translateY(0)}
+  25%{transform:perspective(900px) rotateY(-5deg) rotateX(2deg) translateY(-4px)}
+  50%{transform:perspective(900px) rotateY(0) rotateX(3deg) translateY(-7px)}
+  75%{transform:perspective(900px) rotateY(5deg) rotateX(2deg) translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.oli-gc__card img{animation:none}}
+.oli-gc__buy{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%}
+.oli-gc__amounts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:5px;border-radius:999px;background:#FFFFFF;box-shadow:0 8px 28px rgba(168,90,58,.10)}
+.oli-gc__amount{height:44px;min-width:78px;padding:0 18px;border-radius:999px;border:0;background:transparent;color:var(--ink);
+  font:500 16px 'Google Sans','Heebo',sans-serif;cursor:pointer;transition:all .2s}
+.oli-gc__amount[aria-pressed="true"]{background:var(--blush);font-weight:600}
+.oli-gc__custom{display:none;flex-direction:column;align-items:center;gap:8px;animation:oliRise .4s cubic-bezier(.2,.8,.2,1) both}
+.oli-gc__custom.is-open{display:flex}
+.oli-gc__field{display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#FFFFFF;border:1.5px solid var(--ink);direction:ltr}
+.oli-gc__field span{font-size:18px;color:var(--accent)}
+.oli-gc__field input{width:110px;border:0;outline:none;background:transparent;font:400 20px 'Google Sans','Heebo',sans-serif;color:var(--ink);text-align:center;-moz-appearance:textfield}
+.oli-gc__field input::-webkit-outer-spin-button,.oli-gc__field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.oli-gc__hint{font-size:13px;color:#8A6C64}
+.oli-gc__hint.is-error{color:var(--error)}
+.oli-gc__cta{height:56px;padding:0 34px;border-radius:999px;border:0;background:var(--ink);color:#FFFFFF;
+  font:600 16px 'Google Sans','Heebo',sans-serif;cursor:pointer;transition:background .25s,opacity .25s}
+.oli-gc__cta:hover{background:var(--accent)}
+.oli-gc__cta:disabled{opacity:.5;cursor:not-allowed;background:var(--ink)}
+.oli-gc__steps{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 28px;padding-top:clamp(8px,2vw,16px);font-size:14px;color:var(--muted);list-style:none;padding-inline:0}
+.oli-gc__steps li{display:flex;align-items:center;gap:8px}
+.oli-gc__steps b{font-weight:400;color:var(--accent)}
+@keyframes oliRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body style="margin:0">
+
+<section class="oli-gc" id="gift-card" aria-labelledby="oli-gc-title">
+  <svg class="oli-gc__waves oli-gc__waves--top" viewBox="0 0 1440 260" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 40 C 240 -30, 480 110, 720 40 S 1200 -30, 1460 40" opacity="0.90"/><path d="M-20 66 C 240 -4, 480 136, 720 66 S 1200 -4, 1460 66" opacity="0.82"/><path d="M-20 92 C 240 22, 480 162, 720 92 S 1200 22, 1460 92" opacity="0.74"/><path d="M-20 118 C 240 48, 480 188, 720 118 S 1200 48, 1460 118" opacity="0.66"/><path d="M-20 144 C 240 74, 480 214, 720 144 S 1200 74, 1460 144" opacity="0.58"/><path d="M-20 170 C 240 100, 480 240, 720 170 S 1200 100, 1460 170" opacity="0.50"/><path d="M-20 196 C 240 126, 480 266, 720 196 S 1200 126, 1460 196" opacity="0.42"/><path d="M-20 222 C 240 152, 480 292, 720 222 S 1200 152, 1460 222" opacity="0.34"/></svg>
+  <svg class="oli-gc__waves oli-gc__waves--bottom" viewBox="0 0 1440 260" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 40 C 240 -30, 480 110, 720 40 S 1200 -30, 1460 40" opacity="0.90"/><path d="M-20 66 C 240 -4, 480 136, 720 66 S 1200 -4, 1460 66" opacity="0.82"/><path d="M-20 92 C 240 22, 480 162, 720 92 S 1200 22, 1460 92" opacity="0.74"/><path d="M-20 118 C 240 48, 480 188, 720 118 S 1200 48, 1460 118" opacity="0.66"/><path d="M-20 144 C 240 74, 480 214, 720 144 S 1200 74, 1460 144" opacity="0.58"/><path d="M-20 170 C 240 100, 480 240, 720 170 S 1200 100, 1460 170" opacity="0.50"/><path d="M-20 196 C 240 126, 480 266, 720 196 S 1200 126, 1460 196" opacity="0.42"/><path d="M-20 222 C 240 152, 480 292, 720 222 S 1200 152, 1460 222" opacity="0.34"/></svg>
+  <div class="oli-gc__inner">
+    <span class="oli-gc__eyebrow">כרטיס מתנה</span>
+    <h2 class="oli-gc__title" id="oli-gc-title">תנו לה לבחור</h2>
+    <p class="oli-gc__text">כרטיס מתנה דיגיטלי לאישה בהריון, ליולדת הטרייה או לתינוק החדש. היא בוחרת את המוצרים שמתאימים לה.</p>
+    <div class="oli-gc__card"><img src="gift-card.png" alt="כרטיס מתנה Oli Safe Care"></div>
+    <div class="oli-gc__buy">
+      <div class="oli-gc__amounts" role="group" aria-label="בחירת סכום">
+        <button type="button" class="oli-gc__amount" data-amount="150" aria-pressed="false">₪150</button>
+        <button type="button" class="oli-gc__amount" data-amount="250" aria-pressed="true">₪250</button>
+        <button type="button" class="oli-gc__amount" data-amount="400" aria-pressed="false">₪400</button>
+        <button type="button" class="oli-gc__amount" data-amount="600" aria-pressed="false">₪600</button>
+        <button type="button" class="oli-gc__amount" data-amount="custom" aria-pressed="false">סכום אחר</button>
+      </div>
+      <div class="oli-gc__custom">
+        <label class="oli-gc__field"><span>₪</span><input type="text" inputmode="numeric" maxlength="4" placeholder="0" aria-label="סכום מותאם אישית"></label>
+        <span class="oli-gc__hint" aria-live="polite">בין ₪50 ל־₪2,500</span>
+      </div>
+      <button type="button" class="oli-gc__cta">לרכישת כרטיס מתנה · ₪250</button>
+    </div>
+    <ol class="oli-gc__steps">
+      <li><b>01</b>בוחרים סכום</li>
+      <li><b>02</b>כותבים ברכה אישית</li>
+      <li><b>03</b>היא מקבלת במייל או ב־SMS</li>
+    </ol>
+  </div>
+</section>
+
+<script>
+(function(){
+  const MIN=50, MAX=2500;
+  const root=document.getElementById('gift-card');
+  const chips=root.querySelectorAll('.oli-gc__amount');
+  const custom=root.querySelector('.oli-gc__custom');
+  const input=custom.querySelector('input');
+  const hint=custom.querySelector('.oli-gc__hint');
+  const cta=root.querySelector('.oli-gc__cta');
+  let amount=250, isCustom=false;
+
+  function render(){
+    let valid=amount!==null;
+    if(isCustom){
+      const v=parseInt(input.value,10);
+      valid=v>=MIN&&v<=MAX; amount=valid?v:null;
+      const err=input.value&&!valid;
+      hint.textContent=err?(v>MAX?'הסכום המקסימלי הוא ₪2,500':'הסכום המינימלי הוא ₪50'):'בין ₪50 ל־₪2,500';
+      hint.classList.toggle('is-error',!!err);
+    }
+    cta.textContent=valid?'לרכישת כרטיס מתנה · ₪'+amount.toLocaleString('en-US'):'לרכישת כרטיס מתנה';
+    cta.disabled=!valid;
+  }
+  chips.forEach(btn=>btn.addEventListener('click',()=>{
+    chips.forEach(b=>b.setAttribute('aria-pressed',b===btn));
+    isCustom=btn.dataset.amount==='custom';
+    custom.classList.toggle('is-open',isCustom);
+    if(isCustom){input.focus();}else{amount=+btn.dataset.amount;}
+    render();
+  }));
+  input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,4);render();});
+  cta.addEventListener('click',()=>{
+    if(amount===null)return;
+    // TODO: connect to the store — add gift card product to cart / open gift card flow
+    root.dispatchEvent(new CustomEvent('oli:giftcard-buy',{detail:{amount},bubbles:true}));
+  });
+  render();
+})();
+</script>
+</body>
+</html>
