@@ -77,7 +77,6 @@
 .ck-gift-panel__head { display:flex; flex-direction:column; gap:3px; }
 .ck-gift-panel__kicker { font-size:15px; font-weight:600; color:#3A2826; }
 .ck-gift-panel__hint { font-size:13px; color:#6E5650; line-height:1.45; }
-.ck-gift-where { font-size:13px; font-weight:600; letter-spacing:.02em; color:#A85A3A; }
 
 /* Checkboxes */
 .ck-check { display:flex; gap:12px; align-items:flex-start; font-size:14px; line-height:1.55; color:#4E3B37; cursor:pointer; }

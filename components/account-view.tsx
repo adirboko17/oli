@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearUser, formatPhone, readOrders, readReview, saveReview, saveUser, useOliUser, type OliOrder, type OliReview, type OliUser } from "@/lib/account-session";
+import { clearUser, formatPhone, readOrders, readReview, saveReview, saveUser, useOliUser, type OliOrder, type OliOrderStatus, type OliReview, type OliUser } from "@/lib/account-session";
 import { FF, fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 
@@ -14,9 +14,60 @@ const TABS = [
 ] as const;
 
 const TRACK = ["התקבלה", "נארזה ונשלחה", "בדרך אלייך", "נמסרה"];
-const STATUS = { new: "התקבלה", sent: "נארזה ונשלחה", transit: "בדרך אלייך", done: "נמסרה" } as const;
-const STEP = { new: 0, sent: 1, transit: 2, done: 3 } as const;
+const STATUS = { new: "התקבלה", progress: "בטיפול", hold: "בהמתנה", sent: "נארזה ונשלחה", transit: "בדרך אלייך", done: "נמסרה" } as const;
+const STEP = { new: 0, progress: 0, hold: 0, sent: 1, transit: 2, done: 3 } as const;
 const STARS = ["בחרי דירוג", "לא אהבתי", "סביר", "טוב", "טוב מאוד", "מושלם"];
+
+type LiveOrder = { number?: number; status?: string; total?: number; title?: string; at?: string };
+
+function accountStatus(value: string | undefined): OliOrderStatus {
+  if (value === "progress" || value === "hold" || value === "sent" || value === "transit") return value;
+  if (value === "delivered") return "done";
+  return "new";
+}
+
+async function liveAccountOrders(phone: string, email: string) {
+  try {
+    const response = await fetch("/api/account/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ phone, email }),
+    });
+    const body = (await response.json()) as { orders?: LiveOrder[] };
+    return Array.isArray(body.orders) ? body.orders : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeAccountOrders(local: OliOrder[], live: LiveOrder[]) {
+  const byNumber = new Map(live.flatMap((row) => {
+    const number = String(row.number ?? "");
+    return number ? [[number, row] as const] : [];
+  }));
+  const seen = new Set<string>();
+  const merged = local.map((order) => {
+    const row = byNumber.get(order.no) ?? byNumber.get(order.id);
+    seen.add(String(row?.number ?? order.no));
+    return row?.status ? { ...order, status: accountStatus(row.status) } : order;
+  });
+  live.forEach((row) => {
+    const number = String(row.number ?? "");
+    if (!number || seen.has(number)) return;
+    const when = row.at ? new Date(row.at) : null;
+    merged.push({
+      id: number,
+      no: number,
+      date: when && !Number.isNaN(when.getTime()) ? when.toLocaleDateString("he-IL") : "",
+      status: accountStatus(row.status),
+      lines: [{ id: "item", name: row.title || "הזמנה", sub: "", qty: 1, price: Number(row.total) || 0, image: null }],
+      subtotal: Number(row.total) || 0,
+      ship: 0,
+      addr: "",
+    });
+  });
+  return merged.sort((a, b) => Number(b.no) - Number(a.no));
+}
 
 export function AccountView() {
   const site = useSite();
@@ -34,16 +85,27 @@ export function AccountView() {
 
   useEffect(() => {
     if (!user) return;
-    const load = () => {
-      const rows = readOrders(user.phone);
+    let stop = false;
+    const load = async () => {
+      const local = readOrders(user.phone);
+      const live = await liveAccountOrders(user.phone, user.email);
+      const rows = mergeAccountOrders(local, live);
+      if (stop) return;
       setOrders(rows);
       const next: Record<string, OliReview | null> = {};
       rows.forEach((order) => order.lines.forEach((line) => { next[order.id + line.id] = readReview(order.id + line.id); }));
       setReviews(next);
     };
-    load();
+    void load();
+    const timer = window.setInterval(() => void load(), 15000);
     window.addEventListener("oli-user", load);
-    return () => window.removeEventListener("oli-user", load);
+    window.addEventListener("focus", load);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+      window.removeEventListener("oli-user", load);
+      window.removeEventListener("focus", load);
+    };
   }, [user]);
 
   if (!current) {

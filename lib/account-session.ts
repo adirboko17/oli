@@ -17,7 +17,7 @@ export type OliUser = {
 };
 
 export type OliOrderLine = { id: string; name: string; sub: string; qty: number; price: number; image: string | null };
-export type OliOrderStatus = "new" | "sent" | "transit" | "done";
+export type OliOrderStatus = "new" | "progress" | "hold" | "sent" | "transit" | "done";
 export type OliOrder = {
   id: string;
   no: string;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { categoryLabel, giftAmountsFromTags, giftPriceLabel, giftQueryAmount, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
@@ -63,6 +64,20 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   useEffect(() => {
     thumbsRef.current?.querySelector<HTMLElement>(`[data-i="${thumb}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }, [thumb]);
+
+  useEffect(() => {
+    if (story === null) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setStory(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [story]);
 
   function scrollRel(dir: number) {
     relRef.current?.scrollBy({ left: dir * (relRef.current.clientWidth * 0.8), behavior: "smooth" });
@@ -275,7 +290,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
 
       {stories.length > 0 && <section style={{ background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: 32 }}>
-          <div style={{ display: "flex", justifyContent: fewStories ? "center" : "space-between", alignItems: "flex-end", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: mobile ? "column" : "row", justifyContent: fewStories ? "center" : "space-between", alignItems: mobile ? "stretch" : "flex-end", gap: mobile ? 8 : 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: fewStories ? "center" : "flex-start", textAlign: fewStories ? "center" : "right" }}>
               <h2 style={h2}>אמהות משתמשות</h2>
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "#6E5650" }}>סרטונים אמיתיים של אמהות מהקהילה</p>
@@ -285,7 +300,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           <div className="no-scroll" style={{ display: "flex", gap: 14, justifyContent: fewStories ? "center" : undefined, overflowX: fewStories ? "visible" : "auto", scrollSnapType: fewStories ? undefined : "x mandatory", margin: fewStories ? undefined : "0 calc(-1 * clamp(16px,4.5vw,32px))", paddingInline: fewStories ? undefined : "clamp(16px,4.5vw,32px)" }}>
             {stories.map((item, index) => (
               <button key={item.handle + index} type="button" onClick={() => setStory(index)} style={{ flex: "0 0 clamp(170px,42vw,240px)", aspectRatio: "9/16", position: "relative", border: 0, padding: 0, borderRadius: 14, overflow: "hidden", background: "#F3E6DE", scrollSnapAlign: "start", color: "#3A2826" }}>
-                {isStoryVideo(item.url) ? <video src={item.url} muted playsInline preload="metadata" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null}
+                {isStoryVideo(item.url) ? <StoryFrame url={item.url} /> : null}
                 <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,.9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, paddingLeft: 3 }}>▶</span></span>
                 {item.handle ? <span style={{ position: "absolute", right: 12, bottom: 12, fontSize: 13, fontWeight: 500, background: "rgba(255,255,255,.9)", borderRadius: 999, padding: "6px 12px" }}>{item.handle}</span> : null}
               </button>
@@ -293,23 +308,46 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           </div>
         </div>
       </section>}
-      {story !== null && stories[story] && (
-        <div onClick={() => setStory(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(30,20,18,.92)", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
-          <button type="button" onClick={(e) => { e.stopPropagation(); setStory((story + 1) % stories.length); }} style={storyNav}>›</button>
-          <div onClick={(e) => e.stopPropagation()} style={{ height: "min(86vh,760px)", aspectRatio: "9/16", position: "relative", borderRadius: 16, overflow: "hidden", background: "#3A2826", color: "#FFFFFF" }}>
+      {story !== null && stories[story] && createPortal(
+        <div className="story-view" role="dialog" aria-modal="true" aria-label="סרטון" onClick={() => setStory(null)}>
+          <button type="button" className="story-x" aria-label="סגירה" onClick={() => setStory(null)}>×</button>
+          {stories.length > 1 ? (
+            <button type="button" className="story-arrow story-arrow--next" aria-label="הסרטון הבא" onClick={(event) => { event.stopPropagation(); setStory((story + 1) % stories.length); }}>
+              <StoryArrow dir="next" />
+            </button>
+          ) : null}
+          <div className="story-frame" onClick={(event) => event.stopPropagation()}>
             {isStoryVideo(stories[story].url) ? (
-              <video key={stories[story].url} src={stories[story].url} controls autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", background: "#3A2826" }} />
+              <video key={stories[story].url} src={stories[story].url} controls autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", background: "#3A2826", display: "block" }} />
             ) : (
               <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: 15, opacity: 0.8, padding: 24 }}>{stories[story].handle}{stories[story].url ? <a href={stories[story].url} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 8, color: "#FFFFFF" }}>לעמוד באינסטגרם</a> : null}</span>
             )}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, fontSize: 14, background: "linear-gradient(rgba(30,20,18,.45), transparent)" }}>
-              <span>{story + 1} / {stories.length}</span>
-              <button type="button" onClick={() => setStory(null)} style={{ background: "transparent", border: 0, color: "#FFFFFF", fontSize: 24 }}>×</button>
-            </div>
+            <div className="story-top"><span>{story + 1} / {stories.length}</span></div>
             {isStoryVideo(stories[story].url) && stories[story].handle ? <span style={{ position: "absolute", right: 16, bottom: 56, fontSize: 14, fontWeight: 500 }}>{stories[story].handle}</span> : null}
           </div>
-          <button type="button" onClick={(e) => { e.stopPropagation(); setStory((story + stories.length - 1) % stories.length); }} style={storyNav}>‹</button>
-        </div>
+          {stories.length > 1 ? (
+            <button type="button" className="story-arrow story-arrow--prev" aria-label="הסרטון הקודם" onClick={(event) => { event.stopPropagation(); setStory((story + stories.length - 1) % stories.length); }}>
+              <StoryArrow dir="prev" />
+            </button>
+          ) : null}
+          <style>{`
+            .story-view { position:fixed; inset:0; z-index:200; background:rgba(30,20,18,.92); display:flex; align-items:center; justify-content:center; gap:18px; padding:24px; direction:ltr; }
+            .story-frame { position:relative; width:min(420px, calc((100dvh - 80px) * 9 / 16), calc(100vw - 160px)); aspect-ratio:9/16; border-radius:16px; overflow:hidden; background:#3A2826; color:#FFFFFF; direction:rtl; }
+            .story-arrow { flex:0 0 48px; width:48px; height:48px; min-width:48px; min-height:48px; border-radius:50%; border:1px solid rgba(255,255,255,.5); background:rgba(255,255,255,.1); color:#FFFFFF; display:grid; place-items:center; padding:0; cursor:pointer; }
+            .story-x { position:absolute; top:16px; left:16px; z-index:3; width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.16); color:#FFFFFF; font-size:26px; line-height:1; cursor:pointer; }
+            .story-top { position:absolute; top:0; left:0; right:0; display:flex; justify-content:flex-end; direction:ltr; padding:16px 16px 28px; font-size:14px; background:linear-gradient(rgba(30,20,18,.5), transparent); pointer-events:none; }
+            .story-top span { direction:ltr; unicode-bidi:isolate; }
+            @media (max-width:767px) {
+              .story-view { padding:0; gap:0; }
+              .story-frame { width:min(100vw, calc((100dvh - 8px) * 9 / 16)); max-height:100dvh; border-radius:0; }
+              .story-arrow { position:absolute; top:50%; margin-top:-24px; z-index:3; background:rgba(30,20,18,.42); backdrop-filter:blur(6px); }
+              .story-arrow--next { left:10px; }
+              .story-arrow--prev { right:10px; }
+              .story-x { top:12px; left:12px; background:rgba(30,20,18,.42); }
+            }
+          `}</style>
+        </div>,
+        document.body,
       )}
 
       {steps.length > 0 && <section style={{ background: "#F8EFE9" }}>
@@ -360,14 +398,25 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
               </div>
             </div>
           </div>
-          <figure style={{ margin: 0, display: "grid", gap: 20 }}>
-            <Stars value={featured.rating} size={18} />
-            {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: "clamp(20px,3vw,26px)", lineHeight: 1.3 }}>{featured.title}</h3> : null}
-            <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
-            <figcaption>
-              <ReviewByline review={featured} size={40} />
-            </figcaption>
-          </figure>
+          {mobile ? (
+            <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 12, padding: "18px 16px 16px", borderRadius: 18, background: "#FBF6F2", border: "1px solid #EFE4DC" }}>
+              <Stars value={featured.rating} size={14} />
+              {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: 20, lineHeight: 1.3 }}>{featured.title}</h3> : null}
+              <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: "#5E4844", whiteSpace: "pre-line" }}>{featured.body}</blockquote>
+              <figcaption style={{ paddingTop: 12, borderTop: "1px solid #EFE4DC" }}>
+                <ReviewByline review={featured} size={32} />
+              </figcaption>
+            </figure>
+          ) : (
+            <figure style={{ margin: 0, display: "grid", gap: 20 }}>
+              <Stars value={featured.rating} size={18} />
+              {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: "clamp(20px,3vw,26px)", lineHeight: 1.3 }}>{featured.title}</h3> : null}
+              <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
+              <figcaption>
+                <ReviewByline review={featured} size={40} />
+              </figcaption>
+            </figure>
+          )}
           <div className={mobile ? "no-scroll" : undefined} style={mobile ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 20 }}>
             {visibleReviews.map((review, index) => (
               <div key={`${review.name}-${index}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
@@ -453,6 +502,52 @@ function isStoryVideo(url: string) {
   return /\.(mp4|webm|mov)(\?|$)/i.test(url);
 }
 
+function StoryFrame({ url }: { url: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    const prime = () => {
+      if (video.dataset.primed === "1") return;
+      video.dataset.primed = "1";
+      const pause = () => video.pause();
+      video.play().then(pause).catch(() => {
+        try { video.currentTime = 0.2; } catch { /* the card stays on the warm fallback */ }
+      });
+    };
+    if (!("IntersectionObserver" in window)) {
+      prime();
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      prime();
+      observer.disconnect();
+    }, { rootMargin: "240px" });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [url]);
+  return (
+    <video
+      ref={ref}
+      src={`${url}#t=0.2`}
+      muted
+      playsInline
+      preload="metadata"
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
+    />
+  );
+}
+
+function StoryArrow({ dir }: { dir: "prev" | "next" }) {
+  const pointsRight = dir === "prev";
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" style={{ display: "block" }}>
+      <path d={pointsRight ? "M7.5 4.5 13 10l-5.5 5.5" : "M12.5 4.5 7 10l5.5 5.5"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,40px)", lineHeight: 1.15, margin: 0 };
 function giftTile(on: boolean): CSSProperties {
   return {
@@ -482,7 +577,6 @@ const giftCustomRow: CSSProperties = {
 };
 
 const qtyBtn: CSSProperties = { width: 46, height: 54, border: 0, background: "transparent", fontSize: 20, color: "#3A2826" };
-const storyNav: CSSProperties = { width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,.4)", background: "transparent", color: "#FFFFFF", fontSize: 20 };
 const relBtn: CSSProperties = { width: 44, height: 44, borderRadius: 999, border: 0, background: "#F6EEE8", color: "#3A2826", fontSize: 17 };
 
 function reviewScore(reviews: { rating: number }[]) {

@@ -91,6 +91,7 @@ async function placeStorefrontOrder(input: {
   street: string;
   city: string;
   zip: string;
+  shippingName: string;
 }): Promise<{ ok: true; order: PlacedOrder } | { ok: false; reason: string }> {
   const url = process.env.STORELY_SUPABASE_URL?.trim().replace(/\/$/, "");
   const key = process.env.STORELY_PUBLISHABLE_KEY?.trim();
@@ -130,7 +131,7 @@ async function placeStorefrontOrder(input: {
         customer_street: input.street,
         customer_city: input.city,
         customer_zip: input.zip,
-        shipping_name: "",
+        shipping_name: input.shippingName,
         code: "",
         gift_code: "",
         payment_status: "paid",
@@ -221,11 +222,24 @@ export async function POST(request: Request) {
   if (coupon && !(await consumePromo(coupon))) return NextResponse.json({ ok: false, error: "coupon" }, { status: 400 });
   let gift = 0;
   let issued: { code: string; amount: number }[] = [];
+  let orderNumber = "";
   if (giftCode || purchases.length) {
-    const settled = await settleGiftCards({ name, email, code: giftCode, payable, purchases });
+    const settled = await settleGiftCards({
+      name,
+      email,
+      phone,
+      street,
+      city,
+      zip,
+      shippingName: method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
+      code: giftCode,
+      payable,
+      purchases,
+    });
     if (!settled.ok) return NextResponse.json({ ok: false, error: "gift", message: settled.reason }, { status: 400 });
     gift = Math.round((settled.applied ?? 0) * 100) / 100;
     issued = settled.issued ?? [];
+    if (settled.orderNumber) orderNumber = String(settled.orderNumber);
   }
   const total = Math.round((payable - gift) * 100) / 100;
 
@@ -242,7 +256,6 @@ export async function POST(request: Request) {
     }
   }
 
-  let orderNumber = "";
   let orderShipping = shipping;
   let orderDiscount = discount;
   let orderTotal = total;
@@ -255,6 +268,7 @@ export async function POST(request: Request) {
       street,
       city,
       zip,
+      shippingName: method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;

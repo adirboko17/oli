@@ -60,7 +60,14 @@ export function CheckoutView() {
         phone: data.phone,
         email: data.email,
         city: data.city,
-        street: data.street,
+        street: [
+          data.gift ? `מתנה ל${data.gift.name} (${data.gift.phone})` : "",
+          data.street,
+          data.apt && `דירה ${data.apt}`,
+          data.floor && `קומה ${data.floor}`,
+          data.notes,
+          data.gift?.message && `ברכה: ${data.gift.message}`,
+        ].filter(Boolean).join(", "),
         zip: data.zip,
       }),
     });

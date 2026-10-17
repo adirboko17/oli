@@ -217,12 +217,34 @@ export default function CheckoutDetails({
                   <div className="ck-gift-panel" id="ck-gift-panel">
                     <div className="ck-gift-panel__head">
                       <span className="ck-gift-panel__kicker">למי השמחה</span>
-                      <span className="ck-gift-panel__hint">הקבלה נשארת אצלך. המשלוח יוצא אל המקבלת.</span>
+                      <span className="ck-gift-panel__hint">הקבלה נשארת אצלך. המשלוח יוצא אל המקבלת, לכתובת שתמולא כאן.</span>
                     </div>
                     <div className="ck-row ck-row--auto">
                       <Field label="שם המקבלת" value={to.name} onChange={setGiftField('name')} autoComplete="off" placeholder="שם מלא" />
                       <Field label="טלפון של המקבלת" className="is-ltr" value={to.phone} onChange={setGiftField('phone')} type="tel" inputMode="numeric" autoComplete="off" placeholder="050-000-0000" />
                     </div>
+                    {method === 'home' ? (
+                      <div className="ck-stack">
+                        <div className="ck-row ck-row--city">
+                          <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="off" placeholder="עיר" />
+                          <Field label="רחוב ומספר" value={f.street} onChange={set('street')} autoComplete="off" placeholder="רחוב ומספר" />
+                        </div>
+                        <div className="ck-row ck-row--3">
+                          <Field label="דירה" value={f.apt} onChange={set('apt')} autoComplete="off" placeholder="—" />
+                          <Field label="קומה" value={f.floor} onChange={set('floor')} autoComplete="off" placeholder="—" />
+                          <Field label="מיקוד" optional className="is-ltr" value={f.zip} onChange={set('zip')} inputMode="numeric" autoComplete="off" placeholder="—" />
+                        </div>
+                        <label className="ck-field">
+                          <span>הערות לשליח<span className="ck-field__opt"> (לא חובה)</span></span>
+                          <textarea className="ck-input ck-textarea" rows={2} value={f.notes} onChange={set('notes')} placeholder="קוד לבניין, כניסה, להשאיר ליד הדלת…" />
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="ck-stack">
+                        <Field label="עיר לאיסוף" value={f.city} onChange={set('city')} autoComplete="off" placeholder="נציג את נקודות האיסוף הקרובות" />
+                        <span className="ck-note">[ כאן תוצג רשימת נקודות האיסוף מחברת השילוח ]</span>
+                      </div>
+                    )}
                     <label className="ck-field">
                       <span>ברכה למשלוח<span className="ck-field__opt"> (לא חובה)</span></span>
                       <textarea className="ck-input ck-textarea" rows={2} value={to.message} onChange={setGiftField('message')} placeholder="מזל טוב, שיהיה רך ומתוק…" />
@@ -230,31 +252,28 @@ export default function CheckoutDetails({
                   </div>
                 )}
 
-                {gift && <span className="ck-gift-where">{method === 'home' ? 'כתובת למשלוח המתנה' : 'איסוף עבור המקבלת'}</span>}
-
-                {method === 'home' ? (
+                {!gift && (method === 'home' ? (
                   <div className="ck-stack">
                     <div className="ck-row ck-row--city">
-                      <Field label="עיר" value={f.city} onChange={set('city')} autoComplete={gift ? 'off' : 'address-level2'} placeholder="עיר" />
-                      <Field label="רחוב ומספר" value={f.street} onChange={set('street')} autoComplete={gift ? 'off' : 'street-address'} placeholder="רחוב ומספר" />
+                      <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="address-level2" placeholder="עיר" />
+                      <Field label="רחוב ומספר" value={f.street} onChange={set('street')} autoComplete="street-address" placeholder="רחוב ומספר" />
                     </div>
                     <div className="ck-row ck-row--3">
                       <Field label="דירה" value={f.apt} onChange={set('apt')} placeholder="—" />
                       <Field label="קומה" value={f.floor} onChange={set('floor')} placeholder="—" />
-                      <Field label="מיקוד" className="is-ltr" value={f.zip} onChange={set('zip')} inputMode="numeric" placeholder="—" />
+                      <Field label="מיקוד" optional className="is-ltr" value={f.zip} onChange={set('zip')} inputMode="numeric" placeholder="—" />
                     </div>
                     <label className="ck-field">
                       <span>הערות לשליח<span className="ck-field__opt"> (לא חובה)</span></span>
-                      <textarea className="ck-input ck-textarea" rows={2} value={f.notes} onChange={set('notes')} placeholder="קוד לבניין, להשאיר ליד הדלת…" />
+                      <textarea className="ck-input ck-textarea" rows={2} value={f.notes} onChange={set('notes')} placeholder="קוד לבניין, כניסה, להשאיר ליד הדלת…" />
                     </label>
                   </div>
                 ) : (
                   <div className="ck-stack">
                     <Field label="עיר לאיסוף" value={f.city} onChange={set('city')} placeholder="נציג את נקודות האיסוף הקרובות" />
-                    {/* TODO: list of pickup points from the shipping company's API, by city */}
                     <span className="ck-note">[ כאן תוצג רשימת נקודות האיסוף מחברת השילוח ]</span>
                   </div>
-                )}
+                ))}
               </section>
 
               {/* 3. Confirmation */}
