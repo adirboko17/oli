@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, customerTags, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
@@ -12,30 +13,28 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const { mobile, wide, headerH, add, items } = useSite();
   const images = product.media.filter((item) => item.src);
   const [thumb, setThumb] = useState(0);
-  const [variantId, setVariantId] = useState(product.variants[0]?.id ?? "");
   const [qty, setQty] = useState(1);
   const [openAcc, setOpenAcc] = useState(0);
   const [story, setStory] = useState<number | null>(null);
   const relRef = useRef<HTMLDivElement>(null);
-  const variant = product.variants.find((item) => item.id === variantId) ?? null;
+  const variant = product.variants[0] ?? null;
   const unit = variant?.price ?? product.price;
-  const bundle = product.bundles.find((item) => item.qty === qty) ?? null;
+  const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
+  const bundles = product.bundles;
+  const bundle = bundles.find((item) => item.qty === qty) ?? null;
   const line = bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const active = images[thumb] ?? images[0];
   const description = product.description.split("\n").map((part) => part.trim()).filter(Boolean);
   const blurb = productBlurb(product);
   const sections = product.page.panels;
-  const choices = product.variants.length > 0
-    ? product.variants.map((item) => ({ id: item.id, title: item.title || "יחידה", sub: item.sku || "", price: item.price ?? product.price }))
-    : [{ id: product.id, title: "יחידה", sub: "", price: product.price }];
   const featured = product.page.reviews[0];
   const more = product.page.reviews.slice(1);
   const stories = product.page.stories;
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
   const category = categoryLabel(product.category) || "המוצרים של Oli";
-  const shownTags = customerTags(product.tags).slice(0, 4);
+  const highlights = product.page.highlights.slice(0, 4);
 
   function scrollRel(dir: number) {
     relRef.current?.scrollBy({ left: dir * (relRef.current.clientWidth * 0.8), behavior: "smooth" });
@@ -85,49 +84,45 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             )}
           </div>
           <p style={{ fontSize: 17, lineHeight: 1.7, color: "#5E4844" }}>{description[0] || blurb}</p>
-          <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", fontSize: 14, color: "#5E4844" }}>
-            {(shownTags.length ? shownTags : ["ללא בישום", "ללא אלכוהול", "באישור משרד הבריאות", "100 ml"]).map((tag, i) => (
-              <span key={tag} style={{ flex: "1 1 auto", padding: "14px 0", textAlign: "center", borderRight: i ? "1px solid #EFE4DC" : undefined }}>{tag}</span>
-            ))}
+          {highlights.length > 0 ? (
+            <div className="product-highlights" style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", fontSize: 14, color: "#5E4844" }}>
+              {highlights.map((tag, i) => (
+                <span key={tag} style={{ flex: "1 1 auto", padding: "14px 8px", textAlign: "center", borderRight: i ? "1px solid #EFE4DC" : undefined }}>{tag}</span>
+              ))}
+              <style>{`@media (max-width: 767px) { .product-highlights > span:nth-child(n + 4) { display: none !important; } }`}</style>
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+            <span style={{ fontWeight: 700, fontSize: "clamp(28px,4vw,36px)", letterSpacing: "-.02em" }}>{fmt(unit)}</span>
+            {compareAt ? <span style={{ fontSize: 18, color: "#9C847C", textDecoration: "line-through" }}>{fmt(compareAt)}</span> : null}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>בחרי כמות</span>
-            {product.bundles.length > 0 ? product.bundles.map((item) => {
-              const on = bundle?.qty === item.qty;
-              const regular = unit * item.qty;
-              const saving = Math.round((regular - item.price) * 100) / 100;
-              return (
-                <button key={item.qty} type="button" onClick={() => setQty(item.qty)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
-                  <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                      <span style={{ fontWeight: 600, fontSize: 16 }}>{item.label}</span>
-                      {saving > 0 ? <span style={{ fontSize: 13, fontWeight: 600, color: "#A85A3A" }}>חיסכון {fmt(saving)}</span> : null}
+          {bundles.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>בחרי כמות</span>
+              {bundles.map((item) => {
+                const on = bundle?.qty === item.qty;
+                const regular = unit * item.qty;
+                const saving = Math.round((regular - item.price) * 100) / 100;
+                return (
+                  <button key={item.qty} type="button" onClick={() => setQty(item.qty)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
+                    <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
+                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                        <span style={{ fontWeight: 600, fontSize: 16 }}>{item.label}</span>
+                        {saving > 0 ? <span style={{ fontSize: 13, fontWeight: 600, color: "#A85A3A" }}>חיסכון {fmt(saving)}</span> : null}
+                      </span>
                     </span>
-                  </span>
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                    <span style={{ fontWeight: 700, fontSize: 17 }}>{fmt(item.price)}</span>
-                    {saving > 0 ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(regular)}</span> : null}
-                  </span>
-                </button>
-              );
-            }) : choices.map((choice) => {
-              const on = choice.id === (variant?.id ?? product.id);
-              return (
-                <button key={choice.id} type="button" onClick={() => setVariantId(choice.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
-                  <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                      <span style={{ fontWeight: 600, fontSize: 16 }}>{choice.title}</span>
-                      {choice.sub && <span style={{ fontSize: 13, color: "#6E5650" }}>{choice.sub}</span>}
+                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                      <span style={{ fontWeight: 700, fontSize: 17 }}>{fmt(item.price)}</span>
+                      {saving > 0 ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(regular)}</span> : null}
                     </span>
-                  </span>
-                  <span style={{ fontWeight: 700, fontSize: 17 }}>{fmt(choice.price)}</span>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", border: "1px solid #CDB5A8", borderRadius: 999 }}>
@@ -262,7 +257,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
       </section>}
 
       {related.length > 0 && (
-        <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)" }}>
+        <section style={{ maxWidth: 1320, margin: "0 auto", padding: mobile ? "44px var(--page-pad) 48px" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", ["--page-pad" as string]: "28px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 24 }}>
             <h2 style={h2}>אולי תאהבי גם</h2>
             {!mobile && (
@@ -272,27 +267,31 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
               </div>
             )}
           </div>
-          <div ref={relRef} className="no-scroll" style={{ display: "flex", gap: mobile ? 12 : 20, overflowX: "auto", scrollSnapType: "x mandatory" }}>
-            {related.slice(0, 8).map((item) => {
-              const src = productImage(item);
-              const old = item.compareAt && item.compareAt > item.price ? item.compareAt : null;
-              return (
-                <div key={item.id} style={{ flex: mobile ? "0 0 calc(50% - 6px)" : "0 0 calc((100% - 60px) / 4)", scrollSnapAlign: "start", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <Link href={productHref(item)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-                    {src && <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
-                    <ProductBadges product={item} />
-                  </Link>
-                  <Link href={productHref(item)} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#3A2826" }}>
-                    <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-                      <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{item.title}</span>
-                      <span style={{ fontSize: 14, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(item)}</span>
-                    </span>
-                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{fmt(item.price)}{old ? <span style={{ display: "block", fontSize: 12, color: "#9C847C", textDecoration: "line-through", fontWeight: 400 }}>{fmt(old)}</span> : null}</span>
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
+          {mobile ? (
+            <BestLoop products={related.slice(0, 8)} onAdd={(item) => add({ id: item.id, name: item.title, sub: productBlurb(item), price: item.price, image: productImage(item) })} />
+          ) : (
+            <div ref={relRef} className="no-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", scrollSnapType: "x mandatory" }}>
+              {related.slice(0, 8).map((item) => {
+                const src = productImage(item);
+                const old = item.compareAt && item.compareAt > item.price ? item.compareAt : null;
+                return (
+                  <div key={item.id} style={{ flex: "0 0 calc((100% - 60px) / 4)", scrollSnapAlign: "start", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <Link href={productHref(item)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
+                      {src && <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
+                      <ProductBadges product={item} />
+                    </Link>
+                    <Link href={productHref(item)} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#3A2826" }}>
+                      <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+                        <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{item.title}</span>
+                        <span style={{ fontSize: 14, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productBlurb(item)}</span>
+                      </span>
+                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{fmt(item.price)}{old ? <span style={{ display: "block", fontSize: 12, color: "#9C847C", textDecoration: "line-through", fontWeight: 400 }}>{fmt(old)}</span> : null}</span>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
     </main>

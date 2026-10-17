@@ -1,0 +1,27 @@
+/* Oli: "המומחים מדברים" section, mobile version */
+.oex-grid { display:none; }
+@media (max-width: 767px) {
+  .oex-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-family:'Google Sans','Heebo',sans-serif; }
+}
+.oex-card { display:flex; flex-direction:column; gap:12px; padding:8px 8px 16px; border-radius:22px; text-decoration:none; transition:transform .25s ease; }
+.oex-card:active { transform:scale(.98); }
+.oex-card--dark { background:#3A2826; color:#FFFFFF; }
+.oex-card--light { background:#F8EFE9; color:#3A2826; }
+
+.oex-media { position:relative; aspect-ratio:1/1; border-radius:16px; overflow:hidden; background:#F3D9C6; }
+.oex-media img { width:100%; height:100%; object-fit:cover; display:block; }
+.oex-play { position:absolute; left:8px; bottom:8px; width:36px; height:36px; border-radius:50%; background:#F3D9C6; color:#3A2826;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+
+.oex-text { display:flex; flex-direction:column; gap:6px; padding-inline:6px; flex:1; }
+.oex-eyebrow { font-size:11px; letter-spacing:.12em; font-weight:600; }
+.oex-card--dark .oex-eyebrow { color:#E3A783; }
+.oex-card--light .oex-eyebrow { color:#A85A3A; }
+.oex-title { margin:0; font-weight:500; font-size:19px; line-height:1.15; }
+.oex-sub { margin:0; font-size:12.5px; line-height:1.5; }
+.oex-card--dark .oex-sub { color:#E6D2C6; }
+.oex-card--light .oex-sub { color:#5E4844; }
+
+.oex-cta { margin-inline:6px; display:flex; align-items:center; justify-content:space-between; height:38px; padding:0 14px; border-radius:999px; font-size:13px; font-weight:600; }
+.oex-card--dark .oex-cta { background:rgba(255,255,255,.1); }
+.oex-card--light .oex-cta { background:#FFFFFF; }

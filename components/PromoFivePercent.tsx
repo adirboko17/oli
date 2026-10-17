@@ -21,6 +21,7 @@ type Props = {
   imageSrc?: string;
   onSubmitEmail?: (email: string) => void | Promise<void>;
   onShop?: () => void;
+  delayMs?: number; // how long until the tab enters (default 6 seconds)
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,8 +32,16 @@ export default function PromoFivePercent({
   imageSrc = "https://static.wixstatic.com/media/db159b_023efbddb9054a1695b0af97979b8d28f000.jpg",
   onSubmitEmail,
   onShop,
+  delayMs = 6000,
 }: Props) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), delayMs);
+    return () => clearTimeout(t);
+  }, [delayMs]);
   const [open, setOpen] = useState(false);
+  const [present, setPresent] = useState(false);
+  const [shown, setShown] = useState(false);
   const [tabVisible, setTabVisible] = useState(true);
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
@@ -43,6 +52,21 @@ export default function PromoFivePercent({
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setShown(false);
+      const t = window.setTimeout(() => setPresent(false), 520);
+      return () => window.clearTimeout(t);
+    }
+    setPresent(true);
+  }, [open]);
+
+  useEffect(() => {
+    if (!present || !open) return;
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, [present, open]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
@@ -63,10 +87,10 @@ export default function PromoFivePercent({
   return (
     <>
       {tabVisible && !open && !hidden && (
-        <div className="oliPromo-tabWrap" dir="rtl">
+        <div className={"oliPromo-tabWrap" + (entered ? " is-in" : "")} dir="rtl" aria-hidden={!entered}>
           <button className="oliPromo-tab" onClick={() => setOpen(true)} aria-label="5% הנחה להזמנה הראשונה">
             <span className="oliPromo-tabIcon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="oliPromo-tabSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3.5" y="9" width="17" height="11.5" rx="2" />
                 <path d="M2.5 9h19v-3h-19z" />
                 <path d="M12 6v14.5" />
@@ -80,9 +104,12 @@ export default function PromoFivePercent({
         </div>
       )}
 
-      <div className={"oliPromo-backdrop" + (open ? " is-open" : "")} onClick={() => setOpen(false)} />
+      {present ? (
+        <div className={"oliPromo-backdrop" + (shown ? " is-open" : "")} onClick={() => setOpen(false)} />
+      ) : null}
 
-      <div className={"oliPromo-panel" + (open ? " is-open" : "")} dir="rtl" role="dialog" aria-modal="true" aria-label="5% הנחה">
+      {present ? (
+      <div className={"oliPromo-panel" + (shown ? " is-open" : "")} dir="rtl" role="dialog" aria-modal={shown} aria-hidden={!shown} inert={!shown} aria-label="5% הנחה">
         <button className="oliPromo-close" onClick={() => setOpen(false)} aria-label="סגירה">✕</button>
         <div className="oliPromo-grid">
           {/* mobile header */}
@@ -143,6 +170,7 @@ export default function PromoFivePercent({
           </div>
         </div>
       </div>
+      ) : null}
     </>
   );
 }

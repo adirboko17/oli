@@ -16,6 +16,7 @@ export type CatalogMedia = {
 export type CatalogBundle = { qty: number; price: number; label: string };
 
 export type CatalogPage = {
+  highlights: string[];
   panels: { title: string; paras: string[] }[];
   stories: { handle: string; url: string }[];
   steps: { title: string; body: string }[];
@@ -43,7 +44,7 @@ export type CatalogProduct = {
 };
 
 export function emptyCatalogPage(): CatalogPage {
-  return { panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], reviews: [] };
+  return { highlights: [], panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], reviews: [] };
 }
 
 export type CatalogCollection = {

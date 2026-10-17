@@ -25,6 +25,7 @@
 .om-item { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:46px; padding:0 14px; border:0; border-radius:14px; background:transparent;
   font:400 16px/1.2 inherit; font-family:inherit; color:#3A2826; text-align:right; cursor:pointer;
   opacity:0; transform:translateY(-6px); transition:opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1), background .2s; }
+button.om-item { font-size:16px; font-weight:400; line-height:1.2; font-family:inherit; }
 .om-item.is-active { background:#F8EFE9; font-weight:600; }
 .om-item:active { background:#F3E3D8; }
 .om-panel.is-open .om-item { opacity:1; transform:none; transition-delay:calc(.06s + var(--i) * .035s); }

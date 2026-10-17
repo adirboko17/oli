@@ -1,6 +1,7 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { STORE_ID } from "@/lib/store";
 import { emptyCatalogPage, type CatalogBundle, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
 
@@ -9,9 +10,14 @@ export type CatalogLoad =
   | { status: "inactive" }
   | { status: "error" };
 
-export const loadPublicCatalog = cache(async (): Promise<CatalogLoad> => {
+async function fetchPublicCatalog(): Promise<CatalogLoad> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return { status: "error" };
   try {
-    const supabase = await createClient();
+    const supabase = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
     const { data, error } = await supabase.rpc("store_public_catalog", { target_store: STORE_ID });
     if (error) return { status: "error" };
     if (data == null) return { status: "inactive" };
@@ -20,7 +26,11 @@ export const loadPublicCatalog = cache(async (): Promise<CatalogLoad> => {
   } catch {
     return { status: "error" };
   }
-});
+}
+
+const readCachedCatalog = unstable_cache(fetchPublicCatalog, ["public-catalog", STORE_ID], { revalidate: 60 });
+
+export const loadPublicCatalog = cache(readCachedCatalog);
 
 async function parseCatalog(data: unknown): Promise<PublicCatalog | null> {
   const row = record(data);
@@ -99,7 +109,7 @@ async function reachableMedia(path: string, kind: "image" | "video") {
   const mediaRoot = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/storage/v1/object/public/product-media/`;
   if (path.startsWith(mediaRoot) || kind === "video") return path;
   try {
-    const response = await fetch(path, { method: "HEAD", redirect: "follow", cache: "no-store" });
+    const response = await fetch(path, { method: "HEAD", redirect: "follow", next: { revalidate: 3600 } });
     const type = response.headers.get("content-type") ?? "";
     return response.ok && type.startsWith("image/") ? path : null;
   } catch {
@@ -138,6 +148,7 @@ function parsePage(value: unknown): CatalogPage {
   const row = record(merch?.page);
   const page = emptyCatalogPage();
   if (!row) return page;
+  page.highlights = highlightLabels(row.highlights);
   page.panels = objects(row.panels, 8).flatMap((item) => {
     const title = text(item.title);
     const paras = text(item.body).split("\n").map((part) => part.trim()).filter(Boolean);
@@ -169,6 +180,21 @@ function parsePage(value: unknown): CatalogPage {
     return [{ name, title: text(item.title), body, initial: name.trim()[0]?.toUpperCase() || "•", meta: date + verified }];
   });
   return page;
+}
+
+function highlightLabels(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const item of value) {
+    const label = text(item).replace(/[\u0000-\u001f]/g, "").slice(0, 40);
+    const key = label.toLocaleLowerCase("he");
+    if (!label || seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+    if (labels.length === 4) break;
+  }
+  return labels;
 }
 
 function objects(value: unknown, limit: number) {

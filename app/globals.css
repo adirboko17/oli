@@ -35,6 +35,28 @@ button { font-family: inherit; cursor: pointer; }
 
 h1, h2, h3, h4, p { margin: 0; }
 
+.route-loader {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: route-loader-in .35s ease .3s forwards;
+}
+.route-loader img {
+  height: 52px;
+  width: auto;
+  animation: route-loader-pulse 1.3s ease-in-out .3s infinite;
+}
+@keyframes route-loader-in { to { opacity: 1; } }
+@keyframes route-loader-pulse {
+  0%, 100% { opacity: .4; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loader { animation: none; opacity: 1; }
+  .route-loader img { animation: none; }
+}
+
 html[data-a11y-contrast] body *:not(svg):not(path) { color: #000 !important; border-color: #000 !important; }
 html[data-a11y-contrast] body { background: #fff !important; }
 html[data-a11y-links] a { text-decoration: underline !important; text-underline-offset: 3px; outline: 2px solid #a85a3a; outline-offset: 2px; }

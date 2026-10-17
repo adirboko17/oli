@@ -1,7 +1,15 @@
 /* Oli Safe Care: 5% promo tab + popup. Breakpoint: mobile < 768px */
-.oliPromo-tabWrap{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+/* Entrance: the tab is hidden off-screen and slides in with a bounce after delayMs (class is-in), then the gift icon wiggles once */
+.oliPromo-tabWrap{position:fixed;left:0;top:50%;transform:translateY(-50%) translateX(-120%);opacity:0;pointer-events:none;z-index:30;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:transform .9s cubic-bezier(.34,1.56,.64,1),opacity .4s ease}
+.oliPromo-tabWrap.is-in{transform:translateY(-50%) translateX(0);opacity:1;pointer-events:auto}
+.oliPromo-tabWrap.is-in .oliPromo-tabIcon{animation:oliPromoWiggle 1.1s ease .85s 1 both}
+.oliPromo-tabWrap .oliPromo-tabHide{opacity:0;transition:opacity .4s ease 1s}
+.oliPromo-tabWrap.is-in .oliPromo-tabHide{opacity:1}
+@keyframes oliPromoWiggle{0%,100%{transform:rotate(0) scale(1)}15%{transform:rotate(-14deg) scale(1.15)}30%{transform:rotate(12deg) scale(1.15)}45%{transform:rotate(-8deg) scale(1.08)}60%{transform:rotate(5deg)}75%{transform:rotate(-2deg)}}
+@media (prefers-reduced-motion:reduce){.oliPromo-tabWrap{transition:opacity .3s}.oliPromo-tabWrap.is-in .oliPromo-tabIcon{animation:none}}
 .oliPromo-tab{display:flex;flex-direction:column;align-items:center;gap:6px;width:58px;padding:14px 0 12px;background:#3A2826;color:#FFFFFF;border:0;border-radius:0 18px 18px 0;font-family:inherit;cursor:pointer;box-shadow:6px 8px 24px rgba(42,28,26,.22);transition:width .3s cubic-bezier(.2,.8,.2,1),background .3s}
-.oliPromo-tab:hover{width:64px;background:#A85A3A}
+.oliPromo-tab:hover{background:#A85A3A}
+.oliPromo-tabSvg{width:16px;height:16px}
 .oliPromo-tabIcon{width:30px;height:30px;border-radius:50%;background:#F3D9C6;color:#3A2826;display:flex;align-items:center;justify-content:center}
 .oliPromo-tabPct{font-family:'Google Sans','Heebo',sans-serif;font-size:19px;font-weight:500;line-height:1;letter-spacing:-.02em}
 .oliPromo-tabLbl{font-size:11px;letter-spacing:.06em;color:#F3D9C6;line-height:1}
@@ -11,8 +19,8 @@
 .oliPromo-backdrop.is-open{opacity:1;pointer-events:auto;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 
 /* desktop: centered pop */
-.oliPromo-panel{position:fixed;top:50%;left:50%;width:min(780px,92vw);max-height:92vh;overflow-y:auto;overflow-x:hidden;z-index:73;background:#FFFFFF;color:#3A2826;border-radius:28px;box-shadow:0 30px 80px rgba(42,28,26,.28);opacity:0;pointer-events:none;transform:translate(-50%,-46%) scale(.96);transition:opacity .3s ease,transform .45s cubic-bezier(.32,1.2,.4,1)}
-.oliPromo-panel.is-open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.oliPromo-panel{position:fixed;top:50%;left:50%;width:min(780px,92vw);max-height:92vh;overflow-y:auto;overflow-x:hidden;z-index:73;background:#FFFFFF;color:#3A2826;border-radius:28px;box-shadow:0 30px 80px rgba(42,28,26,.28);opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-46%) scale(.96);transition:opacity .3s ease,transform .45s cubic-bezier(.22,1,.36,1),visibility 0s linear .45s}
+.oliPromo-panel.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,-50%) scale(1);transition:opacity .3s ease,transform .45s cubic-bezier(.22,1,.36,1),visibility 0s linear 0s}
 
 .oliPromo-close{position:absolute;top:14px;left:14px;z-index:2;width:38px;height:38px;border-radius:999px;border:0;background:rgba(255,255,255,.92);color:#3A2826;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(42,28,26,.12);transition:background .2s,color .2s}
 .oliPromo-close:hover{background:#3A2826;color:#FFFFFF}
@@ -53,11 +61,20 @@
 .oliPromo-shop{height:56px;border-radius:999px;border:0;background:#3A2826;color:#FFFFFF;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .25s}
 .oliPromo-shop:hover{background:#A85A3A}
 
-/* mobile: bottom sheet */
+/* mobile: bottom sheet. Shift by a full viewport, not 104% of the sheet —
+   the iOS toolbar otherwise leaves the top of the closed sheet on screen. */
 @media (max-width:767px){
-  .oliPromo-panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:92dvh;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(42,28,26,.25);opacity:1;transform:translateY(104%);transition:transform .55s cubic-bezier(.32,1.2,.4,1)}
-  .oliPromo-panel.is-open{transform:translateY(0)}
+  .oliPromo-panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:92dvh;border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(42,28,26,.25);opacity:1;visibility:hidden;pointer-events:none;transform:translate3d(0,calc(100dvh + 48px),0);transition:transform .5s cubic-bezier(.22,1,.36,1),visibility 0s linear .5s}
+  .oliPromo-panel.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translate3d(0,0,0);transition:transform .5s cubic-bezier(.22,1,.36,1),visibility 0s linear 0s}
   .oliPromo-mHead{display:block}
   .oliPromo-media{display:none}
   .oliPromo-dHead:not(.is-always){display:none}
+  /* Slim tab on mobile, positioned a bit lower */
+  .oliPromo-tabWrap{top:58%}
+  .oliPromo-tab{width:44px;gap:6px;padding:12px 0 11px;border-radius:0 14px 14px 0;box-shadow:4px 6px 16px rgba(42,28,26,.22)}
+  .oliPromo-tabIcon{width:26px;height:26px}
+  .oliPromo-tabSvg{width:15px;height:15px}
+  .oliPromo-tabPct{font-size:15px}
+  .oliPromo-tabLbl{display:none}
+  .oliPromo-tabHide{width:22px;height:22px;margin-left:11px;font-size:10px}
 }
