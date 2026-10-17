@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { VALUES } from "@/lib/data";
 import { categoryGroups, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
+import { ProductBadges } from "@/components/cards";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
 
@@ -351,7 +352,7 @@ export function HomeView() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(26px,3.2vw,38px)", lineHeight: 1.05 }}>{productBlurb(giftMain) || giftMain.title}</span>
+                    <span style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(26px,3.2vw,38px)", lineHeight: 1.05 }}>{giftMain.title}</span>
                     <span style={{ fontWeight: 600, fontSize: 16 }}>{fmt(giftMain.price)}</span>
                   </div>
                   <span style={{ background: "#3A2826", color: "#FFFFFF", padding: "14px 26px", borderRadius: 999, fontSize: 15, fontWeight: 600 }}>לצפייה במארז</span>
@@ -370,7 +371,7 @@ export function HomeView() {
                     {productImage(p) && <img src={productImage(p)!} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
                   </div>
                   <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(18px,2.2vw,22px)" }}>{productBlurb(p) || p.title}</span>
+                    <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(18px,2.2vw,22px)" }}>{p.title}</span>
                     <span style={{ fontWeight: 600, fontSize: 15 }}>{fmt(p.price)}</span>
                   </span>
                 </button>
@@ -506,6 +507,7 @@ function ProductTile({ p, snap, onAdd }: { p: CatalogProduct; snap?: boolean; on
       <div style={{ position: "relative" }}>
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
           {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
+          <ProductBadges product={p} />
         </Link>
         <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>
       </div>

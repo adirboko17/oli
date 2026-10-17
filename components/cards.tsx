@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -16,6 +16,7 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
       <div style={{ position: "relative" }}>
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
           {src ? <img src={src} alt="" style={productPhoto} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
+          <ProductBadges product={p} />
         </Link>
         <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -30,6 +31,18 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
         </span>
       </div>
     </div>
+  );
+}
+
+export function ProductBadges({ product }: { product: CatalogProduct }) {
+  const labels = productBadges(product);
+  if (!labels.length) return null;
+  return (
+    <span style={{ position: "absolute", top: 10, right: 10, zIndex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+      {labels.map((label) => (
+        <span key={label} style={{ background: label === "מבצע" ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "4px 8px", fontSize: 12, fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
+      ))}
+    </span>
   );
 }
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, customerTags, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { ProductBadges } from "@/components/cards";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -34,6 +35,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
   const category = categoryLabel(product.category) || "המוצרים של Oli";
+  const shownTags = customerTags(product.tags).slice(0, 4);
 
   function scrollRel(dir: number) {
     relRef.current?.scrollBy({ left: dir * (relRef.current.clientWidth * 0.8), behavior: "smooth" });
@@ -61,12 +63,20 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} /> : null}
             {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
             {!active?.src ? <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FF, fontSize: "clamp(32px,6vw,56px)", textAlign: "center", padding: 24 }}>{product.title}</span> : null}
+            <ProductBadges product={product} />
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(48px,10vw,84px)", lineHeight: 0.95 }}>{product.title}</h1>
+            {productBadges(product).length > 0 && (
+              <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {productBadges(product).map((label) => (
+                  <span key={label} style={{ background: label === "מבצע" ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 12px", fontSize: 14, fontWeight: 600 }}>{label}</span>
+                ))}
+              </span>
+            )}
             {blurb && blurb !== product.title && <p style={{ fontSize: "clamp(18px,2.4vw,21px)", color: "#5E4844" }}>{blurb}</p>}
             {product.page.reviews.length > 0 && (
               <a href="#reviews" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#5E4844", marginTop: 4 }}>
@@ -76,7 +86,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
           </div>
           <p style={{ fontSize: 17, lineHeight: 1.7, color: "#5E4844" }}>{description[0] || blurb}</p>
           <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", fontSize: 14, color: "#5E4844" }}>
-            {(product.tags.length ? product.tags.slice(0, 4) : ["ללא בישום", "ללא אלכוהול", "באישור משרד הבריאות", "100 ml"]).map((tag, i) => (
+            {(shownTags.length ? shownTags : ["ללא בישום", "ללא אלכוהול", "באישור משרד הבריאות", "100 ml"]).map((tag, i) => (
               <span key={tag} style={{ flex: "1 1 auto", padding: "14px 0", textAlign: "center", borderRight: i ? "1px solid #EFE4DC" : undefined }}>{tag}</span>
             ))}
           </div>
@@ -270,6 +280,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                 <div key={item.id} style={{ flex: mobile ? "0 0 calc(50% - 6px)" : "0 0 calc((100% - 60px) / 4)", scrollSnapAlign: "start", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                   <Link href={productHref(item)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
                     {src && <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} />}
+                    <ProductBadges product={item} />
                   </Link>
                   <Link href={productHref(item)} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#3A2826" }}>
                     <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>

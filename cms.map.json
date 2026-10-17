@@ -44,38 +44,35 @@
   },
   {
     "type": "category",
-    "id": "best",
-    "label": "המומלצים ביותר",
-    "file": "lib/shop-groups.ts",
-    "parent": "products"
-  },
-  {
-    "type": "category",
-    "id": "preg",
+    "id": "הריון",
     "label": "הריון",
-    "file": "lib/shop-groups.ts",
-    "parent": "products"
+    "file": "lib/catalog-menu.ts",
+    "parent": "products",
+    "source": "store_public_catalog"
   },
   {
     "type": "category",
-    "id": "birth",
+    "id": "ספרים",
+    "label": "ספרים",
+    "file": "lib/catalog-menu.ts",
+    "parent": "products",
+    "source": "store_public_catalog"
+  },
+  {
+    "type": "category",
+    "id": "לידה ואחרי לידה",
     "label": "לידה ואחרי לידה",
-    "file": "lib/shop-groups.ts",
-    "parent": "products"
+    "file": "lib/catalog-menu.ts",
+    "parent": "products",
+    "source": "store_public_catalog"
   },
   {
     "type": "category",
-    "id": "baby",
-    "label": "תינוקות · olimini",
-    "file": "lib/shop-groups.ts",
-    "parent": "products"
-  },
-  {
-    "type": "category",
-    "id": "gift",
-    "label": "מתנה ליולדת",
-    "file": "lib/shop-groups.ts",
-    "parent": "products"
+    "id": "מתנה",
+    "label": "מתנה",
+    "file": "lib/catalog-menu.ts",
+    "parent": "products",
+    "source": "store_public_catalog"
   },
   {
     "type": "product",

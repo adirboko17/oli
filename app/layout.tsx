@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         {result.status === "ready" ? (
-          <SiteProvider products={result.catalog.products} storeName={result.catalog.name}>
+          <SiteProvider products={result.catalog.products} collections={result.catalog.collections} storeName={result.catalog.name}>
             <Shell>{children}</Shell>
           </SiteProvider>
         ) : (

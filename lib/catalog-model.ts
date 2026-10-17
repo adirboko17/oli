@@ -38,16 +38,27 @@ export type CatalogProduct = {
   media: CatalogMedia[];
   bundles: CatalogBundle[];
   page: CatalogPage;
+  badge: string;
+  badgeHidden: boolean;
 };
 
 export function emptyCatalogPage(): CatalogPage {
   return { panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], reviews: [] };
 }
 
+export type CatalogCollection = {
+  id: string;
+  title: string;
+  description: string;
+  productIds: string[];
+  subcategories: string[];
+};
+
 export type PublicCatalog = {
   name: string;
   hostname: string;
   products: CatalogProduct[];
+  collections: CatalogCollection[];
 };
 
 export function productHref(product: Pick<CatalogProduct, "id" | "handle">) {
@@ -63,6 +74,10 @@ export function categoryLabel(category: string) {
   return /^oli\s*mini$/i.test(category.trim()) ? "תינוקות · olimini" : category;
 }
 
+export function customerTags(tags: string[]) {
+  return tags.filter((tag) => tag.trim() && !tag.startsWith("\u0001"));
+}
+
 export function categoryGroups(products: CatalogProduct[]) {
   const counts = new Map<string, number>();
   for (const product of products) {
@@ -75,6 +90,15 @@ export function categoryGroups(products: CatalogProduct[]) {
 
 export function productImage(product: CatalogProduct) {
   return product.media.find((item) => item.src && item.kind !== "video")?.src ?? null;
+}
+
+export function productBadges(product: Pick<CatalogProduct, "badge" | "badgeHidden" | "compareAt" | "price">) {
+  if (product.badgeHidden) return [];
+  const labels: string[] = [];
+  const custom = product.badge.trim();
+  if (custom) labels.push(custom);
+  if (product.compareAt != null && product.compareAt > product.price && !labels.includes("מבצע")) labels.push("מבצע");
+  return labels;
 }
 
 export function productBlurb(product: CatalogProduct) {

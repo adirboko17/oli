@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { findUser, formatPhone, saveUser, useOliUser } from "@/lib/account-session";
-import { groupHref, shopGroups } from "@/lib/shop-groups";
-import { productBlurb, productHref, productImage } from "@/lib/catalog-model";
+import { catalogMenu, menuHref } from "@/lib/catalog-menu";
+import { customerTags, productBlurb, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
@@ -81,7 +81,7 @@ function Header() {
   const [subOpen, setSubOpen] = useState(false);
   const router = useRouter();
   const user = useOliUser();
-  const groups = shopGroups(site.products);
+  const groups = catalogMenu(site.products, site.collections);
   const openMine = () => { if (user) router.push("/account"); else site.openAccount(); };
 
   useEffect(() => {
@@ -113,7 +113,7 @@ function Header() {
   const links = [
     { id: "home", href: "/", label: "דף הבית" },
     { id: "products", href: "/products", label: "המוצרים של Oli" },
-    { id: "gifts", href: groupHref("gift"), label: "מתנות ליולדת" },
+    { id: "gifts", href: menuHref("מתנה"), label: "מתנות ליולדת" },
     { id: "stores", href: "/stores", label: "Oli בחנויות" },
     { id: "articles", href: "/articles", label: "מאמרים" },
     { id: "podcast", href: "/podcast", label: "פודקאסט" },
@@ -131,7 +131,7 @@ function Header() {
             <div style={{ position: "absolute", top: "100%", right: -14, minWidth: 260, background: "#FFFFFF", borderRadius: 16, boxShadow: "0 18px 50px rgba(42,28,26,.14)", border: "1px solid #EFE4DC", padding: 8, display: "flex", flexDirection: "column", zIndex: 30, opacity: prodOpen ? 1 : 0, transform: prodOpen ? "translateY(0)" : "translateY(-6px)", pointerEvents: prodOpen ? "auto" : "none", transition: "opacity .25s ease, transform .3s cubic-bezier(.2,.8,.2,1)" }}>
               <Hx as={Link} href="/products" data-cms="nav" data-cms-id="all-products" style={dropLink} hover={{ background: "#F8EFE9" }}>כל המוצרים<span style={{ fontSize: 12, color: "#8A6C64" }}>{site.products.length}</span></Hx>
               {groups.map((group) => (
-                <Hx key={group.id} as={Link} href={groupHref(group.id)} data-cms="category" data-cms-id={group.id} style={dropLink} hover={{ background: "#F8EFE9" }}>
+                <Hx key={group.id} as={Link} href={menuHref(group.id)} data-cms="category" data-cms-id={group.id} style={dropLink} hover={{ background: "#F8EFE9" }}>
                   {group.label}<span style={{ fontSize: 12, color: "#8A6C64" }}>{group.count}</span>
                 </Hx>
               ))}
@@ -208,7 +208,7 @@ function Header() {
                   <div style={{ maxHeight: subOpen ? (groups.length + 1) * 46 : 0, overflow: "hidden", transition: "max-height .5s cubic-bezier(.2,.8,.2,1)" }}>
                     <Link href="/products" data-cms="nav" data-cms-id="all-products" style={subLink}>כל המוצרים<span>{site.products.length}</span></Link>
                     {groups.map((group) => (
-                      <Link key={group.id} href={groupHref(group.id)} data-cms="category" data-cms-id={group.id} style={subLink}>{group.label}<span>{group.count}</span></Link>
+                      <Link key={group.id} href={menuHref(group.id)} data-cms="category" data-cms-id={group.id} style={subLink}>{group.label}<span>{group.count}</span></Link>
                     ))}
                   </div>
                 )}
@@ -350,7 +350,7 @@ function SearchOverlay() {
 
   const t = site.q.trim().toLowerCase();
   const res = t
-    ? site.products.filter((product) => `${product.title} ${productBlurb(product)} ${product.tags.join(" ")}`.toLowerCase().includes(t))
+    ? site.products.filter((product) => `${product.title} ${productBlurb(product)} ${customerTags(product.tags).join(" ")}`.toLowerCase().includes(t))
     : [];
 
   if (!present) return null;

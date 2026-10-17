@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { STORE_ID } from "@/lib/store";
-import { emptyCatalogPage, type CatalogBundle, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
+import { emptyCatalogPage, type CatalogBundle, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
 
 export type CatalogLoad =
   | { status: "ready"; catalog: PublicCatalog }
@@ -30,7 +30,19 @@ async function parseCatalog(data: unknown): Promise<PublicCatalog | null> {
     name: text(row.name),
     hostname: text(row.hostname),
     products,
+    collections: Array.isArray(row.collections) ? row.collections.flatMap(parseCollection) : [],
   };
+}
+
+function parseCollection(value: unknown): CatalogCollection[] {
+  const row = record(value);
+  const title = text(row?.title).trim();
+  if (!row || !title || row.hidden === true) return [];
+  const productIds = Array.isArray(row.productIds) ? row.productIds.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+  const subcategories = Array.isArray(row.subcategories)
+    ? [...new Set(row.subcategories.flatMap((name) => (typeof name === "string" && name.trim() ? [name.trim()] : [])))]
+    : [];
+  return [{ id: typeof row.id === "string" && row.id ? row.id : title, title, description: text(row.description), productIds, subcategories }];
 }
 
 async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
@@ -53,6 +65,8 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     media: media.sort((a, b) => a.position - b.position),
     bundles: parseBundles(row.merch),
     page: parsePage(row.merch),
+    badge: badgeLabel(row.merch),
+    badgeHidden: badgeHidden(row.merch),
   };
 }
 
@@ -91,6 +105,15 @@ async function reachableMedia(path: string, kind: "image" | "video") {
   } catch {
     return null;
   }
+}
+
+function badgeLabel(value: unknown) {
+  const badge = record(record(value)?.badge);
+  return text(badge?.label).trim().slice(0, 24);
+}
+
+function badgeHidden(value: unknown) {
+  return record(record(value)?.badge)?.hidden === true;
 }
 
 function parseBundles(value: unknown): CatalogBundle[] {

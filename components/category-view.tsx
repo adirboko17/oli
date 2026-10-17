@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FF } from "@/lib/format";
-import { findGroup, productsInGroup, shopGroups } from "@/lib/shop-groups";
+import { catalogMenu, findMenuItem, productsForMenu } from "@/lib/catalog-menu";
 import { CatalogCard } from "@/components/cards";
 import CategoryFilter, { type SortKey } from "@/components/CategoryFilter";
 import { useSite } from "@/components/site";
@@ -12,8 +12,8 @@ import { useSite } from "@/components/site";
 export function CategoryView() {
   const sp = useSearchParams();
   const router = useRouter();
-  const { products } = useSite();
-  const groups = useMemo(() => shopGroups(products), [products]);
+  const { products, collections } = useSite();
+  const groups = useMemo(() => catalogMenu(products, collections), [products, collections]);
   const requested = sp.get("cat") || "all";
   const [cat, setCat] = useState(requested);
   const [sort, setSort] = useState<SortKey>("rec");
@@ -23,13 +23,13 @@ export function CategoryView() {
   }, [sp]);
 
   const list = useMemo(() => {
-    let rows = productsInGroup(products, cat);
+    let rows = productsForMenu(products, collections, cat);
     if (sort === "low") rows = [...rows].sort((a, b) => a.price - b.price);
     if (sort === "high") rows = [...rows].sort((a, b) => b.price - a.price);
     return rows;
-  }, [products, cat, sort]);
+  }, [products, collections, cat, sort]);
 
-  const group = cat === "all" ? null : findGroup(cat);
+  const group = cat === "all" ? null : findMenuItem(groups, cat);
   const label = cat === "all" ? "כל המוצרים" : group?.label || cat;
   const blurb = group?.blurb || "מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.";
 
@@ -45,7 +45,7 @@ export function CategoryView() {
 
       <CategoryFilter
         categories={[{ key: "all", label: "כל המוצרים", count: products.length }, ...groups.map((item) => ({ key: item.id, label: item.label, count: item.count }))]}
-        category={findGroup(cat)?.id || (cat === "all" ? "all" : cat)}
+        category={findMenuItem(groups, cat)?.id || (cat === "all" ? "all" : cat)}
         onCategoryChange={(key) => { setCat(key); router.replace(key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(key), { scroll: false }); }}
         sort={sort}
         onSortChange={setSort}
