@@ -95,6 +95,16 @@ export function giftPriceLabel(product: Pick<CatalogProduct, "tags">) {
   return max == null ? null : `עד ${fmt(max)}`;
 }
 
+export function giftQueryAmount(raw: string | null | undefined, amounts: number[], max: number | null): { pick: number | "custom"; text: string } | null {
+  if (!raw) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  const amount = Math.round(value * 100) / 100;
+  if (amounts.includes(amount)) return { pick: amount, text: "" };
+  if (max != null && amount >= 1 && amount <= max) return { pick: "custom", text: String(amount) };
+  return null;
+}
+
 export function giftAmountsFromTags(tags: string[]) {
   const amounts: number[] = [];
   tags.forEach((tag) => {

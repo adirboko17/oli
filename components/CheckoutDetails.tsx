@@ -13,7 +13,7 @@ export type GiftDetails = { name: string; phone: string; message: string };
 export type CheckoutPayload = {
   name: string; phone: string; email: string;
   method: ShippingMethod; city: string; street: string; apt: string; floor: string; zip: string; notes: string;
-  newsletter: boolean; coupon: string | null;
+  newsletter: boolean; coupon: string | null; giftCard: string | null;
   gift: GiftDetails | null;
   subtotal: number; shipping: number; discount: number; total: number;
 };
@@ -24,7 +24,7 @@ type Props = {
   onEditCart: () => void;                          // opens the cart drawer
   onLogin: () => void;                             // opens the SMS login
   onPay: (data: CheckoutPayload) => void | Promise<void>; // creates the order and redirects to the payment provider
-  validateCoupon: (code: string) => Promise<{ ok: boolean; percent?: number }>; // server-side coupon check
+  validateCoupon: (code: string) => Promise<{ ok: boolean; percent?: number; balance?: number; message?: string }>; // coupon percent, or a gift-card balance
   freeShippingFrom?: number;                       // default 250
   shippingPrices?: Record<ShippingMethod, number>; // default home 29, pickup 19
 };
@@ -70,7 +70,7 @@ export default function CheckoutDetails({
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
-  const [applied, setApplied] = useState<{ code: string; percent: number } | null>(null);
+  const [applied, setApplied] = useState<{ code: string; percent?: number; balance?: number } | null>(null);
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -91,9 +91,12 @@ export default function CheckoutDetails({
   const setGiftField = (k: keyof typeof to) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setTo({ ...to, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
-  const shipping = subtotal >= freeShippingFrom ? 0 : shippingPrices[method];
-  const discount = applied ? Math.round(subtotal * applied.percent) / 100 : 0;
-  const total = subtotal + shipping - discount;
+  const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
+  const shipping = digital || subtotal >= freeShippingFrom ? 0 : shippingPrices[method];
+  const discount = applied?.percent ? Math.round(subtotal * applied.percent) / 100 : 0;
+  const payable = Math.max(subtotal + shipping - discount, 0);
+  const giftTaken = applied?.balance ? Math.min(applied.balance, payable) : 0;
+  const total = payable - giftTaken;
 
   const giftPhone = to.phone.replace(/\D/g, '');
   const giftReady = !gift || (!!to.name.trim() && PHONE_RE.test(giftPhone));
@@ -107,7 +110,8 @@ export default function CheckoutDetails({
     if (!code) { setApplied(null); setCouponMsg(null); return; }
     const r = await validateCoupon(code);
     if (r.ok && r.percent) { setApplied({ code, percent: r.percent }); setCouponMsg({ text: `✓ הקופון הופעל: ${r.percent}% הנחה`, ok: true }); }
-    else { setApplied(null); setCouponMsg({ text: 'הקוד לא תקין', ok: false }); }
+    else if (r.ok && r.balance) { setApplied({ code, balance: r.balance }); setCouponMsg({ text: `✓ כרטיס מתנה עם יתרה של ${fmt(r.balance)}. מה שלא ינוצל נשאר בכרטיס.`, ok: true }); }
+    else { setApplied(null); setCouponMsg({ text: r.message || 'הקוד לא תקין', ok: false }); }
   };
 
   const pay = async () => {
@@ -120,12 +124,13 @@ export default function CheckoutDetails({
         phone: f.phone.replace(/\D/g, ''),
         method,
         newsletter: news,
-        coupon: applied?.code || null,
+        coupon: applied?.percent ? applied.code : null,
+        giftCard: applied?.balance ? applied.code : null,
         gift: gift ? { name: to.name.trim(), phone: giftPhone, message: to.message.trim() } : null,
         subtotal, shipping, discount, total,
       });
-    } catch {
-      setErr('לא הצלחנו להמשיך לתשלום. נסי שוב.');
+    } catch (error) {
+      setErr(error instanceof Error && error.message && error.message !== "order" && error.message !== "track" ? error.message : 'לא הצלחנו להמשיך לתשלום. נסי שוב.');
     } finally { setBusy(false); }
   };
 
@@ -282,7 +287,7 @@ export default function CheckoutDetails({
                 ))}
               </div>
               <div className="ck-coupon">
-                <input value={coupon} onChange={e => setCoupon(e.target.value)} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד קופון" />
+                <input value={coupon} onChange={e => { setCoupon(e.target.value); setApplied(null); setCouponMsg(null); }} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד קופון או כרטיס מתנה" />
                 <button onClick={applyCoupon}>החלה</button>
               </div>
               {couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
@@ -290,6 +295,7 @@ export default function CheckoutDetails({
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
                 <div><span>משלוח</span><span>{shipping ? fmt(shipping) : 'חינם'}</span></div>
                 {discount > 0 && <div className="ck-totals__disc"><span>הנחה ({applied?.code})</span><span>−{fmt(discount)}</span></div>}
+                {giftTaken > 0 && <div className="ck-totals__disc"><span>כרטיס מתנה</span><span>−{fmt(giftTaken)}</span></div>}
                 <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{fmt(total)}</span></div>
                 <span className="ck-totals__vat">כולל מע״מ</span>
               </div>

@@ -56,7 +56,21 @@ const DESIGN_CATEGORY: CategoryKey[] = [
 ];
 
 function isAuthor(line: string) {
-  return line.length < 140 && /מיילדת|גינקולוג|פיזיותרפ|מנהל מחלק|מנהל החטיב|רופא|נטע צמח|אלינה /.test(line) && !line.endsWith("?");
+  if (!line || line.length > 180 || /[?!]$/.test(line)) return false;
+  const cleaned = line.replace(/^מאת\s+/, "");
+  const comma = cleaned.indexOf(",");
+  if (comma < 1 || comma > 42) return false;
+  const name = cleaned.slice(0, comma).trim();
+  if (name.split(/\s+/).length > 6 || /[:()]/.test(name) || /^(יחד|כמו|זה|היא|הוא|אני|אנחנו|יש|אין|כך|אבל|לכן|כדי)\b/.test(name)) return false;
+  return /מיילדת|גינקולוג|פיזיותרפ|מנהל|רופא|יועצ|דולה|מומח|פרופ|ד["״']ר|IBCLC|נטע צמח|אלינה /.test(cleaned);
+}
+
+function isNameLine(line: string) {
+  return line.length > 1 && line.length < 40 && line.split(/\s+/).length <= 4 && !/[.?!:,]/.test(line);
+}
+
+function isRoleLine(line: string) {
+  return !!line && line.length < 140 && /מיילדת|גינקולוג|פיזיותרפ|יועצ|דולה|IBCLC|מומח|מנהל/.test(line);
 }
 
 function isHeading(line: string) {
@@ -109,16 +123,48 @@ function present(raw: (typeof journal)[number], index: number): Article {
   const lines = raw.body.split("\n").map((line) => line.trim());
   let cursor = 0;
   const lead: string[] = [];
-  while (cursor < lines.length && lines[cursor] && !lines[cursor].startsWith("עודכן") && !isAuthor(lines[cursor]) && !isHeading(lines[cursor])) {
+  const nameBeforeRole = (index: number) => {
+    let next = index + 1;
+    while (next < lines.length && !lines[next]) next += 1;
+    return isNameLine(lines[index]) && isRoleLine(lines[next]);
+  };
+  while (cursor < lines.length && lines[cursor] && !lines[cursor].startsWith("עודכן") && !isAuthor(lines[cursor]) && !nameBeforeRole(cursor) && !isHeading(lines[cursor])) {
     lead.push(lines[cursor]);
     cursor += 1;
   }
   let author = "";
   let updated = "";
-  while (cursor < lines.length && (!lines[cursor] || lines[cursor].startsWith("עודכן") || isAuthor(lines[cursor]))) {
+  while (cursor < lines.length && (!lines[cursor] || lines[cursor].startsWith("עודכן") || isAuthor(lines[cursor]) || nameBeforeRole(cursor))) {
     if (lines[cursor].startsWith("עודכן")) updated = lines[cursor].replace(/^עודכן:\s*/, "");
-    else if (lines[cursor]) author = author ? author + " · " + lines[cursor] : lines[cursor];
+    else if (nameBeforeRole(cursor)) {
+      let role = cursor + 1;
+      while (role < lines.length && !lines[role]) role += 1;
+      const combined = lines[cursor] + ", " + lines[role].replace(/\.$/, "");
+      author = author ? author + " · " + combined : combined;
+      cursor = role;
+    } else if (lines[cursor]) author = author ? author + " · " + lines[cursor] : lines[cursor];
     cursor += 1;
+  }
+  if (!author) {
+    for (let scan = cursor; scan < lines.length; scan += 1) {
+      if (!lines[scan].startsWith("עודכן")) continue;
+      let byline = scan + 1;
+      while (byline < lines.length && !lines[byline]) byline += 1;
+      if (!isAuthor(lines[byline]) && !nameBeforeRole(byline)) continue;
+      updated = updated || lines[scan].replace(/^עודכן:\s*/, "");
+      lines[scan] = "";
+      if (nameBeforeRole(byline)) {
+        let role = byline + 1;
+        while (role < lines.length && !lines[role]) role += 1;
+        author = lines[byline] + ", " + lines[role].replace(/\.$/, "");
+        lines[byline] = "";
+        lines[role] = "";
+      } else {
+        author = lines[byline];
+        lines[byline] = "";
+      }
+      break;
+    }
   }
   return {
     id: raw.id,
@@ -134,6 +180,15 @@ function present(raw: (typeof journal)[number], index: number): Article {
 }
 
 export const ARTICLES: Article[] = journal.map(present);
+
+export function authorNames(author?: string) {
+  if (!author) return "";
+  return author
+    .split(" · ")
+    .map((part) => part.replace(/^מאת\s+/, "").split(",")[0].replace(/\b(MN|RN|IBCLC)\b/g, "").replace(/[.\s]+$/, "").replace(/\s{2,}/g, " ").trim())
+    .filter(Boolean)
+    .join(" · ");
+}
 
 export const getArticle = (slug: string) => ARTICLES.find((article) => article.slug === decodeURIComponent(slug));
 export const articleNumber = (article: Article) => String(ARTICLES.indexOf(article) + 1).padStart(2, "0");

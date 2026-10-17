@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, giftAmountsFromTags, giftPriceLabel, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, giftAmountsFromTags, giftPriceLabel, giftQueryAmount, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -13,23 +13,24 @@ import { FirstOrderLine } from "@/components/final/FooterAndPromo";
 import { usePromoGate } from "@/components/promo/promo-gate";
 import { useOliUser } from "@/lib/account-session";
 
-export function ProductView({ product, related }: { product: CatalogProduct; related: CatalogProduct[] }) {
+export function ProductView({ product, related, initialGiftAmount }: { product: CatalogProduct; related: CatalogProduct[]; initialGiftAmount?: string }) {
   const { mobile, wide, headerH, add, items } = useSite();
   const user = useOliUser();
   const { openQuiz, finished } = usePromoGate();
   const images = product.media.filter((item) => item.src);
+  const giftAmounts = giftAmountsFromTags(product.tags);
+  const giftMax = openGiftMax(product.tags);
+  const requestedGift = giftQueryAmount(initialGiftAmount, giftAmounts, giftMax);
   const [thumb, setThumb] = useState(0);
   const [qty, setQty] = useState(1);
-  const [giftAmount, setGiftAmount] = useState("");
-  const [giftPick, setGiftPick] = useState<number | "custom" | null>(null);
+  const [giftAmount, setGiftAmount] = useState(requestedGift?.text ?? "");
+  const [giftPick, setGiftPick] = useState<number | "custom" | null>(requestedGift?.pick ?? null);
   const [openAcc, setOpenAcc] = useState(0);
   const [story, setStory] = useState<number | null>(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const relRef = useRef<HTMLDivElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const variant = product.variants[0] ?? null;
-  const giftAmounts = giftAmountsFromTags(product.tags);
-  const giftMax = openGiftMax(product.tags);
   const giftChoice = giftPick ?? giftAmounts[0] ?? (giftMax != null ? "custom" : null);
   const giftNumber = Number(giftAmount);
   const giftValue = giftAmount.trim() && Number.isFinite(giftNumber) ? Math.round(giftNumber * 100) / 100 : null;

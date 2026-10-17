@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { giftAmountsFromTags, openGiftMax, productImage } from "@/lib/catalog-model";
+import { useRouter } from "next/navigation";
+import { giftAmountsFromTags, openGiftMax, productHref, productImage } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 import "./GiftCard.css";
@@ -31,6 +32,7 @@ function Waves({ edge }: { edge: "top" | "bottom" }) {
 
 export default function GiftCardSection() {
   const { products, add } = useSite();
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preset, setPreset] = useState<number | "custom">(250);
   const [custom, setCustom] = useState("");
@@ -71,12 +73,16 @@ export default function GiftCardSection() {
 
   function buy() {
     if (amount == null) return;
+    if (giftProduct) {
+      router.push(`${productHref(giftProduct)}?amount=${amount}`);
+      return;
+    }
     add({
-      id: giftProduct ? `${giftProduct.id}:gift:${amount}` : `oli-gift:${amount}`,
-      name: giftProduct?.title || "כרטיס מתנה",
+      id: `oli-gift:${amount}`,
+      name: "כרטיס מתנה",
       sub: `כרטיס מתנה · ${fmt(amount)}`,
       price: amount,
-      image: (giftProduct && productImage(giftProduct)) || "/assets/gift-card.png",
+      image: "/assets/gift-card.png",
     });
   }
 
