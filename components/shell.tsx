@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { usePathname, useRouter } from "next/navigation";
 import { findUser, formatPhone, saveUser, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
-import { customerTags, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
+import { customerTags, giftPriceLabel, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
@@ -267,7 +267,7 @@ function SearchOverlay() {
                       <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 17 }}>{p.title}</span>
                       <span style={{ fontSize: 13, color: "#6E5650", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{productCardSub(p)}</span>
                     </div>
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>{fmt(p.price)}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{giftPriceLabel(p) ?? fmt(p.price)}</span>
                   </Hx>
                 ))}
               </div>

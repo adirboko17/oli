@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { openGiftMax, productImage } from "@/lib/catalog-model";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { giftAmountsFromTags, openGiftMax, productImage } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 import "./GiftCard.css";
@@ -36,20 +36,33 @@ export default function GiftCardSection() {
   const [custom, setCustom] = useState("");
 
   const giftProduct = useMemo(
-    () => products.find((product) => openGiftMax(product.tags) != null) ?? null,
+    () => products.find((product) => giftAmountsFromTags(product.tags).length > 0 || openGiftMax(product.tags) != null) ?? null,
     [products],
   );
+  const presets: number[] = giftProduct ? giftAmountsFromTags(giftProduct.tags) : [...PRESETS];
+  const allowCustom = giftProduct ? openGiftMax(giftProduct.tags) != null : true;
+  const min = giftProduct ? 1 : MIN;
+  const max = MAX;
+  const presetKey = presets.join(",");
 
-  const customOpen = preset === "custom";
+  useEffect(() => {
+    setPreset((current) => {
+      if (current === "custom" && allowCustom) return current;
+      if (typeof current === "number" && presets.includes(current)) return current;
+      return presets.includes(250) ? 250 : presets[0] ?? "custom";
+    });
+  }, [presetKey, allowCustom]);
+
+  const customOpen = allowCustom && preset === "custom";
   const typed = parseInt(custom, 10);
-  const customValid = typed >= MIN && typed <= MAX;
-  const amount = preset === "custom" ? (customValid ? typed : null) : preset;
+  const customValid = typed >= min && typed <= max;
+  const amount = preset === "custom" ? (customOpen && customValid ? typed : null) : presets.includes(preset) ? preset : null;
   const customError = customOpen && custom.length > 0 && !customValid;
   const hint = !customError
-    ? "בין ₪50 ל־₪2,500"
-    : typed > MAX
-      ? "הסכום המקסימלי הוא ₪2,500"
-      : "הסכום המינימלי הוא ₪50";
+    ? `בין ₪${min.toLocaleString("en-US")} ל־₪${max.toLocaleString("en-US")}`
+    : typed > max
+      ? `הסכום המקסימלי הוא ₪${max.toLocaleString("en-US")}`
+      : `הסכום המינימלי הוא ₪${min}`;
 
   function choose(next: number | "custom") {
     setPreset(next);
@@ -76,14 +89,14 @@ export default function GiftCardSection() {
         <h2 className="oli-gc__title" id="oli-gc-title">תנו לה לבחור</h2>
         <p className="oli-gc__text">כרטיס מתנה דיגיטלי לאישה בהריון, ליולדת הטרייה או לתינוק החדש. היא בוחרת את המוצרים שמתאימים לה.</p>
         <div className="oli-gc__card">
-          <img src="/assets/gift-card.png" alt="כרטיס מתנה Oli Safe Care" />
+          <img src={(giftProduct && productImage(giftProduct)) || "/assets/gift-card.png"} alt="כרטיס מתנה Oli Safe Care" />
         </div>
         <div className="oli-gc__buy">
           <div className="oli-gc__amounts" role="group" aria-label="בחירת סכום">
-            {PRESETS.map((value) => (
+            {presets.map((value) => (
               <button key={value} type="button" className="oli-gc__amount" aria-pressed={preset === value} onClick={() => choose(value)}>₪{value}</button>
             ))}
-            <button type="button" className="oli-gc__amount" aria-pressed={customOpen} onClick={() => choose("custom")}>סכום אחר</button>
+            {allowCustom ? <button type="button" className="oli-gc__amount" aria-pressed={customOpen} onClick={() => choose("custom")}>סכום אחר</button> : null}
           </div>
           <div className={customOpen ? "oli-gc__custom is-open" : "oli-gc__custom"}>
             <label className="oli-gc__field">

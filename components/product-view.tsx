@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { categoryLabel, giftAmountsFromTags, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, giftAmountsFromTags, giftPriceLabel, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -39,7 +39,8 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
   const bundles = product.bundles;
   const bundle = bundles.find((item) => item.qty === qty) ?? null;
-  const line = giftSelected != null ? giftSelected * qty : bundle ? bundle.price : unit * qty;
+  const isGift = giftAmounts.length > 0 || giftMax != null;
+  const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const active = images[thumb] ?? images[0];
   const description = paragraphs(product.description);
@@ -155,36 +156,43 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
           ) : null}
 
           {giftAmounts.length > 0 || giftMax != null ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>סכום הכרטיס</span>
-              {giftAmounts.map((amount) => {
-                const on = giftChoice === amount;
-                return (
-                  <button key={amount} type="button" onClick={() => setGiftPick(amount)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
-                    <span style={{ display: "flex", gap: 12, alignItems: "center", fontWeight: 600, fontSize: 16 }}>
-                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
-                      {fmt(amount)}
-                    </span>
-                  </button>
-                );
-              })}
-              {giftMax != null ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (giftChoice === "custom" ? "#3A2826" : "#E1CDC0"), background: giftChoice === "custom" ? "#FFFFFF" : "transparent" }}>
-                  <button type="button" onClick={() => setGiftPick("custom")} style={{ display: "flex", alignItems: "center", gap: 12, border: 0, background: "transparent", color: "#3A2826", textAlign: "right", padding: 0, fontWeight: 600, fontSize: 16 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{giftChoice === "custom" && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
-                    סכום אחר
-                  </button>
-                  {giftChoice === "custom" ? (
-                    <>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, height: 46, border: "1px solid #CDB5A8", borderRadius: 12, padding: "0 14px" }}>
-                        <span style={{ color: "#8A6C64" }}>₪</span>
-                        <input inputMode="decimal" value={giftAmount} onChange={(event) => setGiftAmount(event.target.value.replace(/[^\d.]/g, ""))} placeholder="150" style={{ flex: 1, minWidth: 0, border: 0, background: "transparent", fontSize: 18, fontWeight: 700, outline: "none" }} />
-                      </span>
-                      <span style={{ fontSize: 13, color: giftAmount && !giftReady ? "#A85A3A" : "#6E5650" }}>{giftAmount && !giftReady ? `אפשר בין ${fmt(1)} ל־${fmt(giftMax)}` : `כל סכום בין ${fmt(1)} ל־${fmt(giftMax)}`}</span>
-                    </>
-                  ) : null}
+              {giftAmounts.length > 0 ? (
+                <div role="group" aria-label="בחירת סכום" className="gift-amounts">
+                  {giftAmounts.map((amount) => {
+                    const on = giftChoice === amount;
+                    return (
+                      <button key={amount} type="button" aria-pressed={on} onClick={() => setGiftPick(amount)} style={giftTile(on)}>
+                        <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                          <span style={{ fontSize: 15, opacity: 0.7 }}>₪</span>
+                          <span style={{ fontFamily: FF, fontSize: 28, fontWeight: 400, letterSpacing: "-.02em" }}>{amount.toLocaleString("en-US")}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : null}
+              {giftMax != null ? (
+                giftChoice === "custom" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <label style={{ ...giftCustomRow, border: "1.5px solid #3A2826", background: "#FFFFFF" }}>
+                      <span style={{ fontSize: 15, fontWeight: 600 }}>סכום אחר</span>
+                      <span style={{ display: "flex", alignItems: "baseline", gap: 6, direction: "ltr" }}>
+                        <span style={{ fontSize: 15, color: "#A85A3A" }}>₪</span>
+                        <input autoFocus inputMode="numeric" value={giftAmount} onChange={(event) => setGiftAmount(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0" aria-label="סכום מותאם אישית" style={{ width: 90, border: 0, background: "transparent", fontFamily: FF, fontSize: 26, letterSpacing: "-.02em", color: "#3A2826", textAlign: "left", outline: "none", padding: 0 }} />
+                      </span>
+                    </label>
+                    <span style={{ fontSize: 13, color: giftAmount && !giftReady ? "#A33A2A" : "#8A6C64" }}>{giftAmount && !giftReady ? `אפשר בין ${fmt(1)} ל־${fmt(giftMax)}` : `כל סכום בין ${fmt(1)} ל־${fmt(giftMax)}`}</span>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setGiftPick("custom")} style={{ ...giftCustomRow, border: "1.5px dashed #CDB5A8", background: "transparent", color: "#3A2826" }}>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>סכום אחר</span>
+                    <span style={{ fontSize: 13, color: "#8A6C64" }}>עד {fmt(giftMax)}</span>
+                  </button>
+                )
+              ) : null}
+              <style>{`.gift-amounts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } @media (max-width: 520px) { .gift-amounts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }`}</style>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
@@ -232,10 +240,14 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                 return;
               }
               add({ id: bundle ? `${variant?.id ?? product.id}:x${bundle.qty}` : (variant?.id ?? product.id), name: product.title, sub: bundle ? bundle.label : (variant?.title || blurb), price: bundle ? bundle.price : unit, image: productImage(product) }, bundle ? 1 : qty);
-            }} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54, opacity: (giftAmounts.length > 0 || giftMax != null) && giftSelected == null ? 0.4 : 1 }} hover={{ background: "#A85A3A" }}>הוספה לסל · {fmt(line)}</Hx>
+            }} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54, opacity: isGift && giftSelected == null ? 0.4 : 1 }} hover={{ background: "#A85A3A" }}>הוספה לסל{isGift && giftSelected == null ? "" : ` · ${fmt(line)}`}</Hx>
           </div>
-          <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= 250 ? "✓ מגיע לך משלוח חינם" : "משלוח חינם בהזמנה מעל 250 ש״ח"}</span>
-          {!user && !finished && <FirstOrderLine onOpen={openQuiz} />}
+          {giftAmounts.length === 0 && giftMax == null ? (
+            <>
+              <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= 250 ? "✓ מגיע לך משלוח חינם" : "משלוח חינם בהזמנה מעל 250 ש״ח"}</span>
+              {!user && !finished && <FirstOrderLine onOpen={openQuiz} />}
+            </>
+          ) : null}
 
           {sections.length > 0 && <div style={{ borderTop: "1px solid #EFE4DC" }}>
             {sections.map((section, index) => {
@@ -395,7 +407,8 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             <div ref={relRef} className="no-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", scrollSnapType: "x mandatory" }}>
               {related.slice(0, 8).map((item) => {
                 const src = productImage(item);
-                const old = item.compareAt && item.compareAt > item.price ? item.compareAt : null;
+                const giftLabel = giftPriceLabel(item);
+                const old = !giftLabel && item.compareAt && item.compareAt > item.price ? item.compareAt : null;
                 return (
                   <div key={item.id} style={{ flex: "0 0 calc((100% - 60px) / 4)", scrollSnapAlign: "start", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                     <Link href={productHref(item)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
@@ -407,7 +420,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
                         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 18 }}>{item.title}</span>
                         <span style={{ fontSize: 14, color: "#6E5650", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{productCardSub(item)}</span>
                       </span>
-                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{fmt(item.price)}{old ? <span style={{ display: "block", fontSize: 12, color: "#9C847C", textDecoration: "line-through", fontWeight: 400 }}>{fmt(old)}</span> : null}</span>
+                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{giftLabel ?? fmt(item.price)}{old ? <span style={{ display: "block", fontSize: 12, color: "#9C847C", textDecoration: "line-through", fontWeight: 400 }}>{fmt(old)}</span> : null}</span>
                     </Link>
                   </div>
                 );
@@ -440,6 +453,33 @@ function isStoryVideo(url: string) {
 }
 
 const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.015em", fontSize: "clamp(28px,6.5vw,40px)", lineHeight: 1.15, margin: 0 };
+function giftTile(on: boolean): CSSProperties {
+  return {
+    height: 84,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+    borderRadius: 18,
+    border: "1px solid " + (on ? "#3A2826" : "#EBDDD3"),
+    background: on ? "#3A2826" : "#FBF5F1",
+    color: on ? "#FFFFFF" : "#3A2826",
+    direction: "ltr",
+    transition: "background .2s, color .2s, border-color .2s",
+  };
+}
+
+const giftCustomRow: CSSProperties = {
+  height: 64,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "0 20px",
+  borderRadius: 18,
+  textAlign: "right",
+};
+
 const qtyBtn: CSSProperties = { width: 46, height: 54, border: 0, background: "transparent", fontSize: 20, color: "#3A2826" };
 const storyNav: CSSProperties = { width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,.4)", background: "transparent", color: "#FFFFFF", fontSize: 20 };
 const relBtn: CSSProperties = { width: 44, height: 44, borderRadius: 999, border: 0, background: "#F6EEE8", color: "#3A2826", fontSize: 17 };

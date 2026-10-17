@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { giftAmountsFromTags, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, giftPriceLabel, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -11,8 +11,9 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
   const { add } = useSite();
   const src = productImage(p);
   const giftAmounts = giftAmountsFromTags(p.tags);
+  const giftLabel = giftPriceLabel(p);
   const customOnly = openGiftMax(p.tags) != null && giftAmounts.length === 0;
-  const old = !customOnly && p.compareAt && p.compareAt > p.price ? p.compareAt : null;
+  const old = !giftLabel && p.compareAt && p.compareAt > p.price ? p.compareAt : null;
   return (
     <div data-cms="product" data-cms-id="product" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", minWidth: 0 }}>
       <div style={{ position: "relative" }}>
@@ -28,7 +29,7 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
         <span style={cardSub(p.headline.mode === "split" && !!p.headline.subtitle.trim())}>{productCardSub(p)}</span>
         <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
-          <span style={{ fontWeight: 600 }}>{customOnly ? `עד ${fmt(openGiftMax(p.tags) ?? 0)}` : fmt(giftAmounts[0] ?? p.price)}</span>
+          <span style={{ fontWeight: 600 }}>{giftLabel ?? fmt(p.price)}</span>
           {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
         </span>
       </div>

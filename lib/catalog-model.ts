@@ -1,3 +1,5 @@
+import { fmt } from "@/lib/format";
+
 export type CatalogVariant = {
   id: string;
   title: string;
@@ -84,6 +86,13 @@ export const OPEN_GIFT_MAX = 2500;
 
 export function openGiftMax(tags: string[]) {
   return tags.includes(OPEN_GIFT_TAG) ? OPEN_GIFT_MAX : null;
+}
+
+export function giftPriceLabel(product: Pick<CatalogProduct, "tags">) {
+  const amounts = giftAmountsFromTags(product.tags);
+  if (amounts.length) return `החל מ־${fmt(amounts[0])}`;
+  const max = openGiftMax(product.tags);
+  return max == null ? null : `עד ${fmt(max)}`;
 }
 
 export function giftAmountsFromTags(tags: string[]) {

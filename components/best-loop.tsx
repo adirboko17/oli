@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ProductBadges } from "@/components/cards";
 import { Hx } from "@/components/hx";
-import { productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { giftPriceLabel, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 
 export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAdd: (p: CatalogProduct) => void }) {
@@ -139,7 +139,8 @@ export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAd
 
 export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void }) {
   const src = productImage(p);
-  const old = p.compareAt && p.compareAt > p.price ? p.compareAt : null;
+  const giftLabel = giftPriceLabel(p);
+  const old = !giftLabel && p.compareAt && p.compareAt > p.price ? p.compareAt : null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <div style={{ position: "relative" }}>
@@ -153,7 +154,7 @@ export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
         <span style={cardSub(p.headline.mode === "split" && !!p.headline.subtitle.trim())}>{productCardSub(p)}</span>
         <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
-          <span style={{ fontWeight: 600 }}>{fmt(p.price)}</span>
+          <span style={{ fontWeight: 600 }}>{giftLabel ?? fmt(p.price)}</span>
           {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
         </span>
       </div>
