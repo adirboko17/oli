@@ -108,7 +108,7 @@ export function SiteProvider({ children, products, collections, storeName }: { c
     setCartOpen(false);
   }, [path]);
 
-  const overlay = menu || search || account || cartOpen;
+  const overlay = search || account || cartOpen;
   useEffect(() => {
     if (!overlay) return;
     const onTouch = (e: TouchEvent) => {

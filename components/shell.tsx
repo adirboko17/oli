@@ -13,6 +13,7 @@ import {
 } from "@/components/icons";
 import { useSite } from "@/components/site";
 import { A11yWidget } from "@/components/widgets";
+import MobileMenu from "@/components/MobileMenu";
 import PromoFivePercent from "@/components/PromoFivePercent";
 
 const PROMO = ["משלוח חינם בהזמנה מעל 250 ש״ח", "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
@@ -78,7 +79,6 @@ function Header() {
   const [menuTop, setMenuTop] = useState(108);
   const [prodOpen, setProdOpen] = useState(false);
   const hideProd = useRef<number | undefined>(undefined);
-  const [subOpen, setSubOpen] = useState(false);
   const router = useRouter();
   const user = useOliUser();
   const groups = catalogMenu(site.products, site.collections);
@@ -110,17 +110,13 @@ function Header() {
     };
   }, [site]);
 
-  const links = [
-    { id: "home", href: "/", label: "דף הבית" },
-    { id: "products", href: "/products", label: "המוצרים של Oli" },
-    { id: "gifts", href: menuHref("מתנה"), label: "מתנות ליולדת" },
-    { id: "stores", href: "/stores", label: "Oli בחנויות" },
-    { id: "articles", href: "/articles", label: "מאמרים" },
-    { id: "podcast", href: "/podcast", label: "פודקאסט" },
+  const categories = [
+    { label: "כל המוצרים", href: "/products", count: site.products.length, cms: "nav" as const, cmsId: "all-products" },
+    ...groups.map((group) => ({ label: group.label, href: menuHref(group.id), count: group.count, cms: "category" as const, cmsId: group.id })),
   ];
 
   return (
-    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent" }}>
+    <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent", ["--oli-header-h" as string]: `${menuTop}px` }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(255,255,255,.94)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EFE4DC" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
         <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", alignItems: "center", minWidth: 0 }}>
@@ -159,10 +155,9 @@ function Header() {
       </div>
 
       <div className="mob-nav" style={{ position: "relative", zIndex: 1, padding: "12px 16px", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
-        <button type="button" onClick={site.toggleMenu} aria-label="תפריט" style={{ justifySelf: "start", width: 44, height: 44, border: "1px solid " + (site.menu ? "#3A2826" : "#CDB5A8"), borderRadius: 999, background: site.menu ? "#3A2826" : "transparent", position: "relative", padding: 0, transition: "background .35s, border-color .35s" }}>
-          <span style={{ position: "absolute", left: 13, right: 13, height: 1.5, borderRadius: 2, background: site.menu ? "#FBF5EF" : "#3A2826", top: site.menu ? 21 : 17, transform: site.menu ? "rotate(45deg)" : "none", transition: "all .45s cubic-bezier(.7,0,.2,1)" }} />
-          <span style={{ position: "absolute", left: 13, right: site.menu ? 13 : 19, height: 1.5, borderRadius: 2, background: site.menu ? "#FBF5EF" : "#3A2826", top: site.menu ? 21 : 25, transform: site.menu ? "rotate(-45deg)" : "none", transition: "all .45s cubic-bezier(.7,0,.2,1)" }} />
-        </button>
+        <div style={{ justifySelf: "start" }}>
+          <MobileMenu categories={categories} onAccount={openMine} />
+        </div>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
           <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
         </Link>
@@ -176,67 +171,11 @@ function Header() {
           </button>
         </div>
       </div>
-
-      <div className="mob-menu" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 19, maxHeight: `calc(100dvh - ${menuTop}px)`, borderRadius: "0 0 28px 28px", overflow: "hidden", color: "#FBF5EF", flexDirection: "column", pointerEvents: site.menu ? "auto" : "none" }}>
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#3A2826", borderRadius: "0 0 28px 28px", clipPath: site.menu ? "inset(0 0 0 0 round 0 0 28px 28px)" : "inset(0 0 100% 0 round 0 0 28px 28px)", transition: "clip-path .65s cubic-bezier(.7,0,.2,1)" }} />
-        <div data-scroll-lock-allow style={{ position: "relative", zIndex: 1, maxHeight: `calc(100dvh - ${menuTop}px)`, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "18px 24px 4px", opacity: site.menu ? 1 : 0, transform: site.menu ? "translateY(0)" : "translateY(16px)", transition: `opacity .5s ease ${site.menu ? 0.18 : 0}s, transform .55s cubic-bezier(.2,.8,.2,1) ${site.menu ? 0.18 : 0}s` }}>
-          <button type="button" onClick={site.openSearch} style={menuRow}>
-            <IconSearch size={20} />
-            <span style={{ flex: 1 }}>חיפוש מוצרים, מאמרים…</span>
-          </button>
-        </div>
-        <nav style={{ display: "flex", flexDirection: "column", padding: "8px 24px 0" }}>
-          {links.map((l, i) => {
-            const products = l.href === "/products";
-            return (
-              <div key={l.href}>
-                {products ? (
-                  <button type="button" onClick={() => setSubOpen((v) => !v)} data-cms="nav" data-cms-id={l.id} style={menuLink(site.menu, i)}>
-                    <span style={menuNum}>0{i + 1}</span>
-                    <span style={{ flex: 1 }}>{l.label}</span>
-                    <span style={{ fontSize: 24, color: "#C9A08A", fontWeight: 300, transform: subOpen ? "rotate(45deg)" : "none", transition: "transform .35s" }}>+</span>
-                  </button>
-                ) : (
-                  <Link href={l.href} data-cms="nav" data-cms-id={l.id} style={menuLink(site.menu, i)}>
-                    <span style={menuNum}>0{i + 1}</span>
-                    <span style={{ flex: 1 }}>{l.label}</span>
-                    <span style={{ fontSize: 20, color: "#C9A08A" }}>←</span>
-                  </Link>
-                )}
-                {products && (
-                  <div style={{ maxHeight: subOpen ? (groups.length + 1) * 46 : 0, overflow: "hidden", transition: "max-height .5s cubic-bezier(.2,.8,.2,1)" }}>
-                    <Link href="/products" data-cms="nav" data-cms-id="all-products" style={subLink}>כל המוצרים<span>{site.products.length}</span></Link>
-                    {groups.map((group) => (
-                      <Link key={group.id} href={menuHref(group.id)} data-cms="category" data-cms-id={group.id} style={subLink}>{group.label}<span>{group.count}</span></Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-        <div style={{ padding: "16px 24px calc(16px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 14, opacity: site.menu ? 1 : 0, transform: site.menu ? "none" : "translateY(16px)", transition: `opacity .5s ease ${site.menu ? 0.62 : 0}s, transform .6s ease ${site.menu ? 0.62 : 0}s` }}>
-          <button type="button" onClick={openMine} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: "#4A3532", color: "#FFFFFF", border: 0, textAlign: "right" }}>
-            <span style={{ width: 40, height: 40, borderRadius: "50%", background: "#F3D9C6", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center" }}><IconUser size={20} /></span>
-            <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}><span style={{ fontSize: 15, fontWeight: 600 }}>{user ? "האזור האישי" : "התחברות לאזור האישי"}</span><span style={{ fontSize: 12, color: "#C9B2A6" }}>{user ? user.name : "הזמנות, פרטים והטבות"}</span></span>
-            <span style={{ fontSize: 18, color: "#C9A08A" }}>←</span>
-          </button>
-          <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
-            <Hx as="a" href="https://wa.me/972559739670" target="_blank" rel="noreferrer" aria-label="WhatsApp" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconWhatsApp size={19} /></Hx>
-            <Hx as="a" href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="Instagram" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconInstagram /></Hx>
-            <Hx as="a" href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" rel="noreferrer" aria-label="Spotify" style={social} hover={{ background: "#F3D9C6", color: "#3A2826", borderColor: "#F3D9C6" }}><IconSpotify /></Hx>
-          </div>
-          <span style={{ textAlign: "center", fontSize: 13, color: "#C9B2A6" }}>משלוח חינם בהזמנה מעל 250 ש״ח</span>
-        </div>
-        </div>
-      </div>
       <style>{`
-        .mob-nav, .mob-menu { display: none; }
+        .mob-nav { display: none; }
         @media (max-width: 767px) {
           .desk-nav { display: none !important; }
           .mob-nav { display: grid !important; }
-          .mob-menu { display: flex; }
         }
       `}</style>
     </header>
@@ -254,24 +193,6 @@ const cartBtn = {
   position: "relative" as const, display: "flex", alignItems: "center", gap: 8, height: 42,
   padding: "0 18px 0 16px", border: 0, borderRadius: 999, background: "#3A2826", color: "#FFFFFF", fontSize: 14, fontWeight: 600,
 };
-
-function menuLink(open: boolean, i: number): CSSProperties {
-  return {
-    display: "flex", alignItems: "center", gap: 16, width: "100%", padding: "15px 0",
-    border: 0, borderBottom: "1px solid #54403C", background: "transparent", color: "#FFFFFF",
-    fontSize: 26, fontWeight: 500, letterSpacing: "-.01em", textAlign: "right",
-    opacity: open ? 1 : 0, transform: open ? "translateY(0)" : "translateY(24px)",
-    transition: `opacity .5s ease ${open ? 0.28 + i * 0.06 : 0}s, transform .6s cubic-bezier(.2,.8,.2,1) ${open ? 0.28 + i * 0.06 : 0}s`,
-  };
-}
-const menuNum: CSSProperties = { fontSize: 13, color: "#C9A08A", fontWeight: 500, letterSpacing: ".06em", minWidth: 26 };
-const subLink: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 42px 11px 0", fontSize: 17, color: "#E6D2C6", borderBottom: "1px solid #4A3532" };
-
-const menuRow = {
-  display: "flex", alignItems: "center", gap: 12, height: 52, width: "100%",
-  padding: "0 18px", borderRadius: 14, background: "#4A3532", color: "#C9B2A6",
-  fontSize: 15, border: 0, textAlign: "right" as const,
-} as const;
 
 const footSocial = {
   width: 42, height: 42, borderRadius: "50%", border: "1px solid #D9B9A5",
