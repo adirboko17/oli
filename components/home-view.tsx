@@ -88,7 +88,7 @@ export function HomeView() {
   const stages = STAGES.map((stage) => {
     const group = groups.find((g) => stage.test.test(g.key));
     const count = group?.count ?? products.filter((p) => stage.test.test(`${p.title} ${p.category} ${p.tags.join(" ")}`)).length;
-    const href = group ? "/products?cat=" + encodeURIComponent(group.key) : "/products";
+    const href = stage.title === "תינוקות" ? "/olimini" : group ? "/products?cat=" + encodeURIComponent(group.key) : "/products";
     return { ...stage, href, count: count ? `${count} ${stage.title === "מתנות ליולדת" ? "מארזים" : "מוצרים"}` : "למוצרים" };
   });
 

@@ -9,13 +9,15 @@ import { customerTags, productBlurb, productHref, productImage } from "@/lib/cat
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
-  IconBag, IconFacebook, IconInstagram, IconSearch, IconSpotify, IconUser, IconWhatsApp, IconYouTube,
+  IconBag, IconSearch, IconUser,
 } from "@/components/icons";
 import { useSite } from "@/components/site";
 import { A11yWidget } from "@/components/widgets";
 import MobileMenu from "@/components/MobileMenu";
 import { PodcastNavDropdown } from "@/components/podcasts/PodcastMenu";
 import PromoFivePercent from "@/components/PromoFivePercent";
+import { PromoGate } from "@/components/promo/promo-gate";
+import { SiteFooter } from "@/components/final/FooterAndPromo";
 import { HeaderContactLink } from "@/components/contact/ContactPage";
 
 const PROMO = ["משלוח חינם בהזמנה מעל 250 ש״ח", "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
@@ -73,7 +75,7 @@ function Header() {
   const site = useSite();
   const path = usePathname();
   const home = path === "/";
-  const prod = path.startsWith("/products") || path.startsWith("/product");
+  const prod = path.startsWith("/products") || path.startsWith("/product") || path.startsWith("/olimini");
   const stores = path.startsWith("/stores");
   const articlesOn = path.startsWith("/articles") || path.startsWith("/journal");
   const pod = path.startsWith("/podcast");
@@ -196,54 +198,6 @@ const cartBtn = {
   position: "relative" as const, display: "flex", alignItems: "center", gap: 8, height: 42,
   padding: "0 18px 0 16px", border: 0, borderRadius: 999, background: "#3A2826", color: "#FFFFFF", fontSize: 14, fontWeight: 600,
 };
-
-const footSocial = {
-  width: 42, height: 42, borderRadius: "50%", border: "1px solid #D9B9A5",
-  display: "flex", alignItems: "center", justifyContent: "center", color: "#5E4844",
-} as const;
-
-function Footer() {
-  const { storeName } = useSite();
-  return (
-    <footer dir="rtl" style={{ background: "#F3D9C6", color: "#5E4844", marginTop: "auto", textAlign: "right" }}>
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(35px,9vw,64px) clamp(16px,4.5vw,32px) 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 40 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <img src="/assets/logo-brown.png" alt={storeName} style={{ height: 64, width: "auto", display: "block", alignSelf: "flex-start" }} />
-          <p style={{ fontSize: 15, lineHeight: 1.6 }}>מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.</p>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>חנות</span>
-          <Link href="/products" style={{ color: "#5E4844" }}>המוצרים של Oli</Link>
-          <Link href="/products" style={{ color: "#5E4844" }}>מתנות ליולדת</Link>
-          <Link href="/stores" style={{ color: "#5E4844" }}>בחנויות Oli</Link>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>ידע</span>
-          <Link href="/articles" style={{ color: "#5E4844" }}>מאמרים</Link>
-          <Link href="/podcast" style={{ color: "#5E4844" }}>היריון בטוח, פרופ׳ שיינר</Link>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 15 }}>
-          <span style={{ color: "#3A2826", fontWeight: 600, marginBottom: 4 }}>צרי קשר</span>
-          <Link href="/contact" style={{ color: "#5E4844" }}>טופס יצירת קשר</Link>
-          <a href="mailto:info@olisafecare.com" style={{ color: "#5E4844" }}>info@olisafecare.com</a>
-          <a href="https://wa.me/972559739670" target="_blank" rel="noreferrer" style={{ color: "#5E4844" }}>+972 55-973-9670</a>
-          <span style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-            <Hx as="a" href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="Instagram" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconInstagram /></Hx>
-            <Hx as="a" href="https://www.facebook.com/profile.php?id=100093537736476" target="_blank" rel="noreferrer" aria-label="Facebook" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconFacebook /></Hx>
-            <Hx as="a" href="https://open.spotify.com/show/0OQnglgNAHROK4QMU7sZxB" target="_blank" rel="noreferrer" aria-label="Spotify" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconSpotify /></Hx>
-            <Hx as="a" href="https://youtube.com/@olisafecare" target="_blank" rel="noreferrer" aria-label="YouTube" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconYouTube /></Hx>
-            <Hx as="a" href="https://wa.me/972559739670" target="_blank" rel="noreferrer" aria-label="WhatsApp" style={footSocial} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}><IconWhatsApp size={19} /></Hx>
-          </span>
-        </div>
-      </div>
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "20px clamp(16px,4.5vw,32px)", borderTop: "1px solid #E2C2AD", display: "flex", gap: 24, fontSize: 13, flexWrap: "wrap" }}>
-        <Link href="/legal?tab=terms" style={{ color: "#5E4844" }}>תקנון האתר</Link>
-        <Link href="/legal?tab=a11y" style={{ color: "#5E4844" }}>הצהרת נגישות</Link>
-        <Link href="/legal?tab=privacy" style={{ color: "#5E4844" }}>מדיניות פרטיות</Link>
-      </div>
-    </footer>
-  );
-}
 
 function useShown(open: boolean, duration = 650) {
   const [present, setPresent] = useState(open);
@@ -641,22 +595,23 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
+    <PromoGate>
     <div dir="rtl" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="chrome-clear top" aria-hidden />
       <div className="chrome-clear bottom" aria-hidden />
       <Promo />
       <Header />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</div>
-      <Footer />
+      <SiteFooter />
       <SearchOverlay />
       <AccountDrawer />
       <CartDrawer />
       <A11yWidget />
       <PromoFivePercent
-        hidden={pathname === "/contact" || !!user || site.menu || site.search || site.account || site.cartOpen}
-        code="OLI5"
+        hidden={pathname === "/contact" || pathname.startsWith("/checkout") || !!user || site.menu || site.search || site.account || site.cartOpen}
         onShop={() => router.push("/products")}
       />
     </div>
+    </PromoGate>
   );
 }

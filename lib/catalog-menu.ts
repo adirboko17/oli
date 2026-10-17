@@ -1,4 +1,4 @@
-import type { CatalogCollection, CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
 
 const subcategoryTagPrefix = "\u0001sub:";
 
@@ -15,7 +15,13 @@ type Bucket = {
   blurb: string;
 };
 
+export function isOliminiCategory(value: string) {
+  const key = decodeURIComponent(value).trim();
+  return key === "olimini" || key === "baby" || /^oli\s*mini$/i.test(key) || key === "תינוקות · olimini";
+}
+
 export function menuHref(id: string) {
+  if (isOliminiCategory(id)) return "/olimini";
   return "/products?cat=" + encodeURIComponent(id);
 }
 
@@ -73,12 +79,15 @@ export function catalogMenu(products: CatalogProduct[], collections: CatalogColl
   titles.forEach((title) => {
     const bucket = groups.get(title)!;
     const count = [...bucket.ids].filter((id) => known.has(id)).length;
-    items.push({ id: title, label: title, count, blurb: bucket.blurb });
+    items.push({ id: isOliminiCategory(title) ? "olimini" : title, label: categoryLabel(title), count, blurb: bucket.blurb });
     bucket.subs.forEach((name) => {
       const count = products.filter((product) => subcategoryNames(product).includes(name) && (product.category.trim() === title || bucket.ids.has(product.id))).length;
       items.push({ id: `${title}/${name}`, label: `${title} · ${name}`, count, blurb: "" });
     });
   });
+  if (!items.some((item) => isOliminiCategory(item.id) || isOliminiCategory(item.label))) {
+    items.push({ id: "olimini", label: "תינוקות · olimini", count: 3, blurb: "קו הטיפוח הראשון שלנו לתינוקות." });
+  }
   return items;
 }
 

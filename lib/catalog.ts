@@ -146,10 +146,11 @@ function parseBundles(value: unknown): CatalogBundle[] {
 
 function parseFaq(value: unknown) {
   const merch = record(value);
-  if (!Array.isArray(merch?.faq)) return [];
+  const page = record(merch?.page);
+  const source = Array.isArray(page?.faqs) ? page.faqs : Array.isArray(merch?.faq) ? merch.faq : [];
   const allowed = new Set(["use", "ing", "post", "buy"]);
   const items: { q: string; a: string; tag: string }[] = [];
-  for (const item of merch.faq) {
+  for (const item of source) {
     const row = record(item);
     const q = text(row?.q).trim();
     const a = text(row?.a).trim();

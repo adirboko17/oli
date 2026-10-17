@@ -5,13 +5,18 @@ import { useRef, useState, type CSSProperties } from "react";
 import { categoryLabel, productBadges, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
-import ProductFAQ, { OLILASTIC_FAQ } from "@/components/contact/ProductFAQ";
+import ProductFAQ from "@/components/contact/ProductFAQ";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
+import { FirstOrderLine } from "@/components/final/FooterAndPromo";
+import { usePromoGate } from "@/components/promo/promo-gate";
+import { useOliUser } from "@/lib/account-session";
 
 export function ProductView({ product, related }: { product: CatalogProduct; related: CatalogProduct[] }) {
   const { mobile, wide, headerH, add, items } = useSite();
+  const user = useOliUser();
+  const { openQuiz, finished } = usePromoGate();
   const images = product.media.filter((item) => item.src);
   const [thumb, setThumb] = useState(0);
   const [qty, setQty] = useState(1);
@@ -35,7 +40,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
   const category = categoryLabel(product.category) || "המוצרים של Oli";
-  const faq = product.faq.length > 0 ? product.faq : /olilastic/i.test(`${product.handle ?? ""} ${product.title}`) ? OLILASTIC_FAQ : [];
+  const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
 
   function scrollRel(dir: number) {
@@ -135,6 +140,7 @@ export function ProductView({ product, related }: { product: CatalogProduct; rel
             <Hx as="button" onClick={() => add({ id: bundle ? `${variant?.id ?? product.id}:x${bundle.qty}` : (variant?.id ?? product.id), name: product.title, sub: bundle ? bundle.label : (variant?.title || blurb), price: bundle ? bundle.price : unit, image: productImage(product) }, bundle ? 1 : qty)} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54 }} hover={{ background: "#A85A3A" }}>הוספה לסל · {fmt(line)}</Hx>
           </div>
           <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= 250 ? "✓ מגיע לך משלוח חינם" : "משלוח חינם בהזמנה מעל 250 ש״ח"}</span>
+          {!user && !finished && <FirstOrderLine onOpen={openQuiz} />}
 
           {sections.length > 0 && <div style={{ borderTop: "1px solid #EFE4DC" }}>
             {sections.map((section, index) => {

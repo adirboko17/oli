@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FF } from "@/lib/format";
-import { catalogMenu, findMenuItem, productsForMenu } from "@/lib/catalog-menu";
+import { catalogMenu, findMenuItem, isOliminiCategory, productsForMenu } from "@/lib/catalog-menu";
+import { OliminiView } from "@/components/olimini/OliminiView";
 import { CatalogCard } from "@/components/cards";
 import CategoryFilter, { type SortKey } from "@/components/CategoryFilter";
 import { useSite } from "@/components/site";
@@ -29,6 +30,8 @@ export function CategoryView() {
     return rows;
   }, [products, collections, cat, sort]);
 
+  if (isOliminiCategory(cat)) return <OliminiView />;
+
   const group = cat === "all" ? null : findMenuItem(groups, cat);
   const label = cat === "all" ? "כל המוצרים" : group?.label || cat;
   const blurb = group?.blurb || "מוצרי טיפוח בטוחים, יעילים ומפנקים למסע היקר של ההריון ולאחריו.";
@@ -46,7 +49,7 @@ export function CategoryView() {
       <CategoryFilter
         categories={[{ key: "all", label: "כל המוצרים", count: products.length }, ...groups.map((item) => ({ key: item.id, label: item.label, count: item.count }))]}
         category={findMenuItem(groups, cat)?.id || (cat === "all" ? "all" : cat)}
-        onCategoryChange={(key) => { setCat(key); router.replace(key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(key), { scroll: false }); }}
+        onCategoryChange={(key) => { if (isOliminiCategory(key)) { router.push("/olimini"); return; } setCat(key); router.replace(key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(key), { scroll: false }); }}
         sort={sort}
         onSortChange={setSort}
         resultCount={list.length}

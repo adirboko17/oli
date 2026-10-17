@@ -22,7 +22,7 @@ type Props = {
 
 const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
   { id: "home", label: "דף הבית", href: "/", match: ["/"] },
-  { id: "products", label: "המוצרים של Oli", href: "/products", match: ["/products", "/product"] },
+  { id: "products", label: "המוצרים של Oli", href: "/products", match: ["/products", "/product", "/olimini"] },
   { id: "gifts", label: "מתנות ליולדת", href: menuHref("מתנה"), match: [] },
   { id: "stores", label: "Oli בחנויות", href: "/stores", match: ["/stores"] },
   { id: "articles", label: "מאמרים", href: "/articles", match: ["/articles", "/journal"] },

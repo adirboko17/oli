@@ -18,7 +18,7 @@ const TAGS: Record<string, string> = { all: 'הכל', use: 'שימוש', ing: '�
 
 // "שאלות ותשובות" on the product page (below the reviews).
 // Desktop: title on the side (sticky) + list. Mobile: title above the list.
-export default function ProductFAQ({ items = OLILASTIC_FAQ, whatsapp = 'https://wa.me/972559739670' }: { items?: FaqItem[]; whatsapp?: string }) {
+export default function ProductFAQ({ items = [], whatsapp = 'https://wa.me/972559739670' }: { items?: FaqItem[]; whatsapp?: string }) {
   const [tag, setTag] = useState('all');
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true });
 

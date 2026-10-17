@@ -1,5 +1,5 @@
-import { PodcastView } from "@/components/podcast-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <PodcastView />;
+  redirect("/podcast/safe");
 }

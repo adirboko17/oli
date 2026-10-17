@@ -18,7 +18,7 @@ export const PODCASTS: Podcast[] = [
     desc: "בהנחיית פרופ' אייל שיינר, מומחה במיילדות וגניקולוגיה, מנהל מחלקת נשים ויולדות ב' בביה\"ח סורוקה.",
     mobileSub: "בהנחיית פרופ' אייל שיינר",
     cover: '/assets/podcast-cover.png',
-    href: '/podcast',
+    href: '/podcast/safe',
   },
   {
     id: 'free-to-birth',
@@ -27,7 +27,6 @@ export const PODCASTS: Podcast[] = [
     desc: 'בהנחיית זיוה כחלון, מיילדת מוסמכת. כל הכלים, הידע והביטחון ללדת בדרך הטבע.',
     mobileSub: 'לידה טבעית עם זיוה כחלון',
     cover: 'https://i.scdn.co/image/ab6765630000ba8a6d08ad7681f239e7c18f701d',
-    href: 'https://open.spotify.com/show/5UMP2LgDAo7n9ih5fvSYEz',
-    external: true, // if an internal page is built, change to '/podcast/free-to-birth' and remove external
+    href: '/podcast/free',
   },
 ];
