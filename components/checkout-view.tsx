@@ -6,9 +6,10 @@ import CheckoutDetails, { type CheckoutPayload } from "@/components/CheckoutDeta
 import { useSite } from "@/components/site";
 import { readUser, saveOrder, useOliUser } from "@/lib/account-session";
 import { FF, fmt } from "@/lib/format";
+import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
-export function CheckoutView() {
+export function CheckoutView({ shippingMethods, currency }: { shippingMethods: ShippingChoice[]; currency: string }) {
   const site = useSite();
   const user = useOliUser();
   const [done, setDone] = useState(false);
@@ -29,31 +30,13 @@ export function CheckoutView() {
     user ? { name: user.name, phone: user.phone, email: user.email, city: user.city, street: user.addr } : null
   ), [user]);
 
-  async function validateCoupon(code: string) {
-    const couponRes = await fetch("/api/coupon", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const coupon = await couponRes.json().catch(() => null) as { ok?: boolean; percent?: number } | null;
-    if (couponRes.ok && coupon?.ok && coupon.percent) return { ok: true as const, percent: coupon.percent };
-    const giftRes = await fetch("/api/gift", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const gift = await giftRes.json().catch(() => null) as { ok?: boolean; balance?: number; message?: string } | null;
-    if (giftRes.ok && gift?.ok && gift.balance) return { ok: true as const, balance: gift.balance };
-    return { ok: false as const, message: gift?.message };
-  }
-
   async function onPay(data: CheckoutPayload) {
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         items: items.map((item) => ({ id: item.id, qty: item.qty })),
-        method: data.method,
+        shippingName: data.shippingName,
         coupon: data.coupon,
         giftCard: data.giftCard,
         name: data.name,
@@ -93,10 +76,14 @@ export function CheckoutView() {
       const prices = new Map((body.lines ?? []).map((line) => [line.id, line.price]));
       const digitalOrder = items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
       const place = digitalOrder
-        ? "משלוח דיגיטלי"
-        : data.method === "pickup"
-        ? ["נקודת איסוף", data.city].filter(Boolean).join(", ")
-        : [data.street, data.apt && "דירה " + data.apt, data.floor && "קומה " + data.floor, data.city].filter(Boolean).join(", ");
+        ? data.shippingName
+        : [
+            data.shippingName,
+            !isPickupZone(data.zone) ? data.street : "",
+            data.apt && "דירה " + data.apt,
+            data.floor && "קומה " + data.floor,
+            data.city,
+          ].filter(Boolean).join(", ");
       const addr = data.gift ? ["מתנה · " + data.gift.name, data.gift.email, place].filter(Boolean).join(" · ") : place;
       saveOrder(account.phone, {
         id: number,
@@ -145,11 +132,12 @@ export function CheckoutView() {
   return (
     <CheckoutDetails
       items={items}
+      shippingMethods={shippingMethods}
+      currency={currency}
       user={profile}
       onEditCart={site.openCart}
       onLogin={site.openAccount}
       onPay={onPay}
-      validateCoupon={validateCoupon}
     />
   );
 }

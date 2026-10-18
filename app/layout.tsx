@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
@@ -23,6 +24,9 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await trackRenderedPageView();
   const result = await loadPublicCatalog();
+  const helloCookie = (await cookies()).get("oli_hello")?.value ?? "";
+  let hello = "";
+  try { hello = decodeURIComponent(helloCookie).trim().slice(0, 40); } catch { hello = ""; }
   return (
     <html lang="he" dir="rtl">
       <head>
@@ -33,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {result.status === "ready" ? (
           <SiteProvider products={result.catalog.products} collections={result.catalog.collections} storeName={result.catalog.name}>
-            <Shell>{children}</Shell>
+            <Shell hello={hello}>{children}</Shell>
           </SiteProvider>
         ) : (
           <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 32, textAlign: "center" }}>

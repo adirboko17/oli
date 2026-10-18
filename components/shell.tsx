@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { findUser, formatPhone, saveUser, useOliUser } from "@/lib/account-session";
+import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { customerTags, giftPriceLabel, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
@@ -71,7 +71,7 @@ function Promo() {
   );
 }
 
-function Header() {
+function Header({ hello }: { hello: string }) {
   const site = useSite();
   const path = usePathname();
   const home = path === "/";
@@ -84,7 +84,7 @@ function Header() {
   const [prodOpen, setProdOpen] = useState(false);
   const hideProd = useRef<number | undefined>(undefined);
   const router = useRouter();
-  const user = useOliUser();
+  const { user, label: accountLabel } = useAccountGreeting(hello);
   const groups = catalogMenu(site.products, site.collections);
   const openMine = () => { if (user) router.push("/account"); else site.openAccount(); };
 
@@ -150,7 +150,7 @@ function Header() {
             <IconSearch /><span>חיפוש</span>
           </Hx>
           <Hx as="button" onClick={openMine} style={iconLink} hover={{ background: "#F8EFE9" }}>
-            <IconUser /><span>החשבון שלי</span>
+            <IconUser /><span>{accountLabel}</span>
           </Hx>
           <Hx as="button" onClick={site.openCart} aria-label="סל קניות" style={cartBtn} hover={{ background: "#A85A3A" }}>
             <IconBag /><span>סל</span>
@@ -161,7 +161,7 @@ function Header() {
 
       <div className="mob-nav" style={{ position: "relative", zIndex: 1, padding: "12px 16px", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
         <div style={{ justifySelf: "start" }}>
-          <MobileMenu categories={categories} onAccount={openMine} />
+          <MobileMenu categories={categories} onAccount={openMine} accountLabel={accountLabel} />
         </div>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>
           <img src="/assets/logo-brown.png" alt={site.storeName} style={{ height: 46, display: "block" }} />
@@ -571,7 +571,7 @@ function scrollToTop() {
   document.body.scrollTop = 0;
 }
 
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({ children, hello = "" }: { children: ReactNode; hello?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const site = useSite();
@@ -600,9 +600,9 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="chrome-clear top" aria-hidden />
       <div className="chrome-clear bottom" aria-hidden />
       <Promo />
-      <Header />
+      <Header hello={hello} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</div>
-      <SiteFooter />
+      <SiteFooter hello={hello} />
       <SearchOverlay />
       <AccountDrawer />
       <CartDrawer />

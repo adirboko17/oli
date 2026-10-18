@@ -1,73 +1,18 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { loadPublicCatalog } from "@/lib/catalog";
-import { giftAmountsFromTags, OPEN_GIFT_MAX, openGiftMax, type CatalogProduct } from "@/lib/catalog-model";
+import { isGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { settleGiftCards } from "@/lib/gift-cards";
-import { consumePromo, promoPercent } from "@/lib/promo-leads";
+import { isPickupZone } from "@/lib/shipping";
 import { createVisitorKey, validVisitorKey, VISITOR_COOKIE, visitorCookieOptions } from "@/lib/storely";
 import { trackPurchase } from "@/lib/storely-actions";
+import { loadShopShipping, quoteStorefront, storefrontHost, type StoreLine } from "@/lib/storely-shop";
 
-const FREE_FROM = 250;
-const SHIPPING = { home: 29, pickup: 19 } as const;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
 const STORE_HOST = "oli-eosin.vercel.app";
 
-type StoreLine = { variantId: string; quantity: number };
 type PlacedOrder = { orderNumber: string; total: number; shipping: number; discount: number };
-
-type Method = keyof typeof SHIPPING;
-
-function giftAmount(raw: string) {
-  const amount = Math.round(Number(raw) * 100) / 100;
-  return Number.isFinite(amount) ? amount : null;
-}
-
-function resolvePrice(products: CatalogProduct[], id: string) {
-  const card = /^oli-gift:(\d+(?:\.\d+)?)$/.exec(id);
-  if (card) {
-    const amount = giftAmount(card[1]);
-    if (amount == null || amount < 50 || amount > OPEN_GIFT_MAX) return null;
-    return amount;
-  }
-  const gift = /^(.*):gift:(\d+(?:\.\d+)?)$/.exec(id);
-  if (gift) {
-    const amount = giftAmount(gift[2]);
-    const product = products.find((item) => item.id === gift[1]);
-    if (!product || amount == null) return null;
-    const preset = giftAmountsFromTags(product.tags).includes(amount);
-    const max = openGiftMax(product.tags);
-    const custom = max != null && amount >= 1 && amount <= max;
-    if (!preset && !custom) return null;
-    return amount;
-  }
-  const bundle = /^(.+):x(\d+)$/.exec(id);
-  const baseId = bundle?.[1] ?? id;
-  const bundleQty = bundle ? Number(bundle[2]) : null;
-  for (const product of products) {
-    const variant = product.variants.find((item) => item.id === baseId);
-    if (product.id !== baseId && !variant) continue;
-    if (bundleQty) {
-      const pack = product.bundles.find((item) => item.qty === bundleQty);
-      return pack ? pack.price : null;
-    }
-    return variant?.price ?? product.price;
-  }
-  return null;
-}
-
-function skippedStoreLine(id: string) {
-  return id.startsWith("oli-gift:") || id.includes(":gift:") || /:x\d+$/.test(id);
-}
-
-function variantForLine(products: CatalogProduct[], id: string) {
-  for (const product of products) {
-    const variant = product.variants.find((item) => item.id === id);
-    if (variant) return variant.id;
-  }
-  const product = products.find((item) => item.id === id);
-  return product?.variants[0]?.id ?? null;
-}
 
 function orderAmount(value: unknown, fallback: number) {
   const amount = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
@@ -92,6 +37,9 @@ async function placeStorefrontOrder(input: {
   city: string;
   zip: string;
   shippingName: string;
+  code: string;
+  giftCode: string;
+  hostname: string;
 }): Promise<{ ok: true; order: PlacedOrder } | { ok: false; reason: string }> {
   const url = process.env.STORELY_SUPABASE_URL?.trim().replace(/\/$/, "");
   const key = process.env.STORELY_PUBLISHABLE_KEY?.trim();
@@ -122,7 +70,7 @@ async function placeStorefrontOrder(input: {
       },
       body: JSON.stringify({
         tracking_key: trackingKey,
-        hostname: STORE_HOST,
+        hostname: input.hostname || STORE_HOST,
         visitor_key: visitorKey,
         lines: input.lines,
         customer_name: input.name,
@@ -132,8 +80,8 @@ async function placeStorefrontOrder(input: {
         customer_city: input.city,
         customer_zip: input.zip,
         shipping_name: input.shippingName,
-        code: "",
-        gift_code: "",
+        code: input.code,
+        gift_code: input.giftCode,
         payment_status: "paid",
       }),
       signal: AbortSignal.timeout(8000),
@@ -170,7 +118,7 @@ async function placeStorefrontOrder(input: {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const method = body?.method === "pickup" ? "pickup" : body?.method === "home" ? "home" : null;
+  const shippingName = typeof body?.shippingName === "string" ? body.shippingName.trim() : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const phone = typeof body?.phone === "string" ? body.phone.replace(/\D/g, "") : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
@@ -178,11 +126,7 @@ export async function POST(request: Request) {
   const street = typeof body?.street === "string" ? body.street.trim() : "";
   const zip = typeof body?.zip === "string" ? body.zip.trim() : "";
   const rawItems = Array.isArray(body?.items) ? body.items : [];
-  const digitalCart = rawItems.length > 0 && rawItems.every((item: { id?: unknown }) => {
-    const id = typeof item?.id === "string" ? item.id : "";
-    return id.startsWith("oli-gift:") || id.includes(":gift:");
-  });
-  if (!method || !name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || (!digitalCart && (!city || (method === "home" && !street)))) {
+  if (!shippingName || !name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email)) {
     return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
   }
 
@@ -208,71 +152,55 @@ export async function POST(request: Request) {
     if (price == null || price < 0) return NextResponse.json({ ok: false, error: "price" }, { status: 400 });
     subtotal += price * qty;
     lines.push({ id, qty, price });
-    if (/^oli-gift:/.test(id) || /:gift:/.test(id)) {
+    if (isGiftLine(id)) {
       for (let copy = 0; copy < qty; copy += 1) purchases.push(price);
     }
   }
   subtotal = Math.round(subtotal * 100) / 100;
 
-  const coupon = typeof body?.coupon === "string" ? body.coupon.trim().toUpperCase() : "";
+  const coupon = typeof body?.coupon === "string" ? body.coupon.trim() : "";
   const giftCode = typeof body?.giftCard === "string" ? body.giftCard.trim() : "";
-  const percent = coupon ? await promoPercent(coupon) : 0;
-  if (coupon && !percent) return NextResponse.json({ ok: false, error: "coupon" }, { status: 400 });
 
-  const digital = lines.every((line) => /^oli-gift:/.test(line.id) || /:gift:/.test(line.id));
-  const shipping = digital || subtotal >= FREE_FROM ? 0 : SHIPPING[method as Method];
-  const discount = percent ? Math.round(subtotal * percent) / 100 : 0;
-  const payable = Math.round((subtotal + shipping - discount) * 100) / 100;
-  if (coupon && !(await consumePromo(coupon))) return NextResponse.json({ ok: false, error: "coupon" }, { status: 400 });
+  const digital = lines.every((line) => isGiftLine(line.id));
+  const shop = await loadShopShipping(request.headers.get("host"));
+  const choice = shop.methods.find((method) => method.name === shippingName);
+  if (!choice) return NextResponse.json({ ok: false, error: "shipping", message: "אפשרות המשלוח לא זמינה" }, { status: 400 });
+  if (!digital && (!city || (!isPickupZone(choice.zone) && !street))) {
+    return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
+  }
+
+  const quotedLines = storefrontLines(catalog.catalog.products, lines);
+  if (!quotedLines.ok) return NextResponse.json({ ok: false, error: "price", message: "המוצר לא זמין להזמנה" }, { status: 400 });
+  const quoted = await quoteStorefront({
+    hostHeader: request.headers.get("host"),
+    shippingName: choice.name,
+    lines: quotedLines.lines,
+    code: coupon,
+    customerEmail: email,
+    giftCode,
+  });
+  if (!quoted.ok) return NextResponse.json({ ok: false, error: "quote", message: quoted.reason }, { status: 400 });
+  const payable = quoted.total;
   let gift = 0;
   let issued: { code: string; amount: number }[] = [];
   let orderNumber = "";
-  if (giftCode || purchases.length) {
-    const settled = await settleGiftCards({
-      name,
-      email,
-      phone,
-      street,
-      city,
-      zip,
-      shippingName: digital ? "דיגיטלי" : method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
-      code: giftCode,
-      payable,
-      purchases,
-    });
-    if (!settled.ok) return NextResponse.json({ ok: false, error: "gift", message: settled.reason }, { status: 400 });
-    gift = Math.round((settled.applied ?? 0) * 100) / 100;
-    issued = settled.issued ?? [];
-    if (settled.orderNumber) orderNumber = String(settled.orderNumber);
-  }
-  const total = Math.round((payable - gift) * 100) / 100;
-
-  const productLines = lines.filter((line) => !skippedStoreLine(line.id));
-  const trial = productLines.length > 0 && productLines.every((line) => line.price === 0);
-  const storeLines: StoreLine[] = [];
-  if (trial) {
-    for (const line of productLines) {
-      const variantId = variantForLine(catalog.catalog.products, line.id);
-      if (!variantId) {
-        return NextResponse.json({ ok: false, error: "price", message: "המוצר לא זמין להזמנה" }, { status: 400 });
-      }
-      storeLines.push({ variantId, quantity: line.qty });
-    }
-  }
-
-  let orderShipping = shipping;
-  let orderDiscount = discount;
-  let orderTotal = total;
-  if (trial && storeLines.length) {
+  const placedProducts = quotedLines.lines.length > 0;
+  let orderShipping = quoted.shipping ?? 0;
+  let orderDiscount = quoted.discount;
+  let orderTotal = payable;
+  if (placedProducts) {
     const placed = await placeStorefrontOrder({
-      lines: storeLines,
+      lines: quotedLines.lines,
       name,
       email,
       phone,
       street,
       city,
       zip,
-      shippingName: digital ? "דיגיטלי" : method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
+      shippingName: choice.name,
+      code: coupon,
+      giftCode,
+      hostname: await storefrontHost(request.headers.get("host")),
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;
@@ -284,6 +212,24 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("purchase event failed", error instanceof Error ? error.name : "Error");
     }
+  }
+  if (purchases.length || (giftCode && !placedProducts)) {
+    const settled = await settleGiftCards({
+      name,
+      email,
+      phone,
+      street,
+      city,
+      zip,
+      shippingName: choice.name,
+      code: placedProducts ? "" : giftCode,
+      payable,
+      purchases,
+    });
+    if (!settled.ok) return NextResponse.json({ ok: false, error: "gift", message: settled.reason }, { status: 400 });
+    gift = Math.round((settled.applied ?? 0) * 100) / 100;
+    issued = settled.issued ?? [];
+    if (!orderNumber && settled.orderNumber) orderNumber = String(settled.orderNumber);
   }
 
   return NextResponse.json({

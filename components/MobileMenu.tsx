@@ -18,6 +18,7 @@ export type MenuCategory = {
 type Props = {
   categories: MenuCategory[];
   onAccount: () => void;
+  accountLabel?: string;
 };
 
 const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
@@ -33,7 +34,7 @@ const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
 const isActive = (path: string, match: string[]) =>
   match.some((item) => (item === "/" ? path === "/" : path.startsWith(item)));
 
-export default function MobileMenu({ categories, onAccount }: Props) {
+export default function MobileMenu({ categories, onAccount, accountLabel = "החשבון שלי" }: Props) {
   const site = useSite();
   const open = site.menu;
   const [sub, setSub] = useState(false);
@@ -120,7 +121,7 @@ export default function MobileMenu({ categories, onAccount }: Props) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" /></svg>
             </span>
             <span className="om-account__text">
-              <span className="om-account__title">החשבון שלי</span>
+              <span className="om-account__title">{accountLabel}</span>
               <span className="om-account__sub">הזמנות, פרטים והטבות</span>
             </span>
             <span className="om-account__arrow">←</span>

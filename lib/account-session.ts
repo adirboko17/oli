@@ -34,6 +34,24 @@ const KEY = "oli-user";
 const BOOK = "oli-users";
 const ORDERS = "oli-orders";
 const REVIEWS = "oli-reviews";
+const HELLO = "oli_hello";
+
+export function greetingName(name: string | null | undefined) {
+  return name?.trim().split(/\s+/)[0] || "";
+}
+
+export function accountLabel(name: string | null | undefined) {
+  const hello = greetingName(name);
+  return hello ? `שלום ${hello}` : "החשבון שלי";
+}
+
+function persistHello(name: string | null) {
+  if (typeof document === "undefined") return;
+  const hello = greetingName(name);
+  document.cookie = hello
+    ? `${HELLO}=${encodeURIComponent(hello)}; path=/; max-age=31536000; samesite=lax`
+    : `${HELLO}=; path=/; max-age=0; samesite=lax`;
+}
 
 export function readUser(): OliUser | null {
   if (typeof window === "undefined") return null;
@@ -50,6 +68,7 @@ export function saveUser(user: OliUser) {
   all.push(user);
   localStorage.setItem(BOOK, JSON.stringify(all));
   localStorage.setItem(KEY, JSON.stringify(user));
+  persistHello(user.name);
   window.dispatchEvent(new Event("oli-user"));
 }
 
@@ -59,13 +78,18 @@ export function findUser(phone: string) {
 
 export function clearUser() {
   localStorage.removeItem(KEY);
+  persistHello(null);
   window.dispatchEvent(new Event("oli-user"));
 }
 
 export function useOliUser() {
   const [user, setUser] = useState<OliUser | null>(null);
   useEffect(() => {
-    const read = () => setUser(readUser());
+    const read = () => {
+      const next = readUser();
+      setUser(next);
+      persistHello(next?.name ?? null);
+    };
     read();
     window.addEventListener("oli-user", read);
     window.addEventListener("storage", read);
@@ -75,6 +99,14 @@ export function useOliUser() {
     };
   }, []);
   return user;
+}
+
+export function useAccountGreeting(hello: string) {
+  const user = useOliUser();
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const name = ready ? greetingName(user?.name) : hello;
+  return { user, label: accountLabel(name) };
 }
 
 function readMap<T>(key: string): Record<string, T> {

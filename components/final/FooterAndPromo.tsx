@@ -2,7 +2,7 @@
 import { useState, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useOliUser } from '@/lib/account-session';
+import { useAccountGreeting } from '@/lib/account-session';
 import { useSite } from '@/components/site';
 import './Final.css';
 
@@ -47,15 +47,15 @@ function FLink({ l, className }: { l: L; className: string }) {
 }
 
 // Desktop: 4 columns. Mobile: columns collapse into an accordion.
-export function SiteFooter() {
+export function SiteFooter({ hello = '' }: { hello?: string }) {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const site = useSite();
   const router = useRouter();
-  const user = useOliUser();
+  const { user, label } = useAccountGreeting(hello);
   const cols = COLS.map((col) => ({
     ...col,
     links: col.links.map((link) => link.label === 'החשבון שלי'
-      ? { ...link, onClick: (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); if (user) router.push('/account'); else site.openAccount(); } }
+      ? { ...link, label, onClick: (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); if (user) router.push('/account'); else site.openAccount(); } }
       : link),
   }));
   return (

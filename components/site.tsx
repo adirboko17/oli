@@ -58,6 +58,33 @@ type Site = {
 };
 
 const Ctx = createContext<Site | null>(null);
+const CART_KEY = "oli-cart";
+
+function readCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as Partial<CartItem>;
+      const qty = Number(row.qty);
+      const price = Number(row.price);
+      if (typeof row.id !== "string" || !row.id || typeof row.name !== "string" || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price)) return [];
+      return [{
+        id: row.id,
+        name: row.name,
+        sub: typeof row.sub === "string" ? row.sub : "",
+        price,
+        image: typeof row.image === "string" ? row.image : null,
+        qty,
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
 
 function allowScroll(target: EventTarget | null) {
   return target instanceof Element && !!target.closest("[data-scroll-lock-allow]");
@@ -76,6 +103,7 @@ export function SiteProvider({ children, products, collections, storeName }: { c
   const [accTab, setAccTab] = useState<"login" | "signup">("login");
   const [cartOpen, setCartOpen] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartReady, setCartReady] = useState(false);
 
   useEffect(() => {
     const onResize = () => {
@@ -100,6 +128,30 @@ export function SiteProvider({ children, products, collections, storeName }: { c
       window.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  useEffect(() => {
+    const saved = readCart();
+    setItems((current) => {
+      if (!current.length) return saved;
+      const seen = new Set(current.map((item) => item.id));
+      return [...saved.filter((item) => !seen.has(item.id)), ...current];
+    });
+    setCartReady(true);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === CART_KEY) setItems(readCart());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!cartReady) return;
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(items));
+    } catch {
+      /* the cart still works for this visit if storage is unavailable */
+    }
+  }, [items, cartReady]);
 
   useEffect(() => {
     setMenu(false);

@@ -1,32 +1,31 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { formatMoney, formatShippingPrice, isPickupZone, type ShippingChoice } from '@/lib/shipping';
 import './CheckoutDetails.css';
 
 /* Oli: details & shipping page (step 2 of 3: cart → details & shipping → payment) */
 
 export type CheckoutItem = { id: string; name: string; sub: string; price: number; qty: number; image: string };
-export type ShippingMethod = 'home' | 'pickup';
 
 export type GiftDetails = { name: string; phone: string; email: string; message: string };
 
 export type CheckoutPayload = {
   name: string; phone: string; email: string;
-  method: ShippingMethod; city: string; street: string; apt: string; floor: string; zip: string; notes: string;
+  shippingName: string; zone: string;
+  city: string; street: string; apt: string; floor: string; zip: string; notes: string;
   newsletter: boolean; coupon: string | null; giftCard: string | null;
   gift: GiftDetails | null;
-  subtotal: number; shipping: number; discount: number; total: number;
 };
 
 type Props = {
   items: CheckoutItem[];
+  shippingMethods: ShippingChoice[];
+  currency: string;
   user?: { name?: string; phone?: string; email?: string; city?: string; street?: string } | null; // logged-in user: fills the fields automatically
   onEditCart: () => void;                          // opens the cart drawer
   onLogin: () => void;                             // opens the SMS login
   onPay: (data: CheckoutPayload) => void | Promise<void>; // creates the order and redirects to the payment provider
-  validateCoupon: (code: string) => Promise<{ ok: boolean; percent?: number; balance?: number; message?: string }>; // coupon percent, or a gift-card balance
-  freeShippingFrom?: number;                       // default 250
-  shippingPrices?: Record<ShippingMethod, number>; // default home 29, pickup 19
 };
 
 const fmt = (n: number) => '₪ ' + (Math.round(n * 10) / 10).toLocaleString('he-IL');
@@ -56,21 +55,26 @@ function Field({ label, optional, className = '', ...input }: { label: string; o
   );
 }
 
+type StoreQuote = { total: number; currency: string; shipping: number | null; discount: number; discountCode: string };
+
 export default function CheckoutDetails({
-  items, user, onEditCart, onLogin, onPay, validateCoupon,
-  freeShippingFrom = 250, shippingPrices = { home: 29, pickup: 19 },
+  items, shippingMethods, currency, user, onEditCart, onLogin, onPay,
 }: Props) {
   const [f, setF] = useState({
     name: user?.name || '', phone: user?.phone || '', email: user?.email || '',
     city: user?.city || '', street: user?.street || '', apt: '', floor: '', zip: '', notes: '',
   });
-  const [method, setMethod] = useState<ShippingMethod>('home');
+  const [shippingName, setShippingName] = useState('');
+  const [quote, setQuote] = useState<StoreQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [quoteMsg, setQuoteMsg] = useState('');
   const [gift, setGift] = useState(false);
   const [to, setTo] = useState({ name: '', phone: '', email: '', message: '' });
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
-  const [applied, setApplied] = useState<{ code: string; percent?: number; balance?: number } | null>(null);
+  const [acceptedCode, setAcceptedCode] = useState('');
+  const [giftCode, setGiftCode] = useState('');
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -92,30 +96,139 @@ export default function CheckoutDetails({
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
   const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
-  const shipping = digital || subtotal >= freeShippingFrom ? 0 : shippingPrices[method];
-  const discount = applied?.percent ? Math.round(subtotal * applied.percent) / 100 : 0;
-  const payable = Math.max(subtotal + shipping - discount, 0);
-  const giftTaken = applied?.balance ? Math.min(applied.balance, payable) : 0;
-  const total = payable - giftTaken;
+  const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
+  const pickup = selected ? isPickupZone(selected.zone) : false;
+  const payCurrency = quote?.currency || currency;
 
   const giftPhone = to.phone.replace(/\D/g, '');
   const giftReady = !gift || (!!to.name.trim() && EMAIL_RE.test(to.email.trim()) && PHONE_RE.test(giftPhone) && !!to.message.trim());
-  const addressReady = digital || (!!f.city.trim() && (method !== 'home' || !!f.street.trim()));
+  const addressReady = digital || (!!f.city.trim() && (pickup || !!f.street.trim()));
   const valid = useMemo(() =>
     !!f.name.trim() && PHONE_RE.test(f.phone.replace(/\D/g, '')) && EMAIL_RE.test(f.email) &&
-    addressReady && terms && giftReady,
-  [f, terms, addressReady, giftReady]);
+    addressReady && terms && giftReady && shippingMethods.length > 0 && !!selected && quote != null && !quoting,
+  [f, terms, addressReady, giftReady, shippingMethods.length, selected, quote, quoting]);
+
+  useEffect(() => {
+    if (!selected) {
+      setQuote(null);
+      setQuoting(false);
+      setQuoteMsg('');
+      return;
+    }
+    const controller = new AbortController();
+    setQuoting(true);
+    setQuote(null);
+    setQuoteMsg('');
+    const timer = window.setTimeout(() => {
+      fetch('/api/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          shippingName: selected.name,
+          items: items.map((item) => ({ id: item.id, qty: item.qty })),
+          code: acceptedCode,
+          customerEmail: f.email.trim(),
+          giftCode,
+        }),
+      }).then(async (res) => {
+        const body = await res.json().catch(() => null) as { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string } | null;
+        if (controller.signal.aborted) return;
+        if (!res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total)) {
+          setQuote(null);
+          setQuoteMsg(body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום');
+          return;
+        }
+        setQuote({
+          total: body.total,
+          currency: body.currency || currency,
+          shipping: typeof body.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
+          discount: typeof body.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
+          discountCode: typeof body.discountCode === 'string' ? body.discountCode : '',
+        });
+        setQuoteMsg('');
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
+        setQuote(null);
+        setQuoteMsg('לא הצלחנו לחשב את הסכום לתשלום');
+      }).finally(() => {
+        if (!controller.signal.aborted) setQuoting(false);
+      });
+    }, 300);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [selected, items, acceptedCode, giftCode, f.email, currency]);
 
   const applyCoupon = async () => {
-    const code = coupon.trim().toUpperCase();
-    if (!code) { setApplied(null); setCouponMsg(null); return; }
-    const r = await validateCoupon(code);
-    if (r.ok && r.percent) { setApplied({ code, percent: r.percent }); setCouponMsg({ text: `✓ הקופון הופעל: ${r.percent}% הנחה`, ok: true }); }
-    else if (r.ok && r.balance) { setApplied({ code, balance: r.balance }); setCouponMsg({ text: `✓ כרטיס מתנה עם יתרה של ${fmt(r.balance)}. מה שלא ינוצל נשאר בכרטיס.`, ok: true }); }
-    else { setApplied(null); setCouponMsg({ text: r.message || 'הקוד לא תקין', ok: false }); }
+    const code = coupon.trim();
+    if (!selected) { setCouponMsg({ text: 'בחרי אפשרות משלוח', ok: false }); return; }
+    const res = await fetch('/api/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shippingName: selected.name,
+        items: items.map((item) => ({ id: item.id, qty: item.qty })),
+        code,
+        customerEmail: f.email.trim(),
+        giftCode,
+      }),
+    });
+    const body = await res.json().catch(() => null) as { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string } | null;
+    const failed = !res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total);
+    if (failed) {
+      const reason = body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום';
+      if (code) {
+        const giftRes = await fetch('/api/gift', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        const giftBody = await giftRes.json().catch(() => null) as { ok?: boolean; balance?: number } | null;
+        if (giftRes.ok && giftBody?.ok && giftBody.balance) {
+          const giftQuote = await fetch('/api/quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shippingName: selected.name,
+              items: items.map((item) => ({ id: item.id, qty: item.qty })),
+              code: acceptedCode,
+              customerEmail: f.email.trim(),
+              giftCode: code,
+            }),
+          });
+          const giftQuoted = await giftQuote.json().catch(() => null) as { ok?: boolean; reason?: string; message?: string } | null;
+          if (!giftQuote.ok || !giftQuoted?.ok) {
+            setCouponMsg({ text: giftQuoted?.reason || giftQuoted?.message || reason, ok: false });
+            return;
+          }
+          setGiftCode(code);
+          setCoupon('');
+          setCouponMsg({ text: '✓ כרטיס מתנה הופעל', ok: true });
+          return;
+        }
+      }
+      setCouponMsg({ text: reason, ok: false });
+      return;
+    }
+    if (!body || typeof body.total !== "number") return;
+    setAcceptedCode(code);
+    setQuote({
+      total: body.total,
+      currency: body.currency || currency,
+      shipping: typeof body.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
+      discount: typeof body.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
+      discountCode: typeof body.discountCode === 'string' ? body.discountCode : '',
+    });
+    const shown = (typeof body.discountCode === 'string' && body.discountCode) || code;
+    setCouponMsg(shown ? { text: `✓ הקוד ${shown} הופעל`, ok: true } : (typeof body.discount === 'number' && body.discount > 0) ? { text: '✓ ההנחה הופעלה', ok: true } : null);
   };
 
   const pay = async () => {
+    if (!shippingMethods.length) { setErr('אין אפשרות משלוח, ואי אפשר להמשיך לתשלום'); return; }
+    if (!selected) { setErr('בחרי אפשרות משלוח'); return; }
+    if (quoting || !quote) { setErr(quoteMsg || 'הסכום לתשלום עדיין לא מוכן'); return; }
     if (gift && !giftReady) { setErr('נא למלא שם, מייל, טלפון וברכה של מי שמקבלת את המתנה'); return; }
     if (!valid) { setErr('נא למלא את כל השדות ולאשר את התקנון'); return; }
     setBusy(true);
@@ -123,25 +236,20 @@ export default function CheckoutDetails({
       await onPay({
         ...f,
         phone: f.phone.replace(/\D/g, ''),
-        method,
+        shippingName: selected?.name || '',
+        zone: selected?.zone || '',
         newsletter: news,
-        coupon: applied?.percent ? applied.code : null,
-        giftCard: applied?.balance ? applied.code : null,
+        coupon: acceptedCode || null,
+        giftCard: giftCode || null,
         gift: gift ? { name: to.name.trim(), phone: giftPhone, email: to.email.trim(), message: to.message.trim() } : null,
-        subtotal, shipping, discount, total,
       });
     } catch (error) {
       setErr(error instanceof Error && error.message && error.message !== "order" && error.message !== "track" ? error.message : 'לא הצלחנו להמשיך לתשלום. נסי שוב.');
     } finally { setBusy(false); }
   };
 
-  const ships: { k: ShippingMethod; title: string; sub: string }[] = [
-    { k: 'home', title: 'שליח עד הבית', sub: '2–4 ימי עסקים' },
-    { k: 'pickup', title: 'נקודת איסוף', sub: 'איסוף מנקודה קרובה, 2–5 ימי עסקים' },
-  ];
-
   const PayButton = ({ label }: { label: string }) => (
-    <button className={`ck-pay${valid ? '' : ' is-disabled'}`} onClick={pay} disabled={busy}>
+    <button className={`ck-pay${valid ? '' : ' is-disabled'}`} onClick={pay} disabled={busy || shippingMethods.length === 0}>
       <LockIcon /><span>{busy ? 'מעבירים לתשלום…' : label}</span>
     </button>
   );
@@ -187,22 +295,20 @@ export default function CheckoutDetails({
               {/* 2. Shipping */}
               <section className="ck-card">
                 <div className="ck-card__head"><span className="ck-num">2</span><h2>משלוח</h2></div>
-                {digital ? (
-                  <div className="ck-digital">
-                    <span className="ck-digital__title">משלוח דיגיטלי · חינם</span>
-                    <span className="ck-digital__sub">כרטיס המתנה נשלח למייל ולטלפון. אין חבילה ואין דמי משלוח.</span>
-                  </div>
+                {shippingMethods.length === 0 ? (
+                  <p className="ck-ship-empty">אין אפשרות משלוח, ואי אפשר להמשיך לתשלום.</p>
                 ) : (
-                <div className="ck-ships" role="radiogroup">
-                  {ships.map(m => (
-                    <button key={m.k} role="radio" aria-checked={method === m.k} className={`ck-ship${method === m.k ? ' is-on' : ''}`} onClick={() => setMethod(m.k)}>
-                      <span className="ck-radio"><span /></span>
-                      <span className="ck-ship__text"><span className="ck-ship__title">{m.title}</span><span className="ck-ship__sub">{m.sub}</span></span>
-                      <span className="ck-ship__price">{subtotal >= freeShippingFrom ? 'חינם' : '₪' + shippingPrices[m.k]}</span>
-                    </button>
-                  ))}
-                </div>
+                  <div className="ck-ships" role="radiogroup">
+                    {shippingMethods.map((method) => (
+                      <button key={method.name} role="radio" aria-checked={shippingName === method.name} className={`ck-ship${shippingName === method.name ? ' is-on' : ''}`} onClick={() => { setShippingName(method.name); setErr(''); }}>
+                        <span className="ck-radio"><span /></span>
+                        <span className="ck-ship__text"><span className="ck-ship__title">{method.name}</span></span>
+                        <span className="ck-ship__price">{formatShippingPrice(method.price, currency)}</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
+                {digital && <span className="ck-digital__sub">כרטיס המתנה נשלח למייל ולטלפון.</span>}
 
                 <label className={`ck-gift${gift ? ' is-on' : ''}`}>
                   <input type="checkbox" checked={gift} onChange={e => {
@@ -232,7 +338,7 @@ export default function CheckoutDetails({
                       <Field label="טלפון של המקבלת" className="is-ltr" value={to.phone} onChange={setGiftField('phone')} type="tel" inputMode="numeric" autoComplete="off" placeholder="050-000-0000" />
                     </div>
                     <Field label="מייל של המקבלת" className="is-ltr" value={to.email} onChange={setGiftField('email')} type="email" autoComplete="off" placeholder="name@email.com" />
-                    {!digital && method === 'home' ? (
+                    {!digital && !pickup ? (
                       <div className="ck-stack">
                         <div className="ck-row ck-row--city">
                           <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="off" placeholder="עיר" />
@@ -261,7 +367,7 @@ export default function CheckoutDetails({
                   </div>
                 )}
 
-                {!gift && !digital && (method === 'home' ? (
+                {!gift && !digital && (!pickup ? (
                   <div className="ck-stack">
                     <div className="ck-row ck-row--city">
                       <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="address-level2" placeholder="עיר" />
@@ -315,17 +421,17 @@ export default function CheckoutDetails({
                 ))}
               </div>
               <div className="ck-coupon">
-                <input value={coupon} onChange={e => { setCoupon(e.target.value); setApplied(null); setCouponMsg(null); }} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד קופון או כרטיס מתנה" />
+                <input value={coupon} onChange={e => { setCoupon(e.target.value); setAcceptedCode(''); setGiftCode(''); setCouponMsg(null); }} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד הנחה או כרטיס מתנה" />
                 <button onClick={applyCoupon}>החלה</button>
               </div>
               {couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
-                <div><span>משלוח</span><span>{shipping ? fmt(shipping) : 'חינם'}</span></div>
-                {discount > 0 && <div className="ck-totals__disc"><span>הנחה ({applied?.code})</span><span>−{fmt(discount)}</span></div>}
-                {giftTaken > 0 && <div className="ck-totals__disc"><span>כרטיס מתנה</span><span>−{fmt(giftTaken)}</span></div>}
-                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{fmt(total)}</span></div>
-                <span className="ck-totals__vat">כולל מע״מ</span>
+                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : '—'}</span></div>
+                {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
+                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{quote ? formatMoney(quote.total, payCurrency) : '—'}</span></div>
+                <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>
+                {quoteMsg && <span className="ck-err">{quoteMsg}</span>}
               </div>
               <div className="ck-desk-pay">
                 <PayButton label="המשך לתשלום מאובטח" />
@@ -341,7 +447,7 @@ export default function CheckoutDetails({
       {!!items.length && (
         <div className="ck-mobile-bar">
           {err && <span className="ck-err">{err}</span>}
-          <PayButton label={`לתשלום מאובטח · ${fmt(total)}`} />
+          <PayButton label={quote ? `לתשלום מאובטח · ${formatMoney(quote.total, payCurrency)}` : 'לתשלום מאובטח'} />
         </div>
       )}
     </main>
