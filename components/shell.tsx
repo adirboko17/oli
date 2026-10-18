@@ -314,7 +314,10 @@ function AccountDrawer() {
   const [bad, setBad] = useState(false);
   const [left, setLeft] = useState(30);
   const [form, setForm] = useState({ name: "", age: "", email: "", city: "", addr: "", due: "" });
-  const known = useRef(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [demoCode, setDemoCode] = useState(true);
+  const verifying = useRef(false);
 
   useEffect(() => {
     if (!site.account) return;
@@ -334,28 +337,84 @@ function AccountDrawer() {
   const phoneOk = /^05\d{8}$/.test(phone);
   const nameOk = form.name.trim().length > 1 && Number(form.age) >= 16 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.city.trim() && form.addr.trim();
 
-  function send() {
-    if (!phoneOk) return;
-    known.current = !!findUser(phone);
-    setStep("code");
-    setCode("");
-    setBad(false);
-    setLeft(30);
+  async function send() {
+    if (!phoneOk || sending) return;
+    setSending(true);
+    setSendError("");
+    try {
+      const res = await fetch("/api/auth/otp", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; message?: string };
+      if (!res.ok) {
+        setSendError(data.message || "לא הצלחנו לשלוח קוד");
+        return;
+      }
+      setDemoCode(data.demo !== false);
+      setStep("code");
+      setCode("");
+      setBad(false);
+      setLeft(30);
+    } catch {
+      setSendError("לא הצלחנו לשלוח קוד");
+    } finally {
+      setSending(false);
+    }
   }
 
-  function onCode(value: string) {
+  async function onCode(value: string) {
     const next = value.replace(/\D/g, "").slice(0, 6);
     setCode(next);
     setBad(false);
-    if (next.length < 6) return;
-    window.setTimeout(() => {
-      if (known.current) finish(findUser(phone)!);
+    if (next.length < 6 || verifying.current) return;
+    verifying.current = true;
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone, code: next }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { user?: { name: string; phone: string; email: string; age: string; city: string; addr: string; due: string; isNew: boolean } | null };
+      if (!res.ok) {
+        setBad(true);
+        setCode("");
+        return;
+      }
+      const local = findUser(phone);
+      const remembered = data.user?.name ? data.user : local?.name ? { ...local, isNew: false as const } : null;
+      if (remembered) finish(remembered);
       else setStep("name");
-    }, 250);
+    } catch {
+      setBad(true);
+      setCode("");
+    } finally {
+      verifying.current = false;
+    }
   }
 
-  function finish(user: { name: string; phone: string; email: string; age: string; city: string; addr: string; due: string; isNew: boolean }) {
-    saveUser(user);
+  async function finish(user: { name: string; phone: string; email: string; age: string; city: string; addr: string; due: string; isNew: boolean }) {
+    const saved = { ...user, phone, isNew: user.isNew };
+    try {
+      const res = await fetch("/api/account", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(saved),
+      });
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { user?: typeof saved };
+        saveUser({ ...(data.user ?? saved), isNew: user.isNew });
+      } else {
+        saveUser(saved);
+      }
+    } catch {
+      saveUser(saved);
+    }
+    setForm({ name: saved.name, age: saved.age, email: saved.email, city: saved.city, addr: saved.addr, due: saved.due });
     setStep("done");
     window.setTimeout(() => {
       site.closeAll();
@@ -390,7 +449,8 @@ function AccountDrawer() {
                   <span style={{ width: 1, height: 22, background: "#E1CABD" }} />
                   <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} onKeyDown={(e) => { if (e.key === "Enter") send(); }} type="tel" inputMode="numeric" placeholder="050-000-0000" style={{ flex: 1, height: "100%", border: 0, outline: "none", fontSize: 18, letterSpacing: ".05em", fontFamily: "inherit", color: "#3A2826", background: "transparent", minWidth: 0 }} />
                 </label>
-                <button type="button" disabled={!phoneOk} onClick={send} style={{ height: 56, border: 0, borderRadius: 999, background: phoneOk ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>שליחת קוד</button>
+                <button type="button" disabled={!phoneOk || sending} onClick={send} style={{ height: 56, border: 0, borderRadius: 999, background: phoneOk && !sending ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>{sending ? "שולחים קוד..." : "שליחת קוד"}</button>
+                {sendError && <span style={{ fontSize: 14, color: "#A33A2A" }}>{sendError}</span>}
               </div>
               <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.6 }}>פעם ראשונה? ניצור לך חשבון ותקבלי <span style={{ color: "#A85A3A", fontWeight: 600 }}>5% הנחה</span> על ההזמנה הראשונה</span>
             </div>
@@ -414,7 +474,7 @@ function AccountDrawer() {
                 {left <= 0 ? <button type="button" onClick={send} style={textBtn}>שליחת קוד חדש</button> : <span>קוד חדש בעוד 0:{String(left).padStart(2, "0")}</span>}
                 <button type="button" onClick={() => setStep("phone")} style={{ ...textBtn, color: "#3A2826" }}>שינוי מספר</button>
               </div>
-              <span style={{ fontSize: 13, color: "#8A6C64" }}>לצורך ההדגמה, כל קוד בן 6 ספרות יעבוד.</span>
+              {demoCode && <span style={{ fontSize: 13, color: "#8A6C64" }}>לצורך ההדגמה, כל קוד בן 6 ספרות יעבוד עד שחיבור פולסים יופעל.</span>}
             </div>
           )}
           {step === "name" && (

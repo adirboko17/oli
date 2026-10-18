@@ -76,6 +76,8 @@ export default function CheckoutDetails({
   const [acceptedCode, setAcceptedCode] = useState('');
   const [giftCode, setGiftCode] = useState('');
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponPhase, setCouponPhase] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -161,25 +163,43 @@ export default function CheckoutDetails({
     };
   }, [selected, items, acceptedCode, giftCode, f.email, currency]);
 
+  type QuoteBody = { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string };
+
+  const readQuote = (body: QuoteBody | null) => ({
+    total: body?.total ?? 0,
+    currency: body?.currency || currency,
+    shipping: typeof body?.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
+    discount: typeof body?.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
+    discountCode: typeof body?.discountCode === 'string' ? body.discountCode : '',
+  });
+
+  const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
   const applyCoupon = async () => {
     const code = coupon.trim();
+    if (couponBusy) return;
     if (!selected) { setCouponMsg({ text: 'בחרי אפשרות משלוח', ok: false }); return; }
-    const res = await fetch('/api/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        shippingName: selected.name,
-        items: items.map((item) => ({ id: item.id, qty: item.qty })),
-        code,
-        customerEmail: f.email.trim(),
-        giftCode,
-      }),
-    });
-    const body = await res.json().catch(() => null) as { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string } | null;
-    const failed = !res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total);
-    if (failed) {
-      const reason = body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום';
-      if (code) {
+    if (!code) { setAcceptedCode(''); setGiftCode(''); setCouponMsg(null); return; }
+    setCouponBusy(true);
+    setCouponMsg(null);
+    setCouponPhase('בודקים את הקוד');
+    try {
+      const res = await fetch('/api/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shippingName: selected.name,
+          items: items.map((item) => ({ id: item.id, qty: item.qty })),
+          code,
+          customerEmail: f.email.trim(),
+          giftCode,
+        }),
+      });
+      const body = await res.json().catch(() => null) as QuoteBody | null;
+      const failed = !res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total);
+      if (failed) {
+        const reason = body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום';
+        setCouponPhase('בודקים אם זה כרטיס מתנה');
         const giftRes = await fetch('/api/gift', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -187,6 +207,7 @@ export default function CheckoutDetails({
         });
         const giftBody = await giftRes.json().catch(() => null) as { ok?: boolean; balance?: number } | null;
         if (giftRes.ok && giftBody?.ok && giftBody.balance) {
+          setCouponPhase('מכניסים את היתרה');
           const giftQuote = await fetch('/api/quote', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -198,31 +219,36 @@ export default function CheckoutDetails({
               giftCode: code,
             }),
           });
-          const giftQuoted = await giftQuote.json().catch(() => null) as { ok?: boolean; reason?: string; message?: string } | null;
-          if (!giftQuote.ok || !giftQuoted?.ok) {
+          const giftQuoted = await giftQuote.json().catch(() => null) as QuoteBody | null;
+          if (!giftQuote.ok || !giftQuoted?.ok || typeof giftQuoted.total !== 'number') {
             setCouponMsg({ text: giftQuoted?.reason || giftQuoted?.message || reason, ok: false });
             return;
           }
           setGiftCode(code);
           setCoupon('');
+          setQuote(readQuote(giftQuoted));
+          setCouponPhase('הקוד אושר');
+          await pause(560);
           setCouponMsg({ text: '✓ כרטיס מתנה הופעל', ok: true });
           return;
         }
+        setCouponMsg({ text: reason, ok: false });
+        return;
       }
-      setCouponMsg({ text: reason, ok: false });
-      return;
+      if (!body || typeof body.total !== 'number') return;
+      setCouponPhase('מעדכנים את הסכום');
+      setAcceptedCode(code);
+      setQuote(readQuote(body));
+      setCouponPhase('הקוד אושר');
+      await pause(560);
+      const shown = (typeof body.discountCode === 'string' && body.discountCode) || code;
+      setCouponMsg(shown ? { text: `✓ הקוד ${shown} הופעל`, ok: true } : (typeof body.discount === 'number' && body.discount > 0) ? { text: '✓ ההנחה הופעלה', ok: true } : null);
+    } catch {
+      setCouponMsg({ text: 'לא הצלחנו לבדוק את הקוד. נסי שוב.', ok: false });
+    } finally {
+      setCouponBusy(false);
+      setCouponPhase('');
     }
-    if (!body || typeof body.total !== "number") return;
-    setAcceptedCode(code);
-    setQuote({
-      total: body.total,
-      currency: body.currency || currency,
-      shipping: typeof body.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
-      discount: typeof body.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
-      discountCode: typeof body.discountCode === 'string' ? body.discountCode : '',
-    });
-    const shown = (typeof body.discountCode === 'string' && body.discountCode) || code;
-    setCouponMsg(shown ? { text: `✓ הקוד ${shown} הופעל`, ok: true } : (typeof body.discount === 'number' && body.discount > 0) ? { text: '✓ ההנחה הופעלה', ok: true } : null);
   };
 
   const pay = async () => {
@@ -420,11 +446,19 @@ export default function CheckoutDetails({
                   </div>
                 ))}
               </div>
-              <div className="ck-coupon">
-                <input value={coupon} onChange={e => { setCoupon(e.target.value); setAcceptedCode(''); setGiftCode(''); setCouponMsg(null); }} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד הנחה או כרטיס מתנה" />
-                <button onClick={applyCoupon}>החלה</button>
+              <div className={`ck-coupon${couponBusy ? ' is-checking' : ''}${couponPhase === 'הקוד אושר' ? ' is-approved' : ''}`}>
+                <input value={coupon} disabled={couponBusy} onChange={e => { setCoupon(e.target.value); setAcceptedCode(''); setGiftCode(''); setCouponMsg(null); }} onKeyDown={e => e.key === 'Enter' && applyCoupon()} placeholder="קוד הנחה או כרטיס מתנה" />
+                <button onClick={applyCoupon} disabled={couponBusy} aria-busy={couponBusy}>
+                  {couponBusy ? <span className="ck-coupon__spin" aria-hidden /> : 'החלה'}
+                </button>
               </div>
-              {couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
+              {couponPhase && (
+                <p className={`ck-coupon__live${couponPhase === 'הקוד אושר' ? ' is-ok' : ''}`} aria-live="polite">
+                  <span className="ck-coupon__mark" aria-hidden>{couponPhase === 'הקוד אושר' ? '✓' : ''}</span>
+                  <span key={couponPhase}>{couponPhase}</span>
+                </p>
+              )}
+              {!couponPhase && couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
                 <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : '—'}</span></div>

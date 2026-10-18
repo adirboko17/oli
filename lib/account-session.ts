@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { phoneKey } from "@/lib/phone";
 
 export type OliAddress = { id: string; label: string; city: string; addr: string };
 
@@ -64,16 +65,18 @@ export function readUser(): OliUser | null {
 }
 
 export function saveUser(user: OliUser) {
-  const all = readBook().filter((item) => item.phone !== user.phone);
-  all.push(user);
+  const saved = { ...user, phone: phoneKey(user.phone) };
+  const all = readBook().filter((item) => phoneKey(item.phone) !== saved.phone);
+  all.push(saved);
   localStorage.setItem(BOOK, JSON.stringify(all));
-  localStorage.setItem(KEY, JSON.stringify(user));
-  persistHello(user.name);
+  localStorage.setItem(KEY, JSON.stringify(saved));
+  persistHello(saved.name);
   window.dispatchEvent(new Event("oli-user"));
 }
 
 export function findUser(phone: string) {
-  return readBook().find((item) => item.phone === phone) ?? null;
+  const key = phoneKey(phone);
+  return readBook().find((item) => phoneKey(item.phone) === key) ?? null;
 }
 
 export function clearUser() {
