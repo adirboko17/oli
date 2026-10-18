@@ -42,6 +42,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const bundles = product.bundles;
   const bundle = bundles.find((item) => item.qty === qty) ?? null;
   const isGift = giftAmounts.length > 0 || giftMax != null;
+  const thumbFit = isGift ? "contain" : "cover";
   const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const active = images[thumb] ?? images[0];
@@ -97,15 +98,15 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             <div className="pg-thumbs" ref={thumbsRef}>
               {(images.length ? images : [{ id: "ph", src: null, kind: "image" as const }]).map((item, index) => (
                 <button key={item.id} type="button" data-i={index} onClick={() => setThumb(index)} aria-label={"תמונה " + (index + 1)} style={{ aspectRatio: "4/5", padding: 0, borderRadius: 10, overflow: "hidden", border: "2px solid " + (thumb === index ? "#3A2826" : "transparent"), background: "#F6EEE8" }}>
-                  {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-                  {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} /> : null}
+                  {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: thumbFit }} /> : null}
+                  {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: thumbFit, backgroundRepeat: "no-repeat", backgroundPosition: "center" }} /> : null}
                 </button>
               ))}
             </div>
           </div>
           <div className="pg-main">
-            {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-            {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} /> : null}
+            {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: thumb === 0 ? "contain" : "cover" }} /> : null}
+            {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: thumb === 0 ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: thumb === 0 ? "darken" : "normal" }} /> : null}
             {!active?.src ? <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FF, fontSize: "clamp(32px,6vw,56px)", textAlign: "center", padding: 24 }}>{product.title}</span> : null}
             <ProductBadges product={product} />
             {images.length > 1 && (
