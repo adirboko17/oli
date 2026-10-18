@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearUser, formatPhone, readOrders, readReview, saveReview, saveUser, useOliUser, type OliOrder, type OliOrderStatus, type OliReview, type OliUser } from "@/lib/account-session";
+import { clearUser, formatPhone, readOrders, readReview, saveReview, saveUser, useOliUser, type OliOrder, type OliOrderLine, type OliOrderStatus, type OliReview, type OliUser } from "@/lib/account-session";
+import { productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 
@@ -18,7 +19,40 @@ const STATUS = { new: "התקבלה", progress: "בטיפול", hold: "בהמת�
 const STEP = { new: 0, progress: 0, hold: 0, sent: 1, transit: 2, done: 3 } as const;
 const STARS = ["בחרי דירוג", "לא אהבתי", "סביר", "טוב", "טוב מאוד", "מושלם"];
 
-type LiveOrder = { number?: number; status?: string; total?: number; title?: string; at?: string };
+type LiveItem = { title?: string; qty?: number; price?: number; image?: string | null };
+type LiveOrder = { number?: number; status?: string; total?: number; title?: string; at?: string; items?: LiveItem[] };
+
+function titleKey(value: string) {
+  return value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("en");
+}
+
+function imageForTitle(products: CatalogProduct[], title: string) {
+  const key = titleKey(title);
+  if (!key) return null;
+  if (key === "כרטיס מתנה") return "/assets/gift-card.png";
+  const product = products.find((item) => titleKey(item.title) === key);
+  return product ? productImage(product) : null;
+}
+
+function picturedLine(products: CatalogProduct[], line: OliOrderLine): OliOrderLine {
+  if (line.image) return line;
+  return { ...line, image: imageForTitle(products, line.name) };
+}
+
+function liveLines(row: LiveOrder, products: CatalogProduct[]): OliOrderLine[] {
+  const items = Array.isArray(row.items) ? row.items : [];
+  const lines = items.flatMap((item, index) => {
+    const name = String(item.title ?? "").trim();
+    if (!name) return [];
+    const qty = Number(item.qty);
+    const price = Number(item.price);
+    const image = typeof item.image === "string" && item.image ? item.image : imageForTitle(products, name);
+    return [{ id: String(index), name, sub: "", qty: Number.isInteger(qty) && qty > 0 ? qty : 1, price: Number.isFinite(price) ? price : 0, image }];
+  });
+  if (lines.length) return lines;
+  const name = row.title || "הזמנה";
+  return [{ id: "item", name, sub: "", qty: 1, price: Number(row.total) || 0, image: imageForTitle(products, name) }];
+}
 
 function accountStatus(value: string | undefined): OliOrderStatus {
   if (value === "progress" || value === "hold" || value === "sent" || value === "transit") return value;
@@ -40,7 +74,7 @@ async function liveAccountOrders(phone: string, email: string) {
   }
 }
 
-function mergeAccountOrders(local: OliOrder[], live: LiveOrder[]) {
+function mergeAccountOrders(local: OliOrder[], live: LiveOrder[], products: CatalogProduct[]) {
   const byNumber = new Map(live.flatMap((row) => {
     const number = String(row.number ?? "");
     return number ? [[number, row] as const] : [];
@@ -49,7 +83,8 @@ function mergeAccountOrders(local: OliOrder[], live: LiveOrder[]) {
   const merged = local.map((order) => {
     const row = byNumber.get(order.no) ?? byNumber.get(order.id);
     seen.add(String(row?.number ?? order.no));
-    return row?.status ? { ...order, status: accountStatus(row.status) } : order;
+    const lines = order.lines.map((line) => picturedLine(products, line));
+    return row?.status ? { ...order, status: accountStatus(row.status), lines } : { ...order, lines };
   });
   live.forEach((row) => {
     const number = String(row.number ?? "");
@@ -60,7 +95,7 @@ function mergeAccountOrders(local: OliOrder[], live: LiveOrder[]) {
       no: number,
       date: when && !Number.isNaN(when.getTime()) ? when.toLocaleDateString("he-IL") : "",
       status: accountStatus(row.status),
-      lines: [{ id: "item", name: row.title || "הזמנה", sub: "", qty: 1, price: Number(row.total) || 0, image: null }],
+      lines: liveLines(row, products),
       subtotal: Number(row.total) || 0,
       ship: 0,
       addr: "",
@@ -89,7 +124,7 @@ export function AccountView() {
     const load = async () => {
       const local = readOrders(user.phone);
       const live = await liveAccountOrders(user.phone, user.email);
-      const rows = mergeAccountOrders(local, live);
+      const rows = mergeAccountOrders(local, live, site.products);
       if (stop) return;
       setOrders(rows);
       const next: Record<string, OliReview | null> = {};
@@ -106,7 +141,7 @@ export function AccountView() {
       window.removeEventListener("oli-user", load);
       window.removeEventListener("focus", load);
     };
-  }, [user]);
+  }, [user, site.products]);
 
   if (!current) {
     return (
@@ -166,7 +201,7 @@ export function AccountView() {
               <button type="button" onClick={() => setOpenId(open ? null : order.id)} style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,150px),1fr))", gap: "14px 24px", alignItems: "center", padding: "clamp(18px,3vw,24px) clamp(18px,3vw,28px)", border: 0, background: "transparent", color: "#3A2826", textAlign: "right" }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 4 }}><span style={{ fontSize: 17, fontWeight: 600 }}>הזמנה {order.no}</span><span style={{ fontSize: 14, color: "#6E5650" }}>{order.date}</span></span>
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {order.lines.slice(0, 3).map((line) => <span key={line.id} style={{ width: 40, height: 48, borderRadius: 10, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />)}
+                  {order.lines.slice(0, 3).map((line) => <OrderThumb key={line.id} image={line.image} width={40} height={48} radius={10} />)}
                   <span style={{ fontSize: 13, color: "#6E5650" }}>{order.lines.length} פריטים</span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: order.status === "done" ? "#6E9B6A" : "#D99A4E" }} />{STATUS[order.status]}</span>
@@ -180,7 +215,7 @@ export function AccountView() {
                       const review = reviews[key];
                       return (
                         <div key={line.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 16, padding: "14px 0", borderBottom: "1px solid #F6EEE8" }}>
-                          <span style={{ width: 64, height: 80, borderRadius: 12, background: "#F6EEE8", backgroundImage: line.image ? `url("${line.image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />
+                          <OrderThumb image={line.image} width={64} height={80} radius={12} />
                           <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <span style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 16, fontWeight: 600 }}>{line.name}</span><span style={{ fontSize: 15, fontWeight: 600 }}>{fmt(line.price * line.qty)}</span></span>
                             <span style={{ fontSize: 13, color: "#6E5650" }}>{line.sub} · כמות {line.qty}</span>
@@ -280,7 +315,7 @@ function ReviewModal({ name, sub, image, initial, onClose, onSave }: { name: str
       <div role="dialog" aria-label="כתיבת ביקורת" style={{ position: "fixed", zIndex: 81, background: "#FFFFFF", color: "#3A2826", width: "min(440px,92vw)", maxHeight: "90vh", overflow: "auto", borderRadius: 28, top: "50%", left: "50%", transform: "translate(-50%,-50%)", boxShadow: "0 30px 80px rgba(42,28,26,.28)" }}>
         <div style={{ position: "relative", background: "#FBF3EE", padding: "28px 24px 26px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
           <button type="button" onClick={onClose} aria-label="סגירה" style={{ position: "absolute", top: 14, left: 14, width: 36, height: 36, borderRadius: 999, border: 0, background: "#FFFFFF" }}>✕</button>
-          <span style={{ width: 76, height: 92, borderRadius: 16, background: "#F6EEE8", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", backgroundBlendMode: "darken" }} />
+          <OrderThumb image={image} width={76} height={92} radius={16} />
           <span style={{ fontFamily: FF, fontSize: 24, lineHeight: 1.15 }}>{name}</span>
           <span style={{ fontSize: 14, color: "#6E5650" }}>{sub}</span>
         </div>
@@ -312,6 +347,14 @@ function ReviewModal({ name, sub, image, initial, onClose, onSave }: { name: str
         </div>
       </div>
     </>
+  );
+}
+
+function OrderThumb({ image, width, height, radius }: { image: string | null; width: number; height: number; radius: number }) {
+  return (
+    <span style={{ width, height, borderRadius: radius, background: "#F6EEE8", overflow: "hidden", display: "inline-flex", flexShrink: 0 }}>
+      {image ? <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : null}
+    </span>
   );
 }
 

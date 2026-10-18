@@ -77,14 +77,19 @@ export function HomeView() {
     el.defaultMuted = true;
     el.loop = true;
     el.playsInline = true;
-    const play = () => { if (el.paused) el.play()?.catch(() => {}); };
-    if (!el.dataset.oli) {
-      el.dataset.oli = "1";
-      el.addEventListener("ended", () => { el.currentTime = 0; play(); });
-      el.addEventListener("pause", () => setTimeout(play, 50));
+    const visible = () => el.getClientRects().length > 0;
+    if (!visible()) {
+      el.pause();
+      return;
     }
-    play();
+    if (el.paused) el.play()?.catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const sync = () => document.querySelectorAll<HTMLVideoElement>(".home video").forEach((el) => kick(el));
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [kick]);
 
   const stages = STAGES.map((stage) => {
     const group = groups.find((g) => stage.test.test(g.key));
@@ -122,7 +127,7 @@ export function HomeView() {
     <main className="home">
       <section className="hero-desk" style={{ position: "relative", overflow: "hidden", background: "#FFFFFF", minHeight: "min(86vh,800px)", alignItems: "center" }}>
         <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "56%" }}>
-          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
+          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="metadata" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
           <span style={{ position: "absolute", inset: 0, background: "linear-gradient(to left,#FFFFFF 0%,rgba(255,255,255,.6) 14%,rgba(255,255,255,0) 38%)", pointerEvents: "none" }} />
           <span style={{ position: "absolute", inset: "auto 0 0 0", height: "18%", background: "linear-gradient(to top,#FFFFFF,rgba(255,255,255,0))", pointerEvents: "none" }} />
         </div>
@@ -133,7 +138,7 @@ export function HomeView() {
 
       <section className="hero-mob" style={{ background: "#FFFFFF", paddingBottom: 56 }}>
         <div style={{ position: "relative", height: "min(54vh,440px)", overflow: "hidden", margin: 0, borderRadius: 0 }}>
-          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
+          <video ref={kick} src="/assets/about-video.mp4" autoPlay muted loop playsInline preload="metadata" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 30%" }} />
           <span style={{ position: "absolute", inset: "auto 0 0 0", height: "62%", background: "linear-gradient(to top,#FFFFFF 0%,rgba(255,255,255,.92) 22%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />
         </div>
         <div style={{ position: "relative", marginTop: -72, padding: "0 var(--page-pad)", display: "flex", flexDirection: "column", gap: 18 }}>
