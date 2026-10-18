@@ -8,7 +8,7 @@ import './CheckoutDetails.css';
 export type CheckoutItem = { id: string; name: string; sub: string; price: number; qty: number; image: string };
 export type ShippingMethod = 'home' | 'pickup';
 
-export type GiftDetails = { name: string; phone: string; message: string };
+export type GiftDetails = { name: string; phone: string; email: string; message: string };
 
 export type CheckoutPayload = {
   name: string; phone: string; email: string;
@@ -66,7 +66,7 @@ export default function CheckoutDetails({
   });
   const [method, setMethod] = useState<ShippingMethod>('home');
   const [gift, setGift] = useState(false);
-  const [to, setTo] = useState({ name: '', phone: '', message: '' });
+  const [to, setTo] = useState({ name: '', phone: '', email: '', message: '' });
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -99,11 +99,12 @@ export default function CheckoutDetails({
   const total = payable - giftTaken;
 
   const giftPhone = to.phone.replace(/\D/g, '');
-  const giftReady = !gift || (!!to.name.trim() && PHONE_RE.test(giftPhone));
+  const giftReady = !gift || (!!to.name.trim() && EMAIL_RE.test(to.email.trim()) && PHONE_RE.test(giftPhone) && !!to.message.trim());
+  const addressReady = digital || (!!f.city.trim() && (method !== 'home' || !!f.street.trim()));
   const valid = useMemo(() =>
     !!f.name.trim() && PHONE_RE.test(f.phone.replace(/\D/g, '')) && EMAIL_RE.test(f.email) &&
-    !!f.city.trim() && (method !== 'home' || !!f.street.trim()) && terms && giftReady,
-  [f, method, terms, giftReady]);
+    addressReady && terms && giftReady,
+  [f, terms, addressReady, giftReady]);
 
   const applyCoupon = async () => {
     const code = coupon.trim().toUpperCase();
@@ -115,7 +116,7 @@ export default function CheckoutDetails({
   };
 
   const pay = async () => {
-    if (gift && !giftReady) { setErr('נא למלא שם וטלפון של מי שמקבלת את המתנה'); return; }
+    if (gift && !giftReady) { setErr('נא למלא שם, מייל, טלפון וברכה של מי שמקבלת את המתנה'); return; }
     if (!valid) { setErr('נא למלא את כל השדות ולאשר את התקנון'); return; }
     setBusy(true);
     try {
@@ -126,7 +127,7 @@ export default function CheckoutDetails({
         newsletter: news,
         coupon: applied?.percent ? applied.code : null,
         giftCard: applied?.balance ? applied.code : null,
-        gift: gift ? { name: to.name.trim(), phone: giftPhone, message: to.message.trim() } : null,
+        gift: gift ? { name: to.name.trim(), phone: giftPhone, email: to.email.trim(), message: to.message.trim() } : null,
         subtotal, shipping, discount, total,
       });
     } catch (error) {
@@ -186,6 +187,12 @@ export default function CheckoutDetails({
               {/* 2. Shipping */}
               <section className="ck-card">
                 <div className="ck-card__head"><span className="ck-num">2</span><h2>משלוח</h2></div>
+                {digital ? (
+                  <div className="ck-digital">
+                    <span className="ck-digital__title">משלוח דיגיטלי · חינם</span>
+                    <span className="ck-digital__sub">כרטיס המתנה נשלח למייל ולטלפון. אין חבילה ואין דמי משלוח.</span>
+                  </div>
+                ) : (
                 <div className="ck-ships" role="radiogroup">
                   {ships.map(m => (
                     <button key={m.k} role="radio" aria-checked={method === m.k} className={`ck-ship${method === m.k ? ' is-on' : ''}`} onClick={() => setMethod(m.k)}>
@@ -195,6 +202,7 @@ export default function CheckoutDetails({
                     </button>
                   ))}
                 </div>
+                )}
 
                 <label className={`ck-gift${gift ? ' is-on' : ''}`}>
                   <input type="checkbox" checked={gift} onChange={e => {
@@ -209,7 +217,7 @@ export default function CheckoutDetails({
                   <span className="ck-gift__icon"><GiftIcon /></span>
                   <span className="ck-gift__copy">
                     <span className="ck-gift__title">האם זו מתנה?</span>
-                    <span className="ck-gift__sub">נשלח אל מישהי אחרת, עם ברכה אישית</span>
+                    <span className="ck-gift__sub">נשלח אל מישהי אחרת, למייל ולטלפון, עם ברכה</span>
                   </span>
                 </label>
 
@@ -217,13 +225,14 @@ export default function CheckoutDetails({
                   <div className="ck-gift-panel" id="ck-gift-panel">
                     <div className="ck-gift-panel__head">
                       <span className="ck-gift-panel__kicker">למי השמחה</span>
-                      <span className="ck-gift-panel__hint">הקבלה נשארת אצלך. המשלוח יוצא אל המקבלת, לכתובת שתמולא כאן.</span>
+                      <span className="ck-gift-panel__hint">{digital ? 'הקבלה נשארת אצלך. הכרטיס והברכה נשלחים למייל ולטלפון של המקבלת.' : 'הקבלה נשארת אצלך. הברכה נשלחת למייל ולטלפון, והחבילה יוצאת לכתובת של המקבלת.'}</span>
                     </div>
                     <div className="ck-row ck-row--auto">
                       <Field label="שם המקבלת" value={to.name} onChange={setGiftField('name')} autoComplete="off" placeholder="שם מלא" />
                       <Field label="טלפון של המקבלת" className="is-ltr" value={to.phone} onChange={setGiftField('phone')} type="tel" inputMode="numeric" autoComplete="off" placeholder="050-000-0000" />
                     </div>
-                    {method === 'home' ? (
+                    <Field label="מייל של המקבלת" className="is-ltr" value={to.email} onChange={setGiftField('email')} type="email" autoComplete="off" placeholder="name@email.com" />
+                    {!digital && method === 'home' ? (
                       <div className="ck-stack">
                         <div className="ck-row ck-row--city">
                           <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="off" placeholder="עיר" />
@@ -239,20 +248,20 @@ export default function CheckoutDetails({
                           <textarea className="ck-input ck-textarea" rows={2} value={f.notes} onChange={set('notes')} placeholder="קוד לבניין, כניסה, להשאיר ליד הדלת…" />
                         </label>
                       </div>
-                    ) : (
+                    ) : !digital ? (
                       <div className="ck-stack">
                         <Field label="עיר לאיסוף" value={f.city} onChange={set('city')} autoComplete="off" placeholder="נציג את נקודות האיסוף הקרובות" />
                         <span className="ck-note">[ כאן תוצג רשימת נקודות האיסוף מחברת השילוח ]</span>
                       </div>
-                    )}
+                    ) : null}
                     <label className="ck-field">
-                      <span>ברכה למשלוח<span className="ck-field__opt"> (לא חובה)</span></span>
+                      <span>ברכה</span>
                       <textarea className="ck-input ck-textarea" rows={2} value={to.message} onChange={setGiftField('message')} placeholder="מזל טוב, שיהיה רך ומתוק…" />
                     </label>
                   </div>
                 )}
 
-                {!gift && (method === 'home' ? (
+                {!gift && !digital && (method === 'home' ? (
                   <div className="ck-stack">
                     <div className="ck-row ck-row--city">
                       <Field label="עיר" value={f.city} onChange={set('city')} autoComplete="address-level2" placeholder="עיר" />

@@ -178,7 +178,11 @@ export async function POST(request: Request) {
   const street = typeof body?.street === "string" ? body.street.trim() : "";
   const zip = typeof body?.zip === "string" ? body.zip.trim() : "";
   const rawItems = Array.isArray(body?.items) ? body.items : [];
-  if (!method || !name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || !city || (method === "home" && !street)) {
+  const digitalCart = rawItems.length > 0 && rawItems.every((item: { id?: unknown }) => {
+    const id = typeof item?.id === "string" ? item.id : "";
+    return id.startsWith("oli-gift:") || id.includes(":gift:");
+  });
+  if (!method || !name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || (!digitalCart && (!city || (method === "home" && !street)))) {
     return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
   }
 
@@ -231,7 +235,7 @@ export async function POST(request: Request) {
       street,
       city,
       zip,
-      shippingName: method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
+      shippingName: digital ? "דיגיטלי" : method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
       code: giftCode,
       payable,
       purchases,
@@ -268,7 +272,7 @@ export async function POST(request: Request) {
       street,
       city,
       zip,
-      shippingName: method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
+      shippingName: digital ? "דיגיטלי" : method === "pickup" ? "נקודת איסוף" : "שליח עד הבית",
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;

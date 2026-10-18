@@ -61,7 +61,7 @@ export function CheckoutView() {
         email: data.email,
         city: data.city,
         street: [
-          data.gift ? `מתנה ל${data.gift.name} (${data.gift.phone})` : "",
+          data.gift ? `מתנה ל${data.gift.name} (${data.gift.phone}, ${data.gift.email})` : "",
           data.street,
           data.apt && `דירה ${data.apt}`,
           data.floor && `קומה ${data.floor}`,
@@ -91,10 +91,13 @@ export function CheckoutView() {
     const account = readUser();
     if (account) {
       const prices = new Map((body.lines ?? []).map((line) => [line.id, line.price]));
-      const place = data.method === "pickup"
+      const digitalOrder = items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
+      const place = digitalOrder
+        ? "משלוח דיגיטלי"
+        : data.method === "pickup"
         ? ["נקודת איסוף", data.city].filter(Boolean).join(", ")
         : [data.street, data.apt && "דירה " + data.apt, data.floor && "קומה " + data.floor, data.city].filter(Boolean).join(", ");
-      const addr = data.gift ? ["מתנה · " + data.gift.name, place].filter(Boolean).join(" · ") : place;
+      const addr = data.gift ? ["מתנה · " + data.gift.name, data.gift.email, place].filter(Boolean).join(" · ") : place;
       saveOrder(account.phone, {
         id: number,
         no: number,
