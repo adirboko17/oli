@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { giftAmountsFromTags, openGiftMax, productHref, productImage } from "@/lib/catalog-model";
+import { giftAmountsFromTags, OPEN_GIFT_MAX, OPEN_GIFT_MIN, openGiftMax, productHref, productImage } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 import "./GiftCard.css";
 
 const PRESETS = [150, 250, 400, 600] as const;
-const MIN = 50;
-const MAX = 2500;
 
 const WAVE = [
   ["M-20 40 C 240 -30, 480 110, 720 40 S 1200 -30, 1460 40", "0.90"],
@@ -43,8 +41,8 @@ export default function GiftCardSection() {
   );
   const presets: number[] = giftProduct ? giftAmountsFromTags(giftProduct.tags) : [...PRESETS];
   const allowCustom = giftProduct ? openGiftMax(giftProduct.tags) != null : true;
-  const min = giftProduct ? 1 : MIN;
-  const max = MAX;
+  const min = OPEN_GIFT_MIN;
+  const max = OPEN_GIFT_MAX;
   const presetKey = presets.join(",");
 
   useEffect(() => {

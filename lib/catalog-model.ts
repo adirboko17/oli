@@ -82,6 +82,7 @@ export function categoryLabel(category: string) {
 
 export const OPEN_GIFT_TAG = "\u0001gift:open";
 export const GIFT_AMOUNT_PREFIX = "\u0001gift:amt:";
+export const OPEN_GIFT_MIN = 150;
 export const OPEN_GIFT_MAX = 2500;
 
 export function openGiftMax(tags: string[]) {
@@ -101,7 +102,7 @@ export function giftQueryAmount(raw: string | null | undefined, amounts: number[
   if (!Number.isFinite(value)) return null;
   const amount = Math.round(value * 100) / 100;
   if (amounts.includes(amount)) return { pick: amount, text: "" };
-  if (max != null && amount >= 1 && amount <= max) return { pick: "custom", text: String(amount) };
+  if (max != null && amount >= OPEN_GIFT_MIN && amount <= max) return { pick: "custom", text: String(amount) };
   return null;
 }
 
@@ -110,7 +111,7 @@ export function giftAmountsFromTags(tags: string[]) {
   tags.forEach((tag) => {
     if (!tag.startsWith(GIFT_AMOUNT_PREFIX)) return;
     const value = Number(tag.slice(GIFT_AMOUNT_PREFIX.length));
-    if (value > 0 && value <= 1_000_000) amounts.push(Math.round(value * 100) / 100);
+    if (value >= OPEN_GIFT_MIN && value <= 1_000_000) amounts.push(Math.round(value * 100) / 100);
   });
   return [...new Set(amounts)].sort((a, b) => a - b);
 }

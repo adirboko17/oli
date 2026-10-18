@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { categoryLabel, giftAmountsFromTags, giftPriceLabel, giftQueryAmount, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { categoryLabel, giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -35,7 +35,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const giftChoice = giftPick ?? giftAmounts[0] ?? (giftMax != null ? "custom" : null);
   const giftNumber = Number(giftAmount);
   const giftValue = giftAmount.trim() && Number.isFinite(giftNumber) ? Math.round(giftNumber * 100) / 100 : null;
-  const giftReady = giftValue != null && giftValue >= 1 && giftMax != null && giftValue <= giftMax;
+  const giftReady = giftValue != null && giftValue >= OPEN_GIFT_MIN && giftMax != null && giftValue <= giftMax;
   const giftSelected = giftChoice === "custom" ? (giftReady ? giftValue : null) : giftChoice;
   const unit = variant?.price ?? product.price;
   const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
@@ -97,15 +97,15 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             <div className="pg-thumbs" ref={thumbsRef}>
               {(images.length ? images : [{ id: "ph", src: null, kind: "image" as const }]).map((item, index) => (
                 <button key={item.id} type="button" data-i={index} onClick={() => setThumb(index)} aria-label={"תמונה " + (index + 1)} style={{ aspectRatio: "4/5", padding: 0, borderRadius: 10, overflow: "hidden", border: "2px solid " + (thumb === index ? "#3A2826" : "transparent"), background: "#F6EEE8" }}>
-                  {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : null}
-                  {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
+                  {item.src && item.kind === "video" ? <video src={item.src} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
+                  {item.src && item.kind !== "video" ? <span style={{ display: "block", width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} /> : null}
                 </button>
               ))}
             </div>
           </div>
           <div className="pg-main">
-            {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} /> : null}
-            {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", mixBlendMode: "darken" }} /> : null}
+            {active?.src && active.kind === "video" ? <video src={active.src} controls playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null}
+            {active?.src && active.kind !== "video" ? <span style={{ position: "absolute", inset: 0, backgroundImage: `url("${active.src}")`, backgroundSize: "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} /> : null}
             {!active?.src ? <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FF, fontSize: "clamp(32px,6vw,56px)", textAlign: "center", padding: 24 }}>{product.title}</span> : null}
             <ProductBadges product={product} />
             {images.length > 1 && (
@@ -199,7 +199,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
                         <input autoFocus inputMode="numeric" value={giftAmount} onChange={(event) => setGiftAmount(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0" aria-label="סכום מותאם אישית" style={{ width: 90, border: 0, background: "transparent", fontFamily: FF, fontSize: 26, letterSpacing: "-.02em", color: "#3A2826", textAlign: "left", outline: "none", padding: 0 }} />
                       </span>
                     </label>
-                    <span style={{ fontSize: 13, color: giftAmount && !giftReady ? "#A33A2A" : "#8A6C64" }}>{giftAmount && !giftReady ? `אפשר בין ${fmt(1)} ל־${fmt(giftMax)}` : `כל סכום בין ${fmt(1)} ל־${fmt(giftMax)}`}</span>
+                    <span style={{ fontSize: 13, color: giftAmount && !giftReady ? "#A33A2A" : "#8A6C64" }}>{giftAmount && !giftReady ? `אפשר בין ${fmt(OPEN_GIFT_MIN)} ל־${fmt(giftMax)}` : `כל סכום בין ${fmt(OPEN_GIFT_MIN)} ל־${fmt(giftMax)}`}</span>
                   </div>
                 ) : (
                   <button type="button" onClick={() => setGiftPick("custom")} style={{ ...giftCustomRow, border: "1.5px dashed #CDB5A8", background: "transparent", color: "#3A2826" }}>

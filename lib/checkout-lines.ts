@@ -1,5 +1,5 @@
 import "server-only";
-import { giftAmountsFromTags, OPEN_GIFT_MAX, openGiftMax, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, OPEN_GIFT_MAX, OPEN_GIFT_MIN, openGiftMax, type CatalogProduct } from "@/lib/catalog-model";
 import type { StoreLine } from "@/lib/storely-shop";
 
 function giftAmount(raw: string) {
@@ -11,7 +11,7 @@ export function resolvePrice(products: CatalogProduct[], id: string) {
   const card = /^oli-gift:(\d+(?:\.\d+)?)$/.exec(id);
   if (card) {
     const amount = giftAmount(card[1]);
-    if (amount == null || amount < 50 || amount > OPEN_GIFT_MAX) return null;
+    if (amount == null || amount < OPEN_GIFT_MIN || amount > OPEN_GIFT_MAX) return null;
     return amount;
   }
   const gift = /^(.*):gift:(\d+(?:\.\d+)?)$/.exec(id);
@@ -21,7 +21,7 @@ export function resolvePrice(products: CatalogProduct[], id: string) {
     if (!product || amount == null) return null;
     const preset = giftAmountsFromTags(product.tags).includes(amount);
     const max = openGiftMax(product.tags);
-    const custom = max != null && amount >= 1 && amount <= max;
+    const custom = max != null && amount >= OPEN_GIFT_MIN && amount <= max;
     if (!preset && !custom) return null;
     return amount;
   }
