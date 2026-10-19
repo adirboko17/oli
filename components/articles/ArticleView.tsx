@@ -40,9 +40,11 @@ export default function ArticleView({ article: a, getProduct, AddToCart }: Props
           )}
         </header>
 
-        {a.image && (
+        {a.video ? (
+          <div className="oa-article__hero oa-article__hero--video"><video src={a.video} controls playsInline preload="metadata" /></div>
+        ) : a.image ? (
           <div className="oa-article__hero"><img src={a.image} alt={a.title} className={a.image === "/assets/logo-brown.png" ? "is-logo" : undefined} /></div>
-        )}
+        ) : null}
 
         <div className="oa-prose">
           {a.body?.length ? a.body.map((b, i) => {

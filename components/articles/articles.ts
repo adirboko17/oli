@@ -38,6 +38,7 @@ export type Article = {
   title: string;
   category: CategoryKey;
   image?: string;
+  video?: string;
   author?: string;
   updated?: string;
   lead?: string;

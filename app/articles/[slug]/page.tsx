@@ -1,9 +1,11 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import ArticleView from "@/components/articles/ArticleView";
 import { AddToCart } from "@/components/articles/AddToCart";
 import { ARTICLES, CATEGORY_PRODUCT, getArticle } from "@/components/articles/articles";
 import type { CalloutProduct } from "@/components/articles/ArticleView";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { loadShopPosts } from "@/lib/storely-shop";
 import { productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
 
@@ -44,8 +46,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const { slug } = await params;
   const article = getArticle(slug);
   if (!article) notFound();
+  const posts = await loadShopPosts((await headers()).get("host"));
+  const video = posts.find((post) => post.handle === article.slug || post.handle === slug)?.video;
+  const shown = video ? { ...article, video } : article;
   const result = await loadPublicCatalog();
   const products = result.status === "ready" ? result.catalog.products : [];
   const productKey = article.productId || CATEGORY_PRODUCT[article.category];
-  return <ArticleView article={article} getProduct={() => callout(products, productKey)} AddToCart={AddToCart} />;
+  return <ArticleView article={shown} getProduct={() => callout(products, productKey)} AddToCart={AddToCart} />;
 }

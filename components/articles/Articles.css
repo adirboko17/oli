@@ -81,7 +81,9 @@
 .oa-article__meta { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font-size:14px; color:var(--soft); padding-top:clamp(4px,1vw,10px); }
 .oa-article__author { color:var(--ink); font-weight:500; }
 .oa-article__hero { width:100%; max-width:1080px; aspect-ratio:16/9; border-radius:clamp(18px,2.5vw,28px); overflow:hidden; background:#F3D9C6; }
-.oa-article__hero img { width:100%; height:100%; object-fit:cover; object-position:center 35%; display:block; }
+.oa-article__hero img { width:100%; height:100%; object-fit:cover; object-position:center 35%; display:block; background:#111; }
+.oa-article__hero.oa-article__hero--video { aspect-ratio:auto; height:auto; background:#1A1412; display:flex; justify-content:center; align-items:center; }
+.oa-article__hero--video video { width:100%; height:auto; max-height:min(78vh,760px); object-fit:contain; object-position:center; display:block; background:#111; }
 .oa-article__hero img.is-logo { object-fit:contain; padding:8%; background:#F3D9C6; }
 
 .oa-prose { max-width:680px; width:100%; display:flex; flex-direction:column; gap:20px; }

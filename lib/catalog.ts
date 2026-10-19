@@ -52,7 +52,7 @@ function parseCollection(value: unknown): CatalogCollection[] {
   const subcategories = Array.isArray(row.subcategories)
     ? [...new Set(row.subcategories.flatMap((name) => (typeof name === "string" && name.trim() ? [name.trim()] : [])))]
     : [];
-  return [{ id: typeof row.id === "string" && row.id ? row.id : title, title, description: text(row.description), productIds, subcategories }];
+  return [{ id: typeof row.id === "string" && row.id ? row.id : title, title, description: text(row.description), productIds, subcategories, manualSort: row.manualSort === true }];
 }
 
 async function parseProduct(value: unknown): Promise<CatalogProduct | null> {

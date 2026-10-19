@@ -14,6 +14,7 @@ export type CheckoutPayload = {
   name: string; phone: string; email: string;
   shippingName: string; zone: string;
   city: string; street: string; apt: string; floor: string; zip: string; notes: string;
+  pregnancyWeek: string; babyAge: string; heard: string; heardOther: string;
   newsletter: boolean; coupon: string | null; giftCard: string | null;
   gift: GiftDetails | null;
 };
@@ -31,6 +32,7 @@ type Props = {
 const fmt = (n: number) => '₪ ' + (Math.round(n * 10) / 10).toLocaleString('he-IL');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
+const HEARD_OPTIONS = ['שמעתי מחברה', 'רשתות חברתיות', 'גוגל', 'דרך הפודקאסט', 'דולה/אשת מקצוע', 'אחר'] as const;
 
 const LockIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></svg>
@@ -70,6 +72,7 @@ export default function CheckoutDetails({
   const [quoteMsg, setQuoteMsg] = useState('');
   const [gift, setGift] = useState(false);
   const [to, setTo] = useState({ name: '', phone: '', email: '', message: '' });
+  const [about, setAbout] = useState({ pregnancyWeek: '', babyAge: '', heard: '', heardOther: '' });
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -95,6 +98,7 @@ export default function CheckoutDetails({
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); setErr(''); };
   const setGiftField = (k: keyof typeof to) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setTo({ ...to, [k]: e.target.value }); setErr(''); };
+  const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
   const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
@@ -105,10 +109,12 @@ export default function CheckoutDetails({
   const giftPhone = to.phone.replace(/\D/g, '');
   const giftReady = !gift || (!!to.name.trim() && EMAIL_RE.test(to.email.trim()) && PHONE_RE.test(giftPhone) && !!to.message.trim());
   const addressReady = digital || (!!f.city.trim() && (pickup || !!f.street.trim()));
+  const week = about.pregnancyWeek.trim();
+  const weekOk = !week || (/^\d{1,2}$/.test(week) && Number(week) >= 1 && Number(week) <= 42);
   const valid = useMemo(() =>
     !!f.name.trim() && PHONE_RE.test(f.phone.replace(/\D/g, '')) && EMAIL_RE.test(f.email) &&
-    addressReady && terms && giftReady && shippingMethods.length > 0 && !!selected && quote != null && !quoting,
-  [f, terms, addressReady, giftReady, shippingMethods.length, selected, quote, quoting]);
+    addressReady && terms && giftReady && weekOk && !!about.heard && shippingMethods.length > 0 && !!selected && quote != null && !quoting,
+  [f, terms, addressReady, giftReady, weekOk, about.heard, shippingMethods.length, selected, quote, quoting]);
 
   useEffect(() => {
     if (!selected) {
@@ -256,6 +262,8 @@ export default function CheckoutDetails({
     if (!selected) { setErr('בחרי אפשרות משלוח'); return; }
     if (quoting || !quote) { setErr(quoteMsg || 'הסכום לתשלום עדיין לא מוכן'); return; }
     if (gift && !giftReady) { setErr('נא למלא שם, מייל, טלפון וברכה של מי שמקבלת את המתנה'); return; }
+    if (!weekOk) { setErr('שבוע הריון צריך להיות בין 1 ל־42'); return; }
+    if (!about.heard) { setErr('נשמח לדעת איך שמעת עלינו'); return; }
     if (!valid) { setErr('נא למלא את כל השדות ולאשר את התקנון'); return; }
     setBusy(true);
     try {
@@ -264,6 +272,10 @@ export default function CheckoutDetails({
         phone: f.phone.replace(/\D/g, ''),
         shippingName: selected?.name || '',
         zone: selected?.zone || '',
+        pregnancyWeek: week,
+        babyAge: about.babyAge.trim(),
+        heard: about.heard,
+        heardOther: about.heard === 'אחר' ? about.heardOther.trim() : '',
         newsletter: news,
         coupon: acceptedCode || null,
         giftCard: giftCode || null,
@@ -417,9 +429,31 @@ export default function CheckoutDetails({
                 ))}
               </section>
 
-              {/* 3. Confirmation */}
               <section className="ck-card">
-                <div className="ck-card__head"><span className="ck-num">3</span><h2>אישור</h2></div>
+                <div className="ck-card__head"><span className="ck-num">3</span><h2>עלייך</h2></div>
+                <div className="ck-row ck-row--auto">
+                  <Field label="שבוע הריון" optional className="is-ltr" value={about.pregnancyWeek} onChange={setAboutField('pregnancyWeek')} type="number" inputMode="numeric" min={1} max={42} placeholder="למשל 24" />
+                  <Field label="גיל הבייבי" optional value={about.babyAge} onChange={setAboutField('babyAge')} placeholder="למשל 3 חודשים" />
+                </div>
+                <div className="ck-hear">
+                  <span className="ck-hear__q">נשמח לשמוע איך שמעת עלינו</span>
+                  <div className="ck-ships" role="radiogroup" aria-label="איך שמעת עלינו">
+                    {HEARD_OPTIONS.map((option) => (
+                      <button key={option} type="button" role="radio" aria-checked={about.heard === option} className={`ck-ship${about.heard === option ? ' is-on' : ''}`} onClick={() => { setAbout({ ...about, heard: option }); setErr(''); }}>
+                        <span className="ck-radio"><span /></span>
+                        <span className="ck-ship__text"><span className="ck-ship__title">{option}</span></span>
+                      </button>
+                    ))}
+                  </div>
+                  {about.heard === 'אחר' && (
+                    <Field label="ספרי לנו" optional value={about.heardOther} onChange={setAboutField('heardOther')} placeholder="איך הגעת אלינו" />
+                  )}
+                </div>
+              </section>
+
+              {/* 4. Confirmation */}
+              <section className="ck-card">
+                <div className="ck-card__head"><span className="ck-num">4</span><h2>אישור</h2></div>
                 <label className="ck-check">
                   <input type="checkbox" checked={terms} onChange={e => { setTerms(e.target.checked); setErr(''); }} />
                   <span>קראתי ואני מאשרת את <Link href="/legal?tab=terms">תקנון האתר</Link> ו<Link href="/legal?tab=privacy">מדיניות הפרטיות</Link></span>

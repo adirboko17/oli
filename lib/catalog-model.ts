@@ -58,6 +58,7 @@ export type CatalogCollection = {
   description: string;
   productIds: string[];
   subcategories: string[];
+  manualSort: boolean;
 };
 
 export type PublicCatalog = {

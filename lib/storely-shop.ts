@@ -175,3 +175,25 @@ export async function quoteStorefront(input: {
     discountCode,
   };
 }
+
+export type ShopPostMedia = { handle: string; video: string };
+
+function postVideo(value: unknown) {
+  const url = typeof value === "string" ? value.trim() : "";
+  return /^https:\/\/.+\.(mp4|webm|mov)(\?.*)?$/i.test(url) ? url.slice(0, 500) : "";
+}
+
+export async function loadShopPosts(hostHeader: string | null): Promise<ShopPostMedia[]> {
+  const hostname = await storefrontHost(hostHeader);
+  if (!hostname) return [];
+  const { record, responseOk } = await shopRecord(hostname);
+  if (!responseOk || record?.ok !== true || !Array.isArray(record.posts)) return [];
+  return record.posts.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const item = row as Record<string, unknown>;
+    const handle = typeof item.handle === "string" ? item.handle.trim() : "";
+    const video = postVideo(item.video);
+    if (!handle || !video || item.visible === false) return [];
+    return [{ handle, video }];
+  });
+}

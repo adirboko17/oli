@@ -59,6 +59,8 @@
 .ck-ship__sub { font-size:13px; color:#6E5650; }
 .ck-ship__price { font-size:15px; font-weight:600; white-space:nowrap; }
 .ck-ship-empty { margin:0; font-size:14px; line-height:1.5; color:#A33A2A; }
+.ck-hear { display:flex; flex-direction:column; gap:12px; }
+.ck-hear__q { font-size:16px; font-weight:600; color:#3A2826; }
 
 /* Gift toggle */
 .ck-gift { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; border:1.5px solid #F1E5DD; background:#FBF5F1; cursor:pointer; transition:border-color .2s, background .2s; }

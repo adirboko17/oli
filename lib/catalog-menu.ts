@@ -105,6 +105,15 @@ export function productsForMenu(products: CatalogProduct[], collections: Catalog
     const ids = new Set(collections.find((collection) => collection.title.trim() === parent)?.productIds ?? []);
     return products.filter((product) => subcategoryNames(product).includes(name) && (product.category.trim() === parent || ids.has(product.id)));
   }
-  const ids = new Set(collections.find((collection) => collection.title.trim() === key)?.productIds ?? []);
-  return products.filter((product) => product.category.trim() === key || ids.has(product.id));
+  const collection = collections.find((item) => item.title.trim() === key);
+  const memberIds = collection?.productIds ?? [];
+  const ordered = collection?.manualSort ? memberIds : [];
+  const ids = new Set(memberIds);
+  const matched = products.filter((product) => product.category.trim() === key || ids.has(product.id));
+  if (!ordered.length) return matched;
+  const rank = new Map(ordered.map((id, index) => [id, index]));
+  return matched
+    .map((product, index) => ({ product, index, rank: rank.get(product.id) ?? Number.MAX_SAFE_INTEGER }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map((item) => item.product);
 }
