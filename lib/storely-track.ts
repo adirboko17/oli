@@ -11,6 +11,15 @@ import {
   type StorefrontEventName,
 } from "@/lib/storely";
 
+function decodePath(value: string | null) {
+  if (!value) return "";
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
+}
+
 function requestPath(headerList: Headers, fallback: string) {
   const nextUrl = headerList.get("next-url")?.split("?")[0]?.split("#")[0];
   if (nextUrl) return nextUrl || fallback;
@@ -69,7 +78,7 @@ function recordRenderedPageView(snapshot: {
   const headerList = new Headers();
   if (snapshot.nextUrl) headerList.set("next-url", snapshot.nextUrl);
   if (snapshot.referer) headerList.set("referer", snapshot.referer);
-  const path = snapshot.pathHeader || requestPath(headerList, "/");
+  const path = decodePath(snapshot.pathHeader) || requestPath(headerList, "/");
   const country = place(snapshot.country);
   const city = place(snapshot.city);
   return recordStorefrontEvent({

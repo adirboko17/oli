@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { articlePublicPath } from '@/lib/article-paths';
 import { ARTICLES, CATEGORIES, CATEGORY_TINT, articleNumber } from './articles';
 import './Articles.css';
 
@@ -12,7 +13,7 @@ export function LatestMarquee({ count = 10 }: { count?: number }) {
       <div className="oa-marquee__viewport">
         <div className="oa-marquee__track">
           {items.map((a, i) => (
-            <Link key={i} href={`/articles/${a.slug}`} className="oa-pill" dir="rtl" aria-hidden={i >= latest.length || undefined} tabIndex={i >= latest.length ? -1 : undefined}>
+            <Link key={i} href={articlePublicPath(a.slug)} className="oa-pill" dir="rtl" aria-hidden={i >= latest.length || undefined} tabIndex={i >= latest.length ? -1 : undefined}>
               {a.image
                 ? <span className={"oa-pill__thumb" + (a.image === "/assets/logo-brown.png" ? " is-logo" : "")} style={{ backgroundImage: `url("${a.image}")` }} />
                 : <span className="oa-pill__thumb oa-pill__thumb--num" style={{ background: CATEGORY_TINT[a.category] }}>{articleNumber(a)}</span>}

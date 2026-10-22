@@ -80,7 +80,7 @@ function isHeading(line: string) {
   return line.length <= 48 && !line.includes(":") && line.split(" ").length <= 8;
 }
 
-function blocksFrom(text: string): Block[] {
+export function blocksFrom(text: string): Block[] {
   const blocks: Block[] = [];
   let paragraph: string[] = [];
   let list: { term: string; text: string }[] | null = null;

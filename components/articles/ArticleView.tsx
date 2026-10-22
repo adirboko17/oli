@@ -1,10 +1,29 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Article, CATEGORIES, CATEGORY_PRODUCT, relatedArticles } from './articles';
 import { ArticleCard } from './ArticleCard';
 import './Articles.css';
 
 // Connect this to the site's existing products/cart (name, short description, price, image, product link, add to cart)
 export type CalloutProduct = { id: string; name: string; sub: string; priceLabel: string; image: string; href: string };
+
+const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|<u>([^<\n]+)<\/u>/g;
+
+export function articleText(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(INLINE)) {
+    const start = match.index ?? 0;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+    if (match[1] && match[2]) nodes.push(<a key={start} href={match[2]}>{match[1]}</a>);
+    else if (match[3]) nodes.push(<strong key={start}>{match[3]}</strong>);
+    else if (match[4]) nodes.push(<em key={start}>{match[4]}</em>);
+    else if (match[5]) nodes.push(<u key={start}>{match[5]}</u>);
+    cursor = start + match[0].length;
+  }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes.length ? nodes : [text];
+}
 
 type Props = {
   article: Article;
@@ -48,11 +67,11 @@ export default function ArticleView({ article: a, getProduct, AddToCart }: Props
 
         <div className="oa-prose">
           {a.body?.length ? a.body.map((b, i) => {
-            if (b.type === 'heading') return <h2 key={i}>{b.text}</h2>;
-            if (b.type === 'paragraph') return <p key={i}>{b.text}</p>;
+            if (b.type === 'heading') return <h2 key={i}>{articleText(b.text)}</h2>;
+            if (b.type === 'paragraph') return <p key={i}>{articleText(b.text)}</p>;
             return (
               <ul key={i}>
-                {b.items.map((it, j) => <li key={j}><strong>{it.term}</strong> {it.text}</li>)}
+                {b.items.map((it, j) => <li key={j}>{articleText(it.text ? `${it.term} ${it.text}` : it.term)}</li>)}
               </ul>
             );
           }) : <div className="oa-prose__missing">כאן ייכנס גוף המאמר מהאתר הקיים</div>}

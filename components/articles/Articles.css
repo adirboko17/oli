@@ -91,6 +91,9 @@
 .oa-prose p, .oa-prose li { font-size:clamp(16px,2vw,18px); line-height:1.85; color:var(--body); text-wrap:pretty; }
 .oa-prose ul { margin:0; list-style:none; display:flex; flex-direction:column; gap:14px; border-right:1px solid #E3C9B8; padding:0 clamp(16px,3vw,24px) 0 0; }
 .oa-prose strong { color:var(--ink); font-weight:600; }
+.oa-prose em { font-style:italic; }
+.oa-prose u { text-underline-offset:3px; }
+.oa-prose a { color:#1a4fd6; text-decoration:underline; text-underline-offset:3px; }
 .oa-prose__missing { border:1.5px dashed #E1CABD; border-radius:18px; padding:clamp(28px,5vw,48px); text-align:center; color:#8A6C64; font-size:15px; }
 
 .oa-callout { max-width:680px; width:100%; box-sizing:border-box; display:grid; grid-template-columns:clamp(96px,22vw,140px) minmax(0,1fr); gap:clamp(16px,3vw,24px); align-items:center; padding:clamp(16px,3vw,22px); border-radius:22px; background:var(--cream); }

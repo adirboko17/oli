@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { isArticleSection } from "@/lib/article-paths";
 import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { customerTags, giftPriceLabel, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
@@ -77,7 +78,7 @@ function Header({ hello }: { hello: string }) {
   const home = path === "/";
   const prod = path.startsWith("/products") || path.startsWith("/product") || path.startsWith("/olimini");
   const stores = path.startsWith("/stores");
-  const articlesOn = path.startsWith("/articles") || path.startsWith("/journal");
+  const articlesOn = isArticleSection(path);
   const pod = path.startsWith("/podcast");
   const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const, color: "#3A2826" });
   const [menuTop, setMenuTop] = useState(108);

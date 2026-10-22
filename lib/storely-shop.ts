@@ -176,7 +176,7 @@ export async function quoteStorefront(input: {
   };
 }
 
-export type ShopPostMedia = { handle: string; video: string };
+export type ShopPostMedia = { handle: string; video: string; body: string };
 
 function postVideo(value: unknown) {
   const url = typeof value === "string" ? value.trim() : "";
@@ -193,7 +193,8 @@ export async function loadShopPosts(hostHeader: string | null): Promise<ShopPost
     const item = row as Record<string, unknown>;
     const handle = typeof item.handle === "string" ? item.handle.trim() : "";
     const video = postVideo(item.video);
-    if (!handle || !video || item.visible === false) return [];
-    return [{ handle, video }];
+    const body = typeof item.body === "string" ? item.body : "";
+    if (!handle || item.visible === false || (!video && !body.trim())) return [];
+    return [{ handle, video, body }];
   });
 }

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isArticleSection } from "@/lib/article-paths";
 import { menuHref } from "@/lib/catalog-menu";
 import { useSite } from "@/components/site";
 import { PodcastMenuSub } from "@/components/podcasts/PodcastMenu";
@@ -72,7 +73,7 @@ export default function MobileMenu({ categories, onAccount, accountLabel = "הח
       <div id="oli-mobile-menu" ref={panelRef} className={`om-panel${open ? " is-open" : ""}`} dir="rtl" aria-hidden={!open}>
         <nav className="om-list">
           {LINKS.map((link, index) => {
-            const active = isActive(path, link.match);
+            const active = link.id === "articles" ? isArticleSection(path) : isActive(path, link.match);
             const style = { ["--i" as string]: index } as React.CSSProperties;
 
             if (link.id === "podcast") {
