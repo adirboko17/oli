@@ -1,5 +1,6 @@
 import "server-only";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { parseShopPopups } from "@/lib/store-popups";
 import { requestHostname } from "@/lib/storely";
 import type { ShippingChoice } from "@/lib/shipping";
 
@@ -181,6 +182,45 @@ export type ShopPostMedia = { handle: string; video: string; body: string };
 function postVideo(value: unknown) {
   const url = typeof value === "string" ? value.trim() : "";
   return /^https:\/\/.+\.(mp4|webm|mov)(\?.*)?$/i.test(url) ? url.slice(0, 500) : "";
+}
+
+export async function loadShopPopups(hostHeader: string | null) {
+  const hostname = await storefrontHost(hostHeader);
+  if (!hostname) return [];
+  const { record, responseOk } = await shopRecord(hostname);
+  if (!responseOk || record?.ok !== true) return [];
+  return parseShopPopups(record.popups);
+}
+
+export async function submitPopupLead(input: {
+  hostHeader: string | null;
+  popupId: string;
+  fields: Record<string, unknown>;
+  pagePath: string;
+}) {
+  const hostname = await storefrontHost(input.hostHeader);
+  const env = storelyEnv();
+  if (!env || !hostname) return { ok: false as const, reason: "לא הצלחנו לשלוח" };
+  const fields: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input.fields)) {
+    if (!/^[a-z][a-z0-9_]{0,31}$/.test(key) || typeof value !== "string") continue;
+    const clean = value.trim().slice(0, 400);
+    if (clean) fields[key] = clean;
+    if (Object.keys(fields).length >= 8) break;
+  }
+  const pagePath = input.pagePath.trim().split("?")[0]?.split("#")[0] || "/";
+  const { record, responseOk } = await storelyRpc("submit_store_popup_lead", {
+    tracking_key: env.trackingKey,
+    hostname,
+    popup_id: input.popupId,
+    fields,
+    page_path: pagePath.startsWith("/") && !pagePath.startsWith("//") ? pagePath.slice(0, 200) : "/",
+  });
+  if (!responseOk || record?.ok !== true) {
+    const reason = typeof record?.reason === "string" ? record.reason : "לא הצלחנו לשלוח";
+    return { ok: false as const, reason };
+  }
+  return { ok: true as const };
 }
 
 export async function loadShopPosts(hostHeader: string | null): Promise<ShopPostMedia[]> {

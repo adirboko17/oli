@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
-import { categoryGroups, paragraphs, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { paragraphs, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { BestLoop, ProductTile } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
@@ -63,8 +63,7 @@ function Waves({ flip }: { flip?: boolean }) {
 }
 
 export function HomeView() {
-  const { mobile, products, add } = useSite();
-  const groups = categoryGroups(products);
+  const { mobile, products, collections, add } = useSite();
   const [why, setWhy] = useState(0);
   const [mini, setMini] = useState(0);
   const [miniHover, setMiniHover] = useState<string | null>(null);
@@ -92,11 +91,13 @@ export function HomeView() {
   }, [kick]);
 
   const stages = STAGES.map((stage) => {
-    const group = groups.find((g) => stage.test.test(g.key));
-    const count = group?.count ?? products.filter((p) => stage.test.test(`${p.title} ${p.category} ${p.tags.join(" ")}`)).length;
-    const href = stage.title === "תינוקות" ? "/olimini" : group ? "/products?cat=" + encodeURIComponent(group.key) : "/products";
+    if (stage.title === "תינוקות") return { ...stage, href: "/olimini", count: "3 מוצרים" };
+    const collection = collections.find((item) => stage.test.test(item.title));
+    const count = collection ? products.filter((product) => collection.productIds.includes(product.id)).length : 0;
+    const href = collection ? "/products?cat=" + encodeURIComponent(collection.title.trim()) : "/products";
     return { ...stage, href, count: count ? `${count} ${stage.title === "מתנות ליולדת" ? "מארזים" : "מוצרים"}` : "למוצרים" };
   });
+  const giftCollection = collections.find((item) => /מתנ/.test(item.title));
 
   const featured = findProduct(products, /olilastic|מתיחה/i) ?? products[0] ?? null;
   const best = products.slice(0, 4);
@@ -347,7 +348,7 @@ export function HomeView() {
 
       {giftMain && (
         <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) var(--page-pad) clamp(64px,10vw,128px)" }}>
-          <SectionHead title="מתנות ליולדת" text="מארזים מפנקים, מוכנים למסירה." href={"/products?cat=" + encodeURIComponent(giftMain.category || "")} link="לכל המארזים" />
+          <SectionHead title={giftCollection?.title.trim() || "מתנות ליולדת"} text="מארזים מפנקים, מוכנים למסירה." href={giftCollection ? "/products?cat=" + encodeURIComponent(giftCollection.title.trim()) : "/products"} link="לכל המארזים" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,5vw,64px)", alignItems: "start" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 18, opacity: giftFade ? 0 : 1, transform: giftFade ? "translateY(8px)" : "none", transition: "opacity .45s ease, transform .45s ease" }}>
               <Link href={productHref(giftMain)} style={{ display: "flex", flexDirection: "column", gap: 18, color: "#3A2826" }}>

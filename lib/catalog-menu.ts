@@ -9,12 +9,6 @@ export type CatalogMenuItem = {
   blurb: string;
 };
 
-type Bucket = {
-  ids: Set<string>;
-  subs: string[];
-  blurb: string;
-};
-
 export function isOliminiCategory(value: string) {
   const key = decodeURIComponent(value).trim();
   return key === "olimini" || key === "baby" || /^oli\s*mini$/i.test(key) || key === "תינוקות · olimini";
@@ -33,62 +27,31 @@ function subcategoryNames(product: CatalogProduct) {
   });
 }
 
-function bucketFor(groups: Map<string, Bucket>, title: string) {
-  const current = groups.get(title);
-  if (current) return current;
-  const created: Bucket = { ids: new Set(), subs: [], blurb: "" };
-  groups.set(title, created);
-  return created;
-}
+const OLIMINI_ITEM: CatalogMenuItem = { id: "olimini", label: "תינוקות · olimini", count: 3, blurb: "קו הטיפוח הראשון שלנו לתינוקות." };
 
 export function catalogMenu(products: CatalogProduct[], collections: CatalogCollection[]): CatalogMenuItem[] {
-  const groups = new Map<string, Bucket>();
-  products.forEach((product) => {
-    const title = product.category.trim();
-    if (!title) return;
-    bucketFor(groups, title).ids.add(product.id);
-  });
+  const known = new Set(products.map((product) => product.id));
+  const items: CatalogMenuItem[] = [];
   collections.forEach((collection) => {
     const title = collection.title.trim();
-    if (!title) return;
-    const bucket = bucketFor(groups, title);
-    collection.productIds.forEach((id) => bucket.ids.add(id));
-    if (!bucket.blurb && collection.description.trim()) bucket.blurb = collection.description.trim();
+    if (!title || isOliminiCategory(title)) return;
+    const ids = new Set(collection.productIds.filter((id) => known.has(id)));
+    items.push({ id: title, label: title, count: ids.size, blurb: collection.description.trim() });
     collection.subcategories.forEach((name) => {
-      if (!bucket.subs.includes(name)) bucket.subs.push(name);
-    });
-  });
-  products.forEach((product) => {
-    const title = product.category.trim();
-    if (!title || !groups.has(title)) return;
-    const bucket = groups.get(title)!;
-    subcategoryNames(product).forEach((name) => {
-      if (!bucket.subs.includes(name)) bucket.subs.push(name);
-    });
-  });
-
-  const items: CatalogMenuItem[] = [];
-  const known = new Set(products.map((product) => product.id));
-  const titles = [
-    ...collections.flatMap((collection) => {
-      const title = collection.title.trim();
-      return title && groups.has(title) ? [title] : [];
-    }),
-    ...[...groups.keys()].filter((title) => !collections.some((collection) => collection.title.trim() === title)),
-  ];
-  titles.forEach((title) => {
-    const bucket = groups.get(title)!;
-    const count = [...bucket.ids].filter((id) => known.has(id)).length;
-    items.push({ id: isOliminiCategory(title) ? "olimini" : title, label: categoryLabel(title), count, blurb: bucket.blurb });
-    bucket.subs.forEach((name) => {
-      const count = products.filter((product) => subcategoryNames(product).includes(name) && (product.category.trim() === title || bucket.ids.has(product.id))).length;
+      const count = products.filter((product) => ids.has(product.id) && subcategoryNames(product).includes(name)).length;
       items.push({ id: `${title}/${name}`, label: `${title} · ${name}`, count, blurb: "" });
     });
   });
-  if (!items.some((item) => isOliminiCategory(item.id) || isOliminiCategory(item.label))) {
-    items.push({ id: "olimini", label: "תינוקות · olimini", count: 3, blurb: "קו הטיפוח הראשון שלנו לתינוקות." });
-  }
+  items.push(OLIMINI_ITEM);
   return items;
+}
+
+export function productMenuTarget(product: CatalogProduct, collections: CatalogCollection[]) {
+  if (isOliminiCategory(product.category)) return { href: menuHref("olimini"), label: OLIMINI_ITEM.label };
+  const collection = collections.find((item) => !isOliminiCategory(item.title) && item.productIds.includes(product.id));
+  const title = collection?.title.trim() || product.category.trim();
+  if (!title) return null;
+  return { href: menuHref(title), label: categoryLabel(title) };
 }
 
 export function findMenuItem(items: CatalogMenuItem[], key: string) {
@@ -103,17 +66,20 @@ export function productsForMenu(products: CatalogProduct[], collections: Catalog
     const parent = key.slice(0, slash);
     const name = key.slice(slash + 1);
     const ids = new Set(collections.find((collection) => collection.title.trim() === parent)?.productIds ?? []);
-    return products.filter((product) => subcategoryNames(product).includes(name) && (product.category.trim() === parent || ids.has(product.id)));
+    return products.filter((product) => ids.has(product.id) && subcategoryNames(product).includes(name));
   }
   const collection = collections.find((item) => item.title.trim() === key);
-  const memberIds = collection?.productIds ?? [];
-  const ordered = collection?.manualSort ? memberIds : [];
-  const ids = new Set(memberIds);
-  const matched = products.filter((product) => product.category.trim() === key || ids.has(product.id));
-  if (!ordered.length) return matched;
-  const rank = new Map(ordered.map((id, index) => [id, index]));
-  return matched
-    .map((product, index) => ({ product, index, rank: rank.get(product.id) ?? Number.MAX_SAFE_INTEGER }))
-    .sort((a, b) => a.rank - b.rank || a.index - b.index)
-    .map((item) => item.product);
+  if (collection) {
+    const memberIds = collection.productIds;
+    const ordered = collection.manualSort ? memberIds : [];
+    const ids = new Set(memberIds);
+    const matched = products.filter((product) => ids.has(product.id));
+    if (!ordered.length) return matched;
+    const rank = new Map(ordered.map((id, index) => [id, index]));
+    return matched
+      .map((product, index) => ({ product, index, rank: rank.get(product.id) ?? Number.MAX_SAFE_INTEGER }))
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)
+      .map((item) => item.product);
+  }
+  return products.filter((product) => product.category.trim() === key);
 }

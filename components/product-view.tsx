@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { categoryLabel, giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { productMenuTarget } from "@/lib/catalog-menu";
+import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -15,7 +16,7 @@ import { usePromoGate } from "@/components/promo/promo-gate";
 import { useOliUser } from "@/lib/account-session";
 
 export function ProductView({ product, related, initialGiftAmount }: { product: CatalogProduct; related: CatalogProduct[]; initialGiftAmount?: string }) {
-  const { mobile, wide, headerH, add, items } = useSite();
+  const { mobile, wide, headerH, add, items, collections } = useSite();
   const user = useOliUser();
   const { openQuiz, finished } = usePromoGate();
   const images = product.media.filter((item) => item.src);
@@ -55,7 +56,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const stories = product.page.stories.filter((item) => item.url);
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
-  const category = categoryLabel(product.category) || "המוצרים של Oli";
+  const menuCategory = productMenuTarget(product, collections);
   const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
   const fewStories = !mobile && stories.length > 0 && stories.length <= 3;
@@ -88,7 +89,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
     <main>
       <div style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) 0", fontSize: 14, color: "#8A6C64", display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Link href="/" style={{ color: "#8A6C64" }}>דף הבית</Link><span>/</span>
-        <Link href={"/products?cat=" + encodeURIComponent(product.category)} style={{ color: "#8A6C64" }}>{category}</Link><span>/</span>
+        {menuCategory ? <Link href={menuCategory.href} style={{ color: "#8A6C64" }}>{menuCategory.label}</Link> : <Link href="/products" style={{ color: "#8A6C64" }}>המוצרים של Oli</Link>}<span>/</span>
         <span style={{ color: "#3A2826" }}>{product.title}</span>
       </div>
 
@@ -140,7 +141,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {product.category.trim() ? <Link href={"/products?cat=" + encodeURIComponent(product.category)} style={{ width: "fit-content", fontSize: 14, fontWeight: 600, color: "#A85A3A" }}>{category}</Link> : null}
+            {menuCategory ? <Link href={menuCategory.href} style={{ width: "fit-content", fontSize: 14, fontWeight: 600, color: "#A85A3A" }}>{menuCategory.label}</Link> : null}
             <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(48px,10vw,84px)", lineHeight: 0.95 }}>{product.title}</h1>
             {product.headline.mode === "split" && product.headline.subtitle ? <p style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(20px,3vw,30px)", lineHeight: 1.25, color: "#5E4844", margin: 0 }}>{product.headline.subtitle}</p> : null}
             {productBadges(product).length > 0 && (
@@ -277,8 +278,8 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
                   <div className={open ? "pacc-body is-open" : "pacc-body"}>
                     <div className="pacc-clip">
                       <div className="pacc-inner" style={{ padding: "0 0 22px", display: "flex", flexDirection: "column", gap: 12 }}>
-                        {section.paras.map((text, paraIndex) => <p key={paraIndex} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{text}</p>)}
-                        {section.link ? <PanelLink link={section.link} /> : null}
+                        {section.paras.map((text, paraIndex) => <p key={paraIndex} dir={section.align === "left" ? "ltr" : "rtl"} style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", margin: 0, whiteSpace: "pre-line", textAlign: section.align === "left" ? "left" : "right" }}>{text}</p>)}
+                        {section.links.map((link) => <PanelLink key={`${link.kind}:${link.href}`} link={link} />)}
                       </div>
                     </div>
                   </div>

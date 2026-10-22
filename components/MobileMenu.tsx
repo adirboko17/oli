@@ -25,7 +25,7 @@ type Props = {
 const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
   { id: "home", label: "דף הבית", href: "/", match: ["/"] },
   { id: "products", label: "המוצרים של Oli", href: "/products", match: ["/products", "/product", "/olimini"] },
-  { id: "gifts", label: "מתנות ליולדת", href: menuHref("מתנה"), match: [] },
+  { id: "gifts", label: "מתנות ליולדת", href: "/products", match: [] },
   { id: "stores", label: "Oli בחנויות", href: "/stores", match: ["/stores"] },
   { id: "articles", label: "מאמרים", href: "/articles", match: ["/articles", "/journal"] },
   { id: "podcast", label: "פודקאסט", href: "/podcast", match: ["/podcast"] },
@@ -37,6 +37,10 @@ const isActive = (path: string, match: string[]) =>
 
 export default function MobileMenu({ categories, onAccount, accountLabel = "החשבון שלי" }: Props) {
   const site = useSite();
+  const giftCollection = site.collections.find((item) => item.title.includes("מתנ"));
+  const links = LINKS.map((link) => link.id === "gifts" && giftCollection
+    ? { ...link, label: giftCollection.title.trim(), href: menuHref(giftCollection.title.trim()) }
+    : link);
   const open = site.menu;
   const [sub, setSub] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
@@ -72,7 +76,7 @@ export default function MobileMenu({ categories, onAccount, accountLabel = "הח
 
       <div id="oli-mobile-menu" ref={panelRef} className={`om-panel${open ? " is-open" : ""}`} dir="rtl" aria-hidden={!open}>
         <nav className="om-list">
-          {LINKS.map((link, index) => {
+          {links.map((link, index) => {
             const active = link.id === "articles" ? isArticleSection(path) : isActive(path, link.match);
             const style = { ["--i" as string]: index } as React.CSSProperties;
 

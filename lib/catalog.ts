@@ -177,8 +177,9 @@ function parsePage(value: unknown): CatalogPage {
   page.panels = objects(row.panels, 8).flatMap((item) => {
     const title = text(item.title);
     const paras = paragraphs(text(item.body));
-    const link = panelLink(item.link);
-    return title && paras.length ? [{ title, paras, ...(link ? { link } : {}) }] : [];
+    const links = panelLinks(item);
+    const align = item.align === "left" ? "left" : "right";
+    return title && paras.length ? [{ title, paras, align, links }] : [];
   });
   page.stories = objects(row.stories, 20).flatMap((item) => {
     const handle = text(item.handle);
@@ -243,6 +244,25 @@ function record(value: unknown) {
 
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function panelLinks(item: Record<string, unknown>) {
+  const listed = Array.isArray(item.links) ? item.links.flatMap((entry) => {
+    const link = panelLink(entry);
+    return link ? [link] : [];
+  }) : [];
+  const legacy = panelLink(item.link);
+  const source = listed.length ? listed : legacy ? [legacy] : [];
+  const seen = new Set<string>();
+  const links: { kind: "url" | "article"; label: string; href: string }[] = [];
+  for (const link of source) {
+    const key = `${link.kind}:${link.href}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push(link);
+    if (links.length === 6) break;
+  }
+  return links;
 }
 
 function panelLink(value: unknown) {

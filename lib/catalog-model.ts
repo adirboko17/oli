@@ -20,7 +20,7 @@ export type CatalogFaq = { q: string; a: string; tag: string };
 
 export type CatalogPage = {
   highlights: string[];
-  panels: { title: string; paras: string[]; link?: { kind: "url" | "article"; label: string; href: string } }[];
+  panels: { title: string; paras: string[]; align: "right" | "left"; links: { kind: "url" | "article"; label: string; href: string }[] }[];
   stories: { handle: string; url: string }[];
   steps: { title: string; body: string }[];
   ingredientsIntro: string;

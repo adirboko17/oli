@@ -54,9 +54,15 @@ export function SiteFooter({ hello = '' }: { hello?: string }) {
   const { user, label } = useAccountGreeting(hello);
   const cols = COLS.map((col) => ({
     ...col,
-    links: col.links.map((link) => link.label === 'החשבון שלי'
-      ? { ...link, label, onClick: (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); if (user) router.push('/account'); else site.openAccount(); } }
-      : link),
+    links: col.links.map((link) => {
+      if (link.label === 'מתנות ליולדת') {
+        const gift = site.collections.find((item) => item.title.includes('מתנ'));
+        return gift ? { ...link, label: gift.title.trim(), href: '/products?cat=' + encodeURIComponent(gift.title.trim()) } : link;
+      }
+      return link.label === 'החשבון שלי'
+        ? { ...link, label, onClick: (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); if (user) router.push('/account'); else site.openAccount(); } }
+        : link;
+    }),
   }));
   return (
     <footer className="ft" dir="rtl">
