@@ -7,7 +7,7 @@ import { upcomingEvents } from './events';
 /** Desktop nav item "מאמרים ואירועים" with a hover sub-menu. Replaces the old "מאמרים" link (between "Oli בחנויות" and "פודקאסט"). */
 export default function NavKnowledge({ articlesCount }: { articlesCount: number }) {
   const [open, setOpen] = useState(false);
-  const t = useRef<ReturnType<typeof setTimeout>>();
+  const t = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const path = usePathname();
   const active = path.startsWith('/articles') || path.startsWith('/events');
   const evCount = upcomingEvents().filter(e => e.status !== 'cancelled').length;
