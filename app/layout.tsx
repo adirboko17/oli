@@ -6,6 +6,7 @@ import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
 import { StorePopupSlot } from "@/components/store-popup-slot";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { loadPublicEvents } from "@/lib/cms-events";
 import { trackRenderedPageView } from "@/lib/storely-track";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await trackRenderedPageView();
-  const result = await loadPublicCatalog();
+  const [result, events] = await Promise.all([loadPublicCatalog(), loadPublicEvents()]);
   const helloCookie = (await cookies()).get("oli_hello")?.value ?? "";
   let hello = "";
   try { hello = decodeURIComponent(helloCookie).trim().slice(0, 40); } catch { hello = ""; }
@@ -38,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         {result.status === "ready" ? (
-          <SiteProvider products={result.catalog.products} collections={result.catalog.collections} storeName={result.catalog.name}>
+          <SiteProvider products={result.catalog.products} collections={result.catalog.collections} events={events} storeName={result.catalog.name}>
             <Shell hello={hello}>{children}</Shell>
             <Suspense fallback={null}>
               <StorePopupSlot />

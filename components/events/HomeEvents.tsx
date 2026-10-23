@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import { useSite } from '@/components/site';
 import { OliEvent, fmt, upcomingEvents } from './events';
 import { Status } from './EventCard';
 import './Events.css';
 
 /** Home page strip "נפגשות בקרוב" – placed directly above "המומלצים שלנו". Hidden when there are no upcoming events. */
-export default function HomeEvents({ events = upcomingEvents() }: { events?: OliEvent[] }) {
-  const list = events.filter(e => e.status === 'open' || e.status === 'full').slice(0, 3);
+export default function HomeEvents({ events }: { events?: OliEvent[] }) {
+  const source = events ?? upcomingEvents(useSite().events);
+  const list = source.filter(e => e.status === 'open' || e.status === 'full').slice(0, 3);
   if (!list.length) return null;
   return (
     <section className="oe-home" dir="rtl">

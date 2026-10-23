@@ -12,6 +12,7 @@ import {
   type RefObject,
 } from "react";
 import { usePathname } from "next/navigation";
+import type { OliEvent } from "@/components/events/events";
 import type { CatalogCollection, CatalogProduct } from "@/lib/catalog-model";
 import { trackAddToCart } from "@/lib/storely-actions";
 
@@ -49,6 +50,7 @@ type Site = {
   closeAll: () => void;
   products: CatalogProduct[];
   collections: CatalogCollection[];
+  events: OliEvent[];
   storeName: string;
   items: CartItem[];
   cartCount: number;
@@ -90,7 +92,7 @@ function allowScroll(target: EventTarget | null) {
   return target instanceof Element && !!target.closest("[data-scroll-lock-allow]");
 }
 
-export function SiteProvider({ children, products, collections, storeName }: { children: ReactNode; products: CatalogProduct[]; collections: CatalogCollection[]; storeName: string }) {
+export function SiteProvider({ children, products, collections, events, storeName }: { children: ReactNode; products: CatalogProduct[]; collections: CatalogCollection[]; events: OliEvent[]; storeName: string }) {
   const path = usePathname();
   const headerRef = useRef<HTMLElement | null>(null);
   const [mobile, setMobile] = useState(false);
@@ -238,9 +240,9 @@ export function SiteProvider({ children, products, collections, storeName }: { c
       mobile, wide, headerH, setHeaderH, headerRef, menu, toggleMenu,
       closeMenu: () => setMenu(false),
       search, q, setQ, openSearch, account, accTab, setAccTab, openAccount,
-      cartOpen, openCart, closeCart, closeAll, products, collections, storeName, items, cartCount, add, setQty, clearCart,
+      cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, clearCart,
     }),
-    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, collections, storeName, items, cartCount, add, setQty, clearCart],
+    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, clearCart],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

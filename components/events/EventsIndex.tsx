@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { OliEvent, fmt, upcomingEvents, pastEvents, MONTHS } from './events';
+import { OliEvent, fmt, MONTHS } from './events';
 import { EventCard, EventRow, Status } from './EventCard';
 import './Events.css';
 
-export default function EventsIndex({ upcoming = upcomingEvents(), past = pastEvents() }: { upcoming?: OliEvent[]; past?: OliEvent[] }) {
+export default function EventsIndex({ upcoming = [], past = [] }: { upcoming?: OliEvent[]; past?: OliEvent[] }) {
   const [tab, setTab] = useState<'up' | 'past'>('up');
   const feat = tab === 'up' ? upcoming.find(e => e.status === 'open') : undefined;
   const list = (tab === 'up' ? upcoming : past).filter(e => e !== feat);

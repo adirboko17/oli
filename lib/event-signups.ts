@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { getEvent, type RegistrationData } from "@/components/events/events";
+import { loadPublicEvents } from "@/lib/cms-events";
 
 export type EventSignup = RegistrationData & { createdAt: string };
 export type EventNotify = { email: string; createdAt: string };
@@ -38,7 +39,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function registerForEvent(data: RegistrationData) {
   return run(async () => {
-    const event = getEvent(data.eventSlug);
+    const event = getEvent(await loadPublicEvents(), data.eventSlug);
     if (!event || event.status !== "open") return { ok: false as const, message: "ההרשמה למפגש הזה סגורה." };
     if (event.price > 0) return { ok: false as const, message: "התשלום למפגש הזה עדיין לא זמין באתר. אפשר לפנות אלינו ונשלים את ההרשמה." };
     const fullName = data.fullName.trim().slice(0, 80);

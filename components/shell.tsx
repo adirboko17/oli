@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isArticleSection } from "@/lib/article-paths";
 import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
-import { customerTags, giftPriceLabel, productBlurb, productCardSub, productHref, productImage } from "@/lib/catalog-model";
+import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import {
@@ -520,14 +520,37 @@ function Soft({ label, value, onChange, placeholder, type, ltr, center }: { labe
 }
 
 const textBtn: CSSProperties = { background: "transparent", border: 0, padding: 0, fontSize: 14, color: "#A85A3A", textDecoration: "underline" };
+const FREE_SHIPPING = 250;
+
+function shippingCompanions(products: CatalogProduct[], items: { id: string }[], total: number) {
+  const gap = FREE_SHIPPING - total;
+  if (gap <= 0) return [];
+  const inCart = new Set(items.map((item) => item.id));
+  const categories = new Set(products.flatMap((product) => inCart.has(product.id) && product.category.trim() ? [product.category.trim()] : []));
+  const pool = products.filter((product) => !inCart.has(product.id) && product.price > 0 && !giftPriceLabel(product) && openGiftMax(product.tags) == null);
+  const ranked = pool.map((product) => ({
+    product,
+    closes: product.price >= gap && product.price <= Math.max(gap * 1.8, gap + 90),
+    same: categories.has(product.category.trim()),
+    distance: Math.abs(product.price - gap),
+  })).sort((a, b) => Number(b.closes) - Number(a.closes) || Number(b.same) - Number(a.same) || a.distance - b.distance);
+  const picked: CatalogProduct[] = [];
+  for (const item of ranked) {
+    if (picked.length === 3) break;
+    picked.push(item.product);
+  }
+  return picked;
+}
 
 function CartDrawer() {
   const site = useSite();
   const total = site.items.reduce((a, x) => a + x.price * x.qty, 0);
+  const gap = Math.max(0, FREE_SHIPPING - total);
+  const companions = shippingCompanions(site.products, site.items, total);
   const { present, visible } = useShown(site.cartOpen);
   if (!present) return null;
   const open = visible;
-  const ship = total >= 250 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(250 - total) + " ומקבלים משלוח חינם";
+  const ship = gap === 0 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(gap) + " ומקבלים משלוח חינם";
   return (
     <>
       <div onClick={site.closeCart} style={backdrop(70, open)} />
@@ -545,8 +568,8 @@ function CartDrawer() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A85A3A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.6" /><circle cx="17" cy="17.5" r="1.6" /></svg>
             <span>{ship}</span>
           </div>
-          <div style={{ height: 4, borderRadius: 2, background: "#EBDAD0", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 3, background: "#A85A3A", width: Math.min(100, (total / 250) * 100) + "%", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} />
+            <div style={{ height: 4, borderRadius: 2, background: "#EBDAD0", overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: 3, background: "#A85A3A", width: Math.min(100, (total / FREE_SHIPPING) * 100) + "%", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} />
           </div>
         </div>
         {!site.items.length ? (
@@ -579,6 +602,36 @@ function CartDrawer() {
                   </div>
                 </div>
               ))}
+              {companions.length > 0 && (
+                <div style={{ margin: "18px 0 8px", padding: "16px 14px 14px", borderRadius: 20, background: "#FBF5F1" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, marginBottom: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".04em", color: "#A85A3A" }}>משלימים לסל</span>
+                      <span style={{ fontFamily: FF, fontWeight: 400, fontSize: 20, letterSpacing: "-.02em", lineHeight: 1.2 }}>עוד {fmt(gap)} למשלוח חינם</span>
+                    </div>
+                  </div>
+                  <div className="oli-ship-row">
+                    {companions.map((product) => {
+                      const image = productImage(product);
+                      const closes = product.price >= gap;
+                      return (
+                        <div key={product.id} style={{ flex: "0 0 148px", scrollSnapAlign: "start", display: "flex", flexDirection: "column", gap: 8, padding: 8, borderRadius: 16, background: "#FFFFFF", border: "1px solid #F1E5DD" }}>
+                          <div style={{ position: "relative" }}>
+                            <div style={{ ...thumbStyle(image), width: "100%", height: 96, borderRadius: 12, backgroundColor: "#F8EFE9" }} />
+                            {closes && <span style={{ position: "absolute", top: 6, right: 6, background: "#F3D9C6", color: "#3A2826", borderRadius: 999, padding: "3px 7px", fontSize: 10, fontWeight: 700 }}>סוגר את המשלוח</span>}
+                          </div>
+                          <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, minHeight: 36, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.title}</span>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginTop: "auto" }}>
+                            <span style={{ fontSize: 14, fontWeight: 600 }}>{fmt(product.price)}</span>
+                            <button type="button" aria-label={"הוספת " + product.title} onClick={() => site.add({ id: product.id, name: product.title, sub: productCardSub(product), price: product.price, image })} style={{ width: 32, height: 32, borderRadius: "50%", border: 0, background: "#3A2826", color: "#FFFFFF", fontSize: 18, lineHeight: 1, cursor: "pointer" }}>+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <style>{`.oli-ship-row{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:2px}.oli-ship-row::-webkit-scrollbar{display:none}`}</style>
+                </div>
+              )}
             </div>
             <div style={{ padding: "18px 24px calc(20px + env(safe-area-inset-bottom))", borderTop: "1px solid #F1E5DD", display: "flex", flexDirection: "column", gap: 14, background: "#FFFFFF" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>

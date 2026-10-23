@@ -1,7 +1,7 @@
 'use client';
 import { useRef } from 'react';
 import Link from 'next/link';
-import { OliEvent, RegistrationData, fmt, upcomingEvents } from './events';
+import { OliEvent, RegistrationData, fmt } from './events';
 import { EventCard, Status } from './EventCard';
 import RegistrationForm from './RegistrationForm';
 import './Events.css';
@@ -22,8 +22,9 @@ const I = {
   tag: <><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1 1 0 0 1 0 1.4l-6.9 6.9a1 1 0 0 1-1.4 0z" /><circle cx="8" cy="8" r="1.3" /></>,
 };
 
-export default function EventView({ event: e, onRegister }: {
+export default function EventView({ event: e, related = [], onRegister }: {
   event: OliEvent;
+  related?: OliEvent[];
   /** TODO backend: save registration, send confirmation email with Zoom link, schedule reminders (day + hour before, email + SMS).
    *  For paid events: run the store checkout first and resolve only after payment succeeded. */
   onRegister: (data: RegistrationData) => Promise<void | { ok: false; message: string }>;
@@ -34,7 +35,6 @@ export default function EventView({ event: e, onRegister }: {
     const el = asideRef.current;
     if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
   };
-  const related = upcomingEvents().filter(x => x.slug !== e.slug && x.status !== 'cancelled').slice(0, 6);
   const msg = MSG[e.status];
 
   return (

@@ -15,22 +15,6 @@ export interface OliEvent {
   image?: string;
 }
 
-// Demo data – replace with data from the admin / DB. Images are temporary.
-export const EVENTS: OliEvent[] = [
-  { slug: 'birth-prep', title: 'סדנת הכנה ללידה', short: 'מפגש אונליין על שלבי הלידה, נשימות ותנוחות, ומה כדאי לארוז לתיק ללידה.', date: '2026-11-04', from: '20:00', to: '21:30', online: true, price: 0, status: 'open', image: '/assets/stage-birth.png',
-    body: ['מפגש של שעה וחצי שמסדר את כל מה שקורה בלידה: איך מזהים שהיא מתחילה, מתי לצאת לבית החולים ומה קורה בכל שלב.', 'נתרגל יחד נשימות ותנוחות שעוזרות בצירים, ונעבור על רשימה מסודרת לתיק ללידה, לך ולבייבי.', 'בסוף המפגש יהיה זמן לשאלות. המפגש מתקיים בזום, וקישור יישלח אלייך במייל האישור.'] },
-  { slug: 'skin-in-pregnancy', title: 'טיפוח העור בהריון: מה בטוח ומה לא', short: 'שאלות ותשובות על רכיבים, סימני מתיחה ושגרת טיפוח בטוחה לאורך ההריון.', date: '2026-11-12', from: '20:30', to: '21:30', online: true, price: 0, status: 'open', image: '/assets/stage-preg.png',
-    body: ['אילו רכיבים כדאי להוריד מהמדף בזמן ההריון, ובמה אפשר להמשיך להשתמש בלי חשש.', 'נדבר על מניעת סימני מתיחה, יובש וגירוד בבטן, ועל שגרת טיפוח פשוטה לכל טרימסטר.', 'אפשר לשלוח שאלות מראש בטופס ההרשמה או לשאול בזמן המפגש.'] },
-  { slug: 'nursing-prep', title: 'מפגש הכנה להנקה', short: 'מפגש פרונטלי בקבוצה קטנה: תנוחות הנקה, ימים ראשונים ומה עושים כשקשה.', date: '2026-11-19', from: '10:00', to: '12:30', online: false, address: 'הברזל 30, תל אביב', price: 120, status: 'full', image: '/assets/research-2.png',
-    body: ['מפגש בקבוצה קטנה שמכין להנקה עוד לפני הלידה: איך נראית הנקה בימים הראשונים, תנוחות ואחיזה נכונה.', 'נעבור על הקשיים הנפוצים, איך מזהים שהבייבי אוכל מספיק ומתי כדאי לפנות לייעוץ.', 'מספר המקומות מוגבל. כיבוד קל במקום.'] },
-  { slug: 'postpartum-body', title: 'הגוף אחרי לידה', short: 'מה קורה לגוף בשבועות שאחרי הלידה, החלמה, טיפוח וחזרה הדרגתית לתנועה.', date: '2026-12-02', from: '20:00', to: '21:00', online: true, price: 60, status: 'open', image: '/assets/stage-baby.png',
-    body: ['השבועות הראשונים אחרי לידה מביאים איתם שינויים שלא תמיד מדברים עליהם. במפגש נעבור על מה נורמלי ומה דורש בדיקה.', 'נדבר על החלמה של אזור הפרינאום, טיפוח העור והפטמות, ומתי ואיך חוזרים לתנועה.', 'המפגש מתקיים בזום. התשלום מתבצע במערכת התשלום של החנות, והחשבונית נשלחת למייל.'] },
-  { slug: 'baby-sleep', title: 'שינה של תינוקות בחודשים הראשונים', short: 'שאלות ותשובות על שגרת שינה, יקיצות לילה וסביבת שינה בטוחה.', date: '2026-10-28', from: '20:30', to: '21:30', online: true, price: 0, status: 'cancelled',
-    body: ['מפגש שאלות ותשובות על שינה של תינוקות בחודשים הראשונים.', 'המפגש בוטל. מפגש חדש יפורסם כאן בהמשך.'] },
-  { slug: 'safe-pregnancy-evening', title: 'ערב היריון בטוח', short: 'ערב מפגש ושיחה על בחירת מוצרים בטוחים לאורך ההריון.', date: '2026-09-15', from: '19:30', to: '21:30', online: false, address: 'הברזל 30, תל אביב', price: 0, status: 'ended', image: '/assets/research-2.png',
-    body: ['ערב מפגש ושיחה על בחירת מוצרים בטוחים לאורך ההריון.', 'המפגש התקיים. מפגשים חדשים מתפרסמים בעמוד האירועים.'] },
-];
-
 export const STATUS_LABEL: Record<Exclude<EventStatus, 'draft'>, string> = {
   open: 'פתוח להרשמה', full: 'ההרשמה מלאה', ended: 'הסתיים', cancelled: 'בוטל',
 };
@@ -38,10 +22,10 @@ export const STATUS_LABEL: Record<Exclude<EventStatus, 'draft'>, string> = {
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 export const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
-export const publicEvents = () => EVENTS.filter(e => e.status !== 'draft');       // drafts never shown
-export const upcomingEvents = () => publicEvents().filter(e => e.status !== 'ended').sort((a, b) => a.date.localeCompare(b.date));
-export const pastEvents = () => publicEvents().filter(e => e.status === 'ended').sort((a, b) => b.date.localeCompare(a.date));
-export const getEvent = (slug: string) => publicEvents().find(e => e.slug === slug);
+export const publicEvents = (events: OliEvent[]) => events.filter(e => e.status !== 'draft');
+export const upcomingEvents = (events: OliEvent[]) => publicEvents(events).filter(e => e.status !== 'ended').sort((a, b) => a.date.localeCompare(b.date) || a.from.localeCompare(b.from));
+export const pastEvents = (events: OliEvent[]) => publicEvents(events).filter(e => e.status === 'ended').sort((a, b) => b.date.localeCompare(a.date) || b.from.localeCompare(a.from));
+export const getEvent = (events: OliEvent[], slug: string) => publicEvents(events).find(e => e.slug === slug);
 
 export function fmt(e: OliEvent) {
   const d = new Date(`${e.date}T${e.from}`);

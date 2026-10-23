@@ -70,12 +70,12 @@ export default function RegistrationForm({ event: e, onRegister, onDone }: {
   return (
     <div className="oe-form">
       <span className="oe-panel__title">הרשמה למפגש</span>
-      <label className="oe-field">שם מלא<input value={v.name} onChange={set('name')} autoComplete="name" className={cls('name')} /></label>
+      <label className="oe-field">שם מלא<input value={v.name} onChange={set('name')} autoComplete="name" placeholder="השם המלא" className={cls('name')} /></label>
       <label className="oe-field">טלפון<input type="tel" inputMode="tel" value={v.phone} onChange={set('phone')} autoComplete="tel" placeholder="05X-XXXXXXX" className={cls('phone')} /></label>
-      <label className="oe-field">מייל<input type="email" value={v.email} onChange={set('email')} autoComplete="email" className={cls('email')} /></label>
+      <label className="oe-field">מייל<input type="email" value={v.email} onChange={set('email')} autoComplete="email" placeholder="name@email.com" className={cls('email')} /></label>
 
       <div className="oe-field">
-        <span>איפה את עכשיו?</span>
+        <span>באיזה שלב את עכשיו?</span>
         <div className="oe-seg">
           <button type="button" className={v.stage === 'pregnant' ? 'is-on' : ''} onClick={() => setV(s => ({ ...s, stage: 'pregnant' }))}>בהריון</button>
           <button type="button" className={v.stage === 'born' ? 'is-on' : ''} onClick={() => setV(s => ({ ...s, stage: 'born' }))}>ילדתי</button>
@@ -83,7 +83,7 @@ export default function RegistrationForm({ event: e, onRegister, onDone }: {
       </div>
 
       {v.stage === 'pregnant' ? (
-        <div className="oe-field">
+        <div className="oe-field oe-field--after">
           <div className="oe-mode">
             <button type="button" className={v.mode === 'date' ? 'is-on' : ''} onClick={() => setV(s => ({ ...s, mode: 'date' }))}>תאריך לידה משוער</button>
             <button type="button" className={v.mode === 'week' ? 'is-on' : ''} onClick={() => setV(s => ({ ...s, mode: 'week' }))}>שבוע הריון</button>
@@ -93,7 +93,7 @@ export default function RegistrationForm({ event: e, onRegister, onDone }: {
             : <select aria-label="שבוע הריון" value={v.week} onChange={set('week')} className={cls('week')}><option value="">בחרי שבוע</option>{WEEKS.map(w => <option key={w} value={w}>שבוע {w}</option>)}</select>}
         </div>
       ) : (
-        <label className="oe-field">תאריך הלידה של הבייבי<input type="date" value={v.baby} onChange={set('baby')} className={cls('baby')} /></label>
+        <label className="oe-field oe-field--after">תאריך הלידה של הבייבי<input type="date" value={v.baby} onChange={set('baby')} className={cls('baby')} /></label>
       )}
 
       <div className="oe-checks">
