@@ -1,4 +1,6 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { loadPublicCatalog } from "@/lib/catalog";
 import { parseShopPopups } from "@/lib/store-popups";
 import { requestHostname } from "@/lib/storely";
@@ -121,6 +123,24 @@ async function shopRecord(hostname: string) {
   });
 }
 
+const readShopContent = unstable_cache(
+  async (hostname: string) => {
+    const { record, responseOk } = await shopRecord(hostname);
+    if (!responseOk || record?.ok !== true) throw new Error("Storely shop unavailable");
+    return { popups: record.popups ?? [], posts: Array.isArray(record.posts) ? record.posts : [] };
+  },
+  ["storely-shop-content"],
+  { revalidate: 60 },
+);
+
+const loadShopContent = cache(async (hostname: string) => {
+  try {
+    return await readShopContent(hostname);
+  } catch {
+    return null;
+  }
+});
+
 export async function loadShopShipping(hostHeader: string | null): Promise<ShopShipping> {
   const hostname = await storefrontHost(hostHeader);
   const env = storelyEnv();
@@ -177,19 +197,35 @@ export async function quoteStorefront(input: {
   };
 }
 
-export type ShopPostMedia = { handle: string; video: string; body: string };
+export type ShopPostMedia = { handle: string; video: string; body: string; image: string; imageX: number; imageY: number; imageScale: number };
 
 function postVideo(value: unknown) {
   const url = typeof value === "string" ? value.trim() : "";
   return /^https:\/\/.+\.(mp4|webm|mov)(\?.*)?$/i.test(url) ? url.slice(0, 500) : "";
 }
 
+function postImage(value: unknown) {
+  const url = typeof value === "string" ? value.trim() : "";
+  return /^https:\/\/\S+$/i.test(url) ? url.slice(0, 800) : "";
+}
+
+function postZoom(value: unknown) {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number) || number <= 0) return 1;
+  return Math.min(3, Math.round(number * 100) / 100);
+}
+
+function postFocus(value: unknown) {
+  const number = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(number)) return 50;
+  return Math.min(100, Math.max(0, Math.round(number)));
+}
+
 export async function loadShopPopups(hostHeader: string | null) {
   const hostname = await storefrontHost(hostHeader);
   if (!hostname) return [];
-  const { record, responseOk } = await shopRecord(hostname);
-  if (!responseOk || record?.ok !== true) return [];
-  return parseShopPopups(record.popups);
+  const content = await loadShopContent(hostname);
+  return content ? parseShopPopups(content.popups) : [];
 }
 
 export async function submitPopupLead(input: {
@@ -226,15 +262,16 @@ export async function submitPopupLead(input: {
 export async function loadShopPosts(hostHeader: string | null): Promise<ShopPostMedia[]> {
   const hostname = await storefrontHost(hostHeader);
   if (!hostname) return [];
-  const { record, responseOk } = await shopRecord(hostname);
-  if (!responseOk || record?.ok !== true || !Array.isArray(record.posts)) return [];
-  return record.posts.flatMap((row) => {
+  const content = await loadShopContent(hostname);
+  if (!content) return [];
+  return content.posts.flatMap((row) => {
     if (!row || typeof row !== "object") return [];
     const item = row as Record<string, unknown>;
     const handle = typeof item.handle === "string" ? item.handle.trim() : "";
     const video = postVideo(item.video);
     const body = typeof item.body === "string" ? item.body : "";
-    if (!handle || item.visible === false || (!video && !body.trim())) return [];
-    return [{ handle, video, body }];
+    const image = postImage(item.image);
+    if (!handle || item.visible === false || (!video && !body.trim() && !image)) return [];
+    return [{ handle, video, body, image, imageX: postFocus(item.imageX), imageY: postFocus(item.imageY), imageScale: postZoom(item.imageScale) }];
   });
 }

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { isArticleSection } from "@/lib/article-paths";
 import { menuHref } from "@/lib/catalog-menu";
 import { useSite } from "@/components/site";
+import { ArticlesEventsMenuSub } from "@/components/articles/ContentMenu";
 import { PodcastMenuSub } from "@/components/podcasts/PodcastMenu";
 import "./MobileMenu.css";
 
@@ -27,7 +28,7 @@ const LINKS: { id: string; label: string; href: string; match: string[] }[] = [
   { id: "products", label: "המוצרים של Oli", href: "/products", match: ["/products", "/product", "/olimini"] },
   { id: "gifts", label: "מתנות ליולדת", href: "/products", match: [] },
   { id: "stores", label: "Oli בחנויות", href: "/stores", match: ["/stores"] },
-  { id: "articles", label: "מאמרים", href: "/articles", match: ["/articles", "/journal"] },
+  { id: "articles", label: "מאמרים ואירועים", href: "/articles", match: ["/articles", "/journal", "/events"] },
   { id: "podcast", label: "פודקאסט", href: "/podcast", match: ["/podcast"] },
   { id: "contact", label: "צרי קשר", href: "/contact", match: ["/contact"] },
 ];
@@ -43,11 +44,12 @@ export default function MobileMenu({ categories, onAccount, accountLabel = "הח
     : link);
   const open = site.menu;
   const [sub, setSub] = useState(false);
+  const [contentOpen, setContentOpen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
   const path = usePathname() || "/";
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSub(false); setPodOpen(false); }, [path]);
+  useEffect(() => { setSub(false); setContentOpen(false); setPodOpen(false); }, [path]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,8 +79,20 @@ export default function MobileMenu({ categories, onAccount, accountLabel = "הח
       <div id="oli-mobile-menu" ref={panelRef} className={`om-panel${open ? " is-open" : ""}`} dir="rtl" aria-hidden={!open}>
         <nav className="om-list">
           {links.map((link, index) => {
-            const active = link.id === "articles" ? isArticleSection(path) : isActive(path, link.match);
+            const active = link.id === "articles" ? isArticleSection(path) || path.startsWith("/events") : isActive(path, link.match);
             const style = { ["--i" as string]: index } as React.CSSProperties;
+
+            if (link.id === "articles") {
+              return (
+                <div key={link.href}>
+                  <button className={`om-item${active ? " is-active" : ""}`} style={style} aria-expanded={contentOpen} data-cms="nav" data-cms-id={link.id} onClick={() => setContentOpen((value) => !value)} type="button">
+                    <span>{link.label}</span>
+                    <span className={`om-plus${contentOpen ? " is-open" : ""}`}>+</span>
+                  </button>
+                  <ArticlesEventsMenuSub open={contentOpen} onNavigate={close} />
+                </div>
+              );
+            }
 
             if (link.id === "podcast") {
               return (

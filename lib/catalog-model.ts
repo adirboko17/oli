@@ -25,6 +25,7 @@ export type CatalogPage = {
   steps: { title: string; body: string }[];
   ingredientsIntro: string;
   ingredients: { en: string; he: string; body: string }[];
+  inci: { inci: string; he: string; key?: boolean }[];
   reviews: { name: string; title: string; body: string; initial: string; date: string; rating: number; verified: boolean }[];
 };
 
@@ -49,7 +50,7 @@ export type CatalogProduct = {
 };
 
 export function emptyCatalogPage(): CatalogPage {
-  return { highlights: [], panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], reviews: [] };
+  return { highlights: [], panels: [], stories: [], steps: [], ingredientsIntro: "", ingredients: [], inci: [], reviews: [] };
 }
 
 export type CatalogCollection = {

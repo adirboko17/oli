@@ -52,11 +52,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const match = posts.find((post) => post.handle === article.slug || post.handle === slug);
   const shown = {
     ...article,
+    image: match?.image || article.image,
+    imageX: match?.image ? match.imageX : article.imageX,
+    imageY: match?.image ? match.imageY : article.imageY,
+    imageScale: match?.image ? match.imageScale : article.imageScale,
     video: match?.video || article.video,
     body: match?.body.trim() ? blocksFrom(match.body) : article.body,
   };
   const result = await loadPublicCatalog();
   const products = result.status === "ready" ? result.catalog.products : [];
   const productKey = article.productId || CATEGORY_PRODUCT[article.category];
-  return <ArticleView article={shown} getProduct={() => callout(products, productKey)} AddToCart={AddToCart} />;
+  return <ArticleView article={shown} media={Object.fromEntries(posts.map((post) => [post.handle, post]))} getProduct={() => callout(products, productKey)} AddToCart={AddToCart} />;
 }

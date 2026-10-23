@@ -9,7 +9,7 @@ import './Articles.css';
 const PAGE = 12;
 
 // Articles page: header, latest-articles marquee, category tabs + search, card grid with "show more"
-export default function ArticlesIndex({ initialCategory = 'all' }: { initialCategory?: 'all' | CategoryKey }) {
+export default function ArticlesIndex({ initialCategory = 'all', media = {} }: { initialCategory?: 'all' | CategoryKey; media?: Record<string, { image?: string; imageX?: number; imageY?: number; imageScale?: number }> }) {
   const [cat, setCat] = useState<'all' | CategoryKey>(initialCategory);
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(PAGE);
@@ -57,7 +57,11 @@ export default function ArticlesIndex({ initialCategory = 'all' }: { initialCate
           </div>
 
           <div className="oa-grid">
-            {list.slice(0, limit).map(a => <ArticleCard key={a.slug} article={a} />)}
+            {list.slice(0, limit).map(a => {
+              const shot = media[a.slug];
+              const card = shot?.image ? { ...a, image: shot.image, imageX: shot.imageX, imageY: shot.imageY, imageScale: shot.imageScale } : a;
+              return <ArticleCard key={a.slug} article={card} />;
+            })}
           </div>
 
           {!list.length && <p className="oa-empty">לא נמצאו מאמרים. נסי מילה אחרת.</p>}

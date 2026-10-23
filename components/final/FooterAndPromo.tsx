@@ -27,7 +27,7 @@ export function FirstOrderLine({ onOpen }: { onOpen: () => void }) {
 type L = { label: string; href: string; external?: boolean; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void };
 const COLS: { title: string; links: L[] }[] = [
   { title: 'חנות', links: [{ label: 'כל המוצרים', href: '/products' }, { label: 'מתנות ליולדת', href: '/products?cat=' + encodeURIComponent('מתנה') }, { label: 'תינוקות · olimini', href: '/olimini' }, { label: 'המומלצים ביותר', href: '/products' }, { label: 'Oli בחנויות', href: '/stores' }] },
-  { title: 'ידע', links: [{ label: 'מאמרים', href: '/articles' }, { label: 'היריון בטוח · פודקאסט', href: '/podcast/safe' }, { label: 'חופשיה ללדת · פודקאסט', href: '/podcast/free' }] },
+  { title: 'ידע', links: [{ label: 'מאמרים', href: '/articles' }, { label: 'אירועים', href: '/events' }, { label: 'היריון בטוח · פודקאסט', href: '/podcast/safe' }, { label: 'חופשיה ללדת · פודקאסט', href: '/podcast/free' }] },
   { title: 'שירות', links: [{ label: 'צרי קשר', href: '/contact' }, { label: 'החשבון שלי', href: '/account' }, { label: 'וואטסאפ', href: 'https://wa.me/972559739670', external: true }] },
   { title: 'מידע', links: [{ label: 'תקנון האתר', href: '/terms' }, { label: 'מדיניות פרטיות', href: '/privacy' }, { label: 'הצהרת נגישות', href: '/accessibility' }] },
 ];

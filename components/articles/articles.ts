@@ -28,7 +28,7 @@ export const CATEGORY_PRODUCT: Record<CategoryKey, string> = {
 };
 
 export type Block =
-  | { type: "heading"; text: string }
+  | { type: "heading"; text: string; level: 1 | 2 | 3 }
   | { type: "paragraph"; text: string }
   | { type: "list"; items: { term: string; text: string }[] };
 
@@ -38,6 +38,9 @@ export type Article = {
   title: string;
   category: CategoryKey;
   image?: string;
+  imageX?: number;
+  imageY?: number;
+  imageScale?: number;
   video?: string;
   author?: string;
   updated?: string;
@@ -80,6 +83,18 @@ function isHeading(line: string) {
   return line.length <= 48 && !line.includes(":") && line.split(" ").length <= 8;
 }
 
+function markedHeading(line: string) {
+  const match = /^(#{1,3}) (.+)$/.exec(line);
+  if (!match) return null;
+  const level = match[1].length as 1 | 2 | 3;
+  return { level, text: match[2] };
+}
+
+function countsAsHeading(line: string) {
+  if (line.startsWith("\\ ")) return false;
+  return markedHeading(line) != null || isHeading(line);
+}
+
 export function blocksFrom(text: string): Block[] {
   const blocks: Block[] = [];
   let paragraph: string[] = [];
@@ -110,9 +125,19 @@ export function blocksFrom(text: string): Block[] {
       continue;
     }
     flushList();
+    if (line.startsWith("\\ ")) {
+      paragraph.push(line.slice(2));
+      continue;
+    }
+    const marked = markedHeading(line);
+    if (marked) {
+      flushParagraph();
+      blocks.push({ type: "heading", text: marked.text, level: marked.level });
+      continue;
+    }
     if (isHeading(line)) {
       flushParagraph();
-      blocks.push({ type: "heading", text: line });
+      blocks.push({ type: "heading", text: line, level: 2 });
     } else paragraph.push(line);
   }
   flushParagraph();
@@ -129,7 +154,7 @@ function present(raw: (typeof journal)[number], index: number): Article {
     while (next < lines.length && !lines[next]) next += 1;
     return isNameLine(lines[index]) && isRoleLine(lines[next]);
   };
-  while (cursor < lines.length && lines[cursor] && !lines[cursor].startsWith("עודכן") && !isAuthor(lines[cursor]) && !nameBeforeRole(cursor) && !isHeading(lines[cursor])) {
+  while (cursor < lines.length && lines[cursor] && !lines[cursor].startsWith("עודכן") && !isAuthor(lines[cursor]) && !nameBeforeRole(cursor) && !countsAsHeading(lines[cursor])) {
     lead.push(lines[cursor]);
     cursor += 1;
   }

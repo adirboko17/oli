@@ -19,7 +19,7 @@ const STATUS = { new: "התקבלה", progress: "בטיפול", hold: "בהמת�
 const STEP = { new: 0, progress: 0, hold: 0, sent: 1, transit: 2, done: 3 } as const;
 const STARS = ["בחרי דירוג", "לא אהבתי", "סביר", "טוב", "טוב מאוד", "מושלם"];
 
-type LiveItem = { title?: string; qty?: number; price?: number; image?: string | null };
+type LiveItem = { title?: string; qty?: number; price?: number; image?: string | null; productId?: string };
 type LiveOrder = { number?: number; status?: string; total?: number; title?: string; at?: string; items?: LiveItem[] };
 
 function titleKey(value: string) {
@@ -39,6 +39,12 @@ function picturedLine(products: CatalogProduct[], line: OliOrderLine): OliOrderL
   return { ...line, image: imageForTitle(products, line.name) };
 }
 
+function productIdFor(products: CatalogProduct[], title: string, given: unknown) {
+  if (typeof given === "string" && /^[0-9a-f-]{36}$/i.test(given)) return given;
+  const key = titleKey(title);
+  return products.find((item) => titleKey(item.title) === key)?.id ?? "";
+}
+
 function liveLines(row: LiveOrder, products: CatalogProduct[]): OliOrderLine[] {
   const items = Array.isArray(row.items) ? row.items : [];
   const lines = items.flatMap((item, index) => {
@@ -47,11 +53,11 @@ function liveLines(row: LiveOrder, products: CatalogProduct[]): OliOrderLine[] {
     const qty = Number(item.qty);
     const price = Number(item.price);
     const image = typeof item.image === "string" && item.image ? item.image : imageForTitle(products, name);
-    return [{ id: String(index), name, sub: "", qty: Number.isInteger(qty) && qty > 0 ? qty : 1, price: Number.isFinite(price) ? price : 0, image }];
+    return [{ id: String(index), name, sub: "", qty: Number.isInteger(qty) && qty > 0 ? qty : 1, price: Number.isFinite(price) ? price : 0, image, productId: productIdFor(products, name, item.productId) }];
   });
   if (lines.length) return lines;
   const name = row.title || "הזמנה";
-  return [{ id: "item", name, sub: "", qty: 1, price: Number(row.total) || 0, image: imageForTitle(products, name) }];
+  return [{ id: "item", name, sub: "", qty: 1, price: Number(row.total) || 0, image: imageForTitle(products, name), productId: productIdFor(products, name, "") }];
 }
 
 function accountStatus(value: string | undefined): OliOrderStatus {
@@ -83,7 +89,11 @@ function mergeAccountOrders(local: OliOrder[], live: LiveOrder[], products: Cata
   const merged = local.map((order) => {
     const row = byNumber.get(order.no) ?? byNumber.get(order.id);
     seen.add(String(row?.number ?? order.no));
-    const lines = order.lines.map((line) => picturedLine(products, line));
+    const fromLive = row ? liveLines(row, products) : [];
+    const lines: OliOrderLine[] = order.lines.map((line, index) => {
+      const pictured = picturedLine(products, line);
+      return { ...pictured, productId: pictured.productId || fromLive[index]?.productId || productIdFor(products, pictured.name, "") };
+    });
     return row?.status ? { ...order, status: accountStatus(row.status), lines } : { ...order, lines };
   });
   live.forEach((row) => {
@@ -114,6 +124,8 @@ export function AccountView() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Record<string, OliReview | null>>({});
   const [reviewKey, setReviewKey] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSending, setReviewSending] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addr, setAddr] = useState({ label: "בית", city: "", street: "" });
   const current = draft && user && draft.phone === user.phone ? draft : user;
@@ -223,7 +235,7 @@ export function AccountView() {
                             {review && (
                               <span style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, padding: "10px 12px", borderRadius: 12, background: "#FBF5F1" }}>
                                 <span style={{ fontSize: 14, color: "#C9873E", letterSpacing: 2 }}>{"★".repeat(review.stars)}</span>
-                                <span style={{ fontSize: 13, color: "#5E4844", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{review.text}</span>
+                                <span style={{ fontSize: 13, color: "#5E4844", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{review.pending ? "ממתינה לאישור" : review.text}</span>
                                 <button type="button" onClick={() => setReviewKey(key)} style={{ marginRight: "auto", background: "transparent", border: 0, fontSize: 12, color: "#A85A3A", textDecoration: "underline" }}>עריכה</button>
                               </span>
                             )}
@@ -297,15 +309,39 @@ export function AccountView() {
           sub={reviewing.line.sub}
           image={reviewing.line.image}
           initial={reviews[reviewKey!] ?? { stars: 0, text: "", photo: null }}
-          onClose={() => setReviewKey(null)}
-          onSave={(review) => { saveReview(reviewKey!, review); setReviewKey(null); }}
+          error={reviewError}
+          sending={reviewSending}
+          onClose={() => { if (!reviewSending) { setReviewKey(null); setReviewError(""); } }}
+          onSave={(review) => {
+            const productId = reviewing.line.productId || "";
+            const orderNumber = Number(reviewing.order.no);
+            if (!user || !productId || !Number.isInteger(orderNumber)) {
+              setReviewError("לא מצאנו את המוצר בהזמנה, אז הביקורת לא נשלחה.");
+              return;
+            }
+            setReviewSending(true);
+            setReviewError("");
+            void fetch("/api/reviews", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ phone: user.phone, email: user.email, orderNumber, productId, stars: review.stars, text: review.text }),
+            }).then(async (response) => {
+              const result = (await response.json().catch(() => null)) as { ok?: boolean; status?: string; reason?: string } | null;
+              if (!result?.ok) {
+                setReviewError(result?.reason || "לא הצלחנו לשלוח את הביקורת.");
+                return;
+              }
+              saveReview(reviewKey!, { ...review, pending: result.status === "pending" });
+              setReviewKey(null);
+            }).catch(() => setReviewError("לא הצלחנו לשלוח את הביקורת.")).finally(() => setReviewSending(false));
+          }}
         />
       )}
     </main>
   );
 }
 
-function ReviewModal({ name, sub, image, initial, onClose, onSave }: { name: string; sub: string; image: string | null; initial: OliReview; onClose: () => void; onSave: (review: OliReview) => void }) {
+function ReviewModal({ name, sub, image, initial, error, sending, onClose, onSave }: { name: string; sub: string; image: string | null; initial: OliReview; error: string; sending: boolean; onClose: () => void; onSave: (review: OliReview) => void }) {
   const [stars, setStars] = useState(initial.stars);
   const [text, setText] = useState(initial.text);
   const [photo, setPhoto] = useState<string | null>(initial.photo);
@@ -343,7 +379,9 @@ function ReviewModal({ name, sub, image, initial, onClose, onSave }: { name: str
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setPhoto(String(reader.result)); reader.readAsDataURL(file); }} />
             </label>
           )}
-          <button type="button" disabled={!stars} onClick={() => onSave({ stars, text, photo })} style={{ height: 54, border: 0, borderRadius: 999, background: stars ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>פרסום הביקורת</button>
+          {stars > 0 && stars < 4 ? <span style={{ fontSize: 13, lineHeight: 1.5, color: "#8A6C64", textAlign: "center" }}>ביקורת מתחת ל-4 כוכבים נשלחת לאישור ולא מתפרסמת בחנות עד שמאשרים אותה.</span> : null}
+          {error ? <span style={{ fontSize: 13, lineHeight: 1.5, color: "#8E1F0B", textAlign: "center" }}>{error}</span> : null}
+          <button type="button" disabled={!stars || sending} onClick={() => onSave({ stars, text, photo })} style={{ height: 54, border: 0, borderRadius: 999, background: stars && !sending ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>{sending ? "שולחת…" : stars > 0 && stars < 4 ? "שליחה לאישור" : "פרסום הביקורת"}</button>
         </div>
       </div>
     </>

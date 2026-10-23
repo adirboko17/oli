@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Article, CATEGORIES, CATEGORY_PRODUCT, relatedArticles } from './articles';
 import { ArticleCard } from './ArticleCard';
+import { FramedPhoto } from './FramedPhoto';
 import './Articles.css';
 
 // Connect this to the site's existing products/cart (name, short description, price, image, product link, add to cart)
@@ -27,12 +28,13 @@ export function articleText(text: string): ReactNode[] {
 
 type Props = {
   article: Article;
+  media?: Record<string, { image?: string; imageX?: number; imageY?: number; imageScale?: number }>;
   getProduct: (id: string) => CalloutProduct | undefined;
   AddToCart: React.ComponentType<{ productId: string; className?: string }>; // the existing cart button
 };
 
 // Single article page: breadcrumbs, centered header, main image, body, product callout, "more in this category"
-export default function ArticleView({ article: a, getProduct, AddToCart }: Props) {
+export default function ArticleView({ article: a, media, getProduct, AddToCart }: Props) {
   const cat = CATEGORIES[a.category];
   const catHref = `/articles?category=${a.category}`;
   const product = getProduct(a.productId || CATEGORY_PRODUCT[a.category]);
@@ -62,12 +64,15 @@ export default function ArticleView({ article: a, getProduct, AddToCart }: Props
         {a.video ? (
           <div className="oa-article__hero oa-article__hero--video"><video src={a.video} controls playsInline preload="metadata" /></div>
         ) : a.image ? (
-          <div className="oa-article__hero"><img src={a.image} alt={a.title} className={a.image === "/assets/logo-brown.png" ? "is-logo" : undefined} /></div>
+          <div className="oa-article__hero"><FramedPhoto src={a.image} alt={a.title} x={a.imageX} y={a.imageY} scale={a.imageScale} logo={a.image === "/assets/logo-brown.png"} /></div>
         ) : null}
 
         <div className="oa-prose">
           {a.body?.length ? a.body.map((b, i) => {
-            if (b.type === 'heading') return <h2 key={i}>{articleText(b.text)}</h2>;
+            if (b.type === 'heading') {
+              const Tag = b.level === 1 ? 'h1' : b.level === 3 ? 'h3' : 'h2';
+              return <Tag key={i}>{articleText(b.text)}</Tag>;
+            }
             if (b.type === 'paragraph') return <p key={i}>{articleText(b.text)}</p>;
             return (
               <ul key={i}>
@@ -101,7 +106,11 @@ export default function ArticleView({ article: a, getProduct, AddToCart }: Props
               <Link href="/articles" className="oa-related__all">לכל המאמרים ←</Link>
             </div>
             <div className="oa-related__grid">
-              {related.map(r => <ArticleCard key={r.slug} article={r} />)}
+              {related.map(r => {
+                const shot = media?.[r.slug];
+                const card = shot?.image ? { ...r, image: shot.image, imageX: shot.imageX, imageY: shot.imageY, imageScale: shot.imageScale } : r;
+                return <ArticleCard key={r.slug} article={card} />;
+              })}
             </div>
           </div>
         </section>

@@ -8,6 +8,7 @@ import { FF, fmt } from "@/lib/format";
 import { BestLoop, ProductTile } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import GiftCardSection from "@/components/gift-card/GiftCardSection";
+import HomeEvents from "@/components/events/HomeEvents";
 import PodcastsSection from "@/components/podcasts/PodcastsSection";
 import { Hx } from "@/components/hx";
 import { IconInstagram } from "@/components/icons";
@@ -272,6 +273,8 @@ export function HomeView() {
           ))}
         </div>
       </section>
+
+      <HomeEvents />
 
       <div style={{ display: "flex", flexDirection: mobile ? "column-reverse" : "column" }}>
         <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", paddingInline: "var(--page-pad)", paddingTop: mobile ? 8 : "clamp(64px,10vw,128px)", paddingBottom: mobile ? 56 : "clamp(64px,10vw,128px)" }}>

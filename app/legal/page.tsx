@@ -36,7 +36,10 @@ function LegalBody() {
           </aside>
         )}
         <article style={{ minWidth: 0, maxWidth: 720, display: "flex", flexDirection: "column" }}>
-          <div style={{ paddingBottom: 12 }}><span style={{ fontSize: 13, color: "#8A6C64" }}>עודכן לאחרונה: <Mark>[ תאריך ]</Mark></span></div>
+          <div style={{ paddingBottom: 12 }}><span style={{ fontSize: 13, color: "#8A6C64" }}>עודכן לאחרונה: {tab.updated ?? <Mark>[ תאריך ]</Mark>}</span></div>
+          {tab.lead?.map((text) => (
+            <p key={text} style={{ fontSize: 16, lineHeight: 1.8, color: "#4E3B37", marginBottom: 12 }}><Rich text={text} /></p>
+          ))}
           {tab.sections.map((section) => (
             <section key={section.id} id={section.id} style={{ display: "flex", flexDirection: "column", gap: 12, padding: "28px 0", borderTop: "1px solid #F1E5DD", scrollMarginTop: 120 }}>
               <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
@@ -59,11 +62,12 @@ function LegalBody() {
 }
 
 function Rich({ text }: { text: string }) {
-  const bits = text.split(/(\[[^\]]+\]|contact@olisafecare\.com|\+972559739670)/g);
+  const bits = text.split(/(\[[^\]]+\]|[\w.+-]+@[\w.-]+\.\w+|\+972559739670|054-8045075)/g);
   return bits.map((bit, index) => {
     if (bit.startsWith("[")) return <Mark key={index}>{bit}</Mark>;
-    if (bit.startsWith("contact@")) return <a key={index} href={"mailto:" + bit} style={{ color: "#A85A3A" }}>{bit}</a>;
+    if (bit.includes("@")) return <a key={index} href={"mailto:" + bit} style={{ color: "#A85A3A" }}>{bit}</a>;
     if (bit.startsWith("+972")) return <a key={index} href="https://wa.me/972559739670" style={{ color: "#A85A3A", direction: "ltr", display: "inline-block" }}>{bit}</a>;
+    if (bit.startsWith("054")) return <a key={index} href="tel:0548045075" style={{ color: "#A85A3A", direction: "ltr", display: "inline-block" }}>{bit}</a>;
     return <span key={index}>{bit}</span>;
   });
 }

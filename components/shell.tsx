@@ -15,6 +15,7 @@ import {
 import { useSite } from "@/components/site";
 import { A11yWidget } from "@/components/widgets";
 import MobileMenu from "@/components/MobileMenu";
+import { ArticlesEventsNav } from "@/components/articles/ContentMenu";
 import { PodcastNavDropdown } from "@/components/podcasts/PodcastMenu";
 import PromoFivePercent from "@/components/PromoFivePercent";
 import { PromoGate } from "@/components/promo/promo-gate";
@@ -78,7 +79,7 @@ function Header({ hello }: { hello: string }) {
   const home = path === "/";
   const prod = path.startsWith("/products") || path.startsWith("/product") || path.startsWith("/olimini");
   const stores = path.startsWith("/stores");
-  const articlesOn = isArticleSection(path);
+  const articlesOn = isArticleSection(path) || path.startsWith("/events");
   const pod = path.startsWith("/podcast");
   const nav = (on: boolean) => ({ fontWeight: on ? 600 : 400, fontSize: 15, whiteSpace: "nowrap" as const, color: "#3A2826" });
   const [menuTop, setMenuTop] = useState(108);
@@ -124,7 +125,7 @@ function Header({ hello }: { hello: string }) {
     <header ref={site.headerRef} style={{ position: "sticky", top: 0, zIndex: 20, background: "transparent", ["--oli-header-h" as string]: `${menuTop}px` }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "rgba(255,255,255,.94)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: "1px solid #EFE4DC" }} />
       <div className="desk-nav" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "12px clamp(16px,4.5vw,32px)", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 24 }}>
-        <nav style={{ display: "flex", gap: "clamp(12px,1.8vw,26px)", fontSize: 15, whiteSpace: "nowrap", alignItems: "center", minWidth: 0 }}>
+        <nav style={{ display: "flex", gap: "clamp(10px,1.35vw,22px)", fontSize: 15, whiteSpace: "nowrap", alignItems: "center", minWidth: 0 }}>
           <Link href="/" data-cms="nav" data-cms-id="home" style={nav(home)}>דף הבית</Link>
           <div onMouseEnter={() => { window.clearTimeout(hideProd.current); setProdOpen(true); }} onMouseLeave={() => { hideProd.current = window.setTimeout(() => setProdOpen(false), 120); }} style={{ position: "relative", display: "flex", alignItems: "center", gap: 4, padding: "12px 0", margin: "-12px 0" }}>
             <Link href="/products" data-cms="nav" data-cms-id="products" style={nav(prod)}>המוצרים של Oli</Link>
@@ -139,7 +140,7 @@ function Header({ hello }: { hello: string }) {
             </div>
           </div>
           <Link href="/stores" data-cms="nav" data-cms-id="stores" style={nav(stores)}>Oli בחנויות</Link>
-          <Link href="/articles" data-cms="nav" data-cms-id="articles" style={nav(articlesOn)}>מאמרים</Link>
+          <ArticlesEventsNav active={articlesOn} />
           <PodcastNavDropdown active={pod} />
         </nav>
         <Link href="/" style={{ display: "flex", alignItems: "center" }}>

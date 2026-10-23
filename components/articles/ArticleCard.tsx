@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { articlePublicPath } from '@/lib/article-paths';
+import { FramedPhoto } from './FramedPhoto';
 import { Article, CATEGORIES, CATEGORY_TINT, articleNumber, authorNames } from './articles';
 import './Articles.css';
 
@@ -13,7 +14,7 @@ export function ArticleCard({ article }: { article: Article }) {
     return (
       <Link href={href} className="oa-card-photo">
         <div className="oa-card-photo__img">
-          <img src={article.image} alt={article.title} loading="lazy" className={article.image === "/assets/logo-brown.png" ? "is-logo" : undefined} />
+          <FramedPhoto src={article.image} alt={article.title} x={article.imageX} y={article.imageY} scale={article.imageScale} logo={article.image === "/assets/logo-brown.png"} />
         </div>
         <span className="oa-cat">{cat}</span>
         <h3 className="oa-card-photo__title">{article.title}</h3>

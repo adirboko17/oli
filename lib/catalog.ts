@@ -204,6 +204,12 @@ function parsePage(value: unknown): CatalogPage {
     const body = text(item.body);
     return (en || he) && body ? [{ en, he, body }] : [];
   });
+  page.inci = objects(row.inci, 60).flatMap((item) => {
+    const inci = line(item.inci, 240);
+    const he = line(item.he, 80);
+    if (!inci) return [];
+    return [{ inci, he, ...(item.key === true ? { key: true } : {}) }];
+  });
   page.reviews = objects(row.reviews, 30).flatMap((item) => {
     const name = text(item.name);
     const body = text(item.body);
@@ -244,6 +250,10 @@ function record(value: unknown) {
 
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function line(value: unknown, max: number) {
+  return text(value).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
 }
 
 function panelLinks(item: Record<string, unknown>) {

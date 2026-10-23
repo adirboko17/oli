@@ -8,6 +8,7 @@ import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, op
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
+import InciList from "@/components/product/InciList";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -56,6 +57,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const stories = product.page.stories.filter((item) => item.url);
   const steps = product.page.steps;
   const ingredients = product.page.ingredients;
+  const inci = product.page.inci;
   const menuCategory = productMenuTarget(product, collections);
   const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
@@ -367,7 +369,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
         </div>
       </section>}
 
-      {ingredients.length > 0 && <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexWrap: "wrap", gap: "clamp(20px,5vw,72px)", alignItems: "flex-start" }}>
+      {ingredients.length > 0 && <section style={{ maxWidth: 1320, margin: "0 auto", padding: inci.length ? "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px) 0" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexWrap: "wrap", gap: "clamp(20px,5vw,72px)", alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: "1 1 300px", alignSelf: "flex-start", position: wide ? "sticky" : "relative", top: wide ? (headerH > 20 ? headerH + 16 : 110) : "auto" }}>
           <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(32px,6.5vw,52px)", lineHeight: 1.05 }}>רכיבי מפתח</h2>
           {product.page.ingredientsIntro ? <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 380, margin: 0, whiteSpace: "pre-line" }}>{product.page.ingredientsIntro}</p> : null}
@@ -387,6 +389,8 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           ))}
         </div>
       </section>}
+
+      {inci.length > 0 ? <div style={ingredients.length ? undefined : { paddingTop: "clamp(44px,9vw,80px)" }}><InciList items={inci} /></div> : null}
 
       {featured && <section id="reviews" style={{ background: "#FFFFFF", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,88px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: "clamp(28px,5vw,48px)" }}>

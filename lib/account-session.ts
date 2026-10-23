@@ -17,7 +17,7 @@ export type OliUser = {
   addresses?: OliAddress[];
 };
 
-export type OliOrderLine = { id: string; name: string; sub: string; qty: number; price: number; image: string | null };
+export type OliOrderLine = { id: string; name: string; sub: string; qty: number; price: number; image: string | null; productId?: string };
 export type OliOrderStatus = "new" | "progress" | "hold" | "sent" | "transit" | "done";
 export type OliOrder = {
   id: string;
@@ -29,7 +29,7 @@ export type OliOrder = {
   ship: number;
   addr: string;
 };
-export type OliReview = { stars: number; text: string; photo: string | null };
+export type OliReview = { stars: number; text: string; photo: string | null; pending?: boolean };
 
 const KEY = "oli-user";
 const BOOK = "oli-users";
