@@ -1,12 +1,16 @@
 'use client';
 import Link from 'next/link';
+import OliminiPromise from './OliminiPromise';
+import OliminiToGo, { type ToGoProduct } from './OliminiToGo';
 import './OliminiPage.css';
 
 export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string };
 
 type Props = {
   products: MiniProduct[];                 // in order: Pre & Shower, After Shower, Baby Spa
+  toGo: ToGoProduct[];
   onAdd: (id: string) => void;              // add to cart
+  onAddToGo: (product: ToGoProduct) => void;
   formatPrice?: (n: number) => string;
 };
 
@@ -20,7 +24,7 @@ const FLOAT: [string, string, number, number, number, number][] = [
 const RISE: [string, number, number, number][] = [['20%', 18, 16, 0], ['62%', 24, 19, -6], ['38%', 12, 14, -10], ['88%', 16, 17, -3], ['8%', 22, 21, -13]];
 
 // olimini category page: hero with the wordmark and bubbles, the "החבילה של olimini" section (3 steps), and facts
-export default function OliminiPage({ products, onAdd, formatPrice = n => '₪' + Math.round(n) }: Props) {
+export default function OliminiPage({ products, toGo, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
   const total = products.reduce((a, p) => a + p.price, 0);
 
   return (
@@ -90,15 +94,8 @@ export default function OliminiPage({ products, onAdd, formatPrice = n => '₪' 
         <button className="om-all" onClick={() => products.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button>
       </section>
 
-      <section className="om-facts-sec">
-        <div className="om-facts">
-          {[['0+', 'מגיל לידה', 'נוסחות עדינות שמתאימות לעור של תינוק מהיום הראשון.'],
-            ['0%', 'סבונים, פרפום ופתלטים', 'רק מה שהעור של התינוק צריך, בלי תוספות מיותרות.'],
-            ['3', 'צעדים בחבילה אחת', 'רחצה, לחות ועיסוי. רגע קבוע של מגע ורוגע.']].map(([big, t, d]) => (
-            <div key={t} className="om-fact"><span className="om-fact__big">{big}</span><span className="om-fact__t">{t}</span><span className="om-fact__d">{d}</span></div>
-          ))}
-        </div>
-      </section>
+      <OliminiToGo products={toGo} onAdd={onAddToGo} />
+      <OliminiPromise />
     </main>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FF } from "@/lib/format";
-import { catalogMenu, findMenuItem, productsForMenu } from "@/lib/catalog-menu";
+import { catalogMenu, findMenuItem, isOliminiCategory, menuHref, productsForMenu } from "@/lib/catalog-menu";
 import { CatalogCard } from "@/components/cards";
 import CategoryFilter, { type SortKey } from "@/components/CategoryFilter";
 import { useSite } from "@/components/site";
@@ -19,8 +19,13 @@ export function CategoryView() {
   const [sort, setSort] = useState<SortKey>("rec");
 
   useEffect(() => {
-    setCat(sp.get("cat") || "all");
-  }, [sp]);
+    const next = sp.get("cat") || "all";
+    if (next !== "all" && isOliminiCategory(next)) {
+      router.replace("/olimini");
+      return;
+    }
+    setCat(next);
+  }, [sp, router]);
 
   const list = useMemo(() => {
     let rows = productsForMenu(products, collections, cat);
@@ -46,7 +51,7 @@ export function CategoryView() {
       <CategoryFilter
         categories={[{ key: "all", label: "כל המוצרים", count: products.length }, ...groups.map((item) => ({ key: item.id, label: item.label, count: item.count }))]}
         category={findMenuItem(groups, cat)?.id || (cat === "all" ? "all" : cat)}
-        onCategoryChange={(key) => { setCat(key); router.replace(key === "all" ? "/products" : "/products?cat=" + encodeURIComponent(key), { scroll: false }); }}
+        onCategoryChange={(key) => { if (isOliminiCategory(key)) { router.push("/olimini"); return; } setCat(key); router.replace(key === "all" ? "/products" : menuHref(key), { scroll: false }); }}
         sort={sort}
         onSortChange={setSort}
         resultCount={list.length}

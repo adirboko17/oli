@@ -79,7 +79,14 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     badge: badgeLabel(row.merch),
     badgeHidden: badgeHidden(row.merch),
     headline: parseHeadline(row.merch),
+    seoTitle: seoText(row.merch, "title", 70),
+    seoDescription: seoText(row.merch, "description", 160),
   };
+}
+
+function seoText(merch: unknown, key: "title" | "description", max: number) {
+  const row = record(record(merch)?.seo);
+  return text(row?.[key]).replace(/[\u0000-\u001f\u007f]/g, "").slice(0, max);
 }
 
 function parseVariant(value: unknown): CatalogVariant | null {

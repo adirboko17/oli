@@ -9,7 +9,14 @@ export type CatalogMenuItem = {
   blurb: string;
 };
 
+export function isOliminiCategory(value: string) {
+  let key = value.trim();
+  try { key = decodeURIComponent(key).trim(); } catch { /* the title is already plain text */ }
+  return /olimini/i.test(key) || key === "baby" || /^oli\s*mini$/i.test(key);
+}
+
 export function menuHref(id: string) {
+  if (isOliminiCategory(id)) return "/olimini";
   return "/products?cat=" + encodeURIComponent(id);
 }
 

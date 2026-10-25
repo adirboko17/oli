@@ -47,6 +47,8 @@ export type CatalogProduct = {
   badge: string;
   badgeHidden: boolean;
   headline: { mode: "single" | "split"; subtitle: string };
+  seoTitle: string;
+  seoDescription: string;
 };
 
 export function emptyCatalogPage(): CatalogPage {
