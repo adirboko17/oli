@@ -6,7 +6,7 @@ import { settleGiftCards } from "@/lib/gift-cards";
 import { isPickupZone } from "@/lib/shipping";
 import { createVisitorKey, validVisitorKey, VISITOR_COOKIE, visitorCookieOptions } from "@/lib/storely";
 import { trackPurchase } from "@/lib/storely-actions";
-import { loadShopShipping, quoteStorefront, storefrontHost, type StoreLine } from "@/lib/storely-shop";
+import { loadShopShipping, quoteCheckout, storefrontHost, type StoreLine } from "@/lib/storely-shop";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
 
   const quotedLines = storefrontLines(catalog.catalog.products, lines);
   if (!quotedLines.ok) return NextResponse.json({ ok: false, error: "price", message: "המוצר לא זמין להזמנה" }, { status: 400 });
-  const quoted = await quoteStorefront({
+  const quoted = await quoteCheckout({
     hostHeader: request.headers.get("host"),
     shippingName: choice.name,
     lines: quotedLines.lines,
@@ -184,13 +184,13 @@ export async function POST(request: Request) {
   let gift = 0;
   let issued: { code: string; amount: number }[] = [];
   let orderNumber = "";
-  const placedProducts = quotedLines.lines.length > 0;
+  const placedProducts = quoted.lines.length > 0;
   let orderShipping = quoted.shipping ?? 0;
   let orderDiscount = quoted.discount;
   let orderTotal = payable;
   if (placedProducts) {
     const placed = await placeStorefrontOrder({
-      lines: quotedLines.lines,
+      lines: quoted.lines,
       name,
       email,
       phone,
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
       city,
       zip,
       shippingName: choice.name,
-      code: coupon,
+      code: quoted.bundleBlocked ? "" : coupon,
       giftCode,
       hostname: await storefrontHost(request.headers.get("host")),
     });

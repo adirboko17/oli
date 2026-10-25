@@ -153,9 +153,18 @@ function parseBundles(value: unknown): CatalogBundle[] {
     if (qty == null || price == null || !Number.isInteger(qty) || qty < 1 || qty > 99 || price < 0) continue;
     if (seen.has(qty)) continue;
     seen.add(qty);
-    bundles.push({ qty, price, label: text(row?.label) || `קנה ${qty}` });
+    const image = bundleImage(row?.image);
+    const tag = text(row?.tag).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 24);
+    bundles.push({ qty, price, label: text(row?.label) || `קנה ${qty}`, ...(image ? { image } : {}), ...(tag ? { tag } : {}) });
   }
   return bundles.sort((a, b) => a.qty - b.qty);
+}
+
+function bundleImage(value: unknown) {
+  const raw = text(value).trim().slice(0, 500);
+  const path = raw.split("?")[0] ?? "";
+  if (!path || path.includes("..")) return "";
+  return /^https:\/\/[a-z0-9.-]+\/storage\/v1\/object\/public\/product-media\/[a-z0-9._/-]+\.(jpe?g|png|webp|gif|avif)$/i.test(path) ? path : "";
 }
 
 function parseFaq(value: unknown) {

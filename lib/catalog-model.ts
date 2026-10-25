@@ -15,7 +15,7 @@ export type CatalogMedia = {
   kind: "image" | "video";
 };
 
-export type CatalogBundle = { qty: number; price: number; label: string };
+export type CatalogBundle = { qty: number; price: number; label: string; image?: string; tag?: string };
 export type CatalogFaq = { q: string; a: string; tag: string };
 
 export type CatalogPage = {

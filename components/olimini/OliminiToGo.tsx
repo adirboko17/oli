@@ -1,26 +1,29 @@
 'use client';
+import Link from 'next/link';
 import { useState } from 'react';
 import './OliminiToGo.css';
 
 export interface ToGoProduct {
   id: string;
-  name: string;     // e.g. "Pre & Shower To Go"
-  size: string;     // e.g. "50 מ״ל"
+  name: string;
+  size: string;
   price: number;
-  image: string;    // transparent PNG of the bottle
+  image: string;
+  href: string;
 }
 
 /** olimini To Go strip – placed directly below "החבילה של olimini" on the olimini page. */
-export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit }: {
+export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit, formatPrice = (value) => `₪${Math.round(value)}` }: {
   products: ToGoProduct[];
-  kitPrice?: number;                         // omit to hide the kit line
-  onAdd: (p: ToGoProduct) => void;           // TODO: wire to the site's cart
+  kitPrice?: number;
+  onAdd: (p: ToGoProduct) => void;
   onAddKit?: () => void;
+  formatPrice?: (value: number) => string;
 }) {
   const [hover, setHover] = useState<string | null>(null);
   if (!products?.length) return null;
   const full = products.reduce((a, p) => a + p.price, 0);
-  const ils = (v: number) => `₪${v}`;
+  const ils = formatPrice;
 
   return (
     <section className="otg" dir="rtl">
@@ -43,13 +46,13 @@ export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit }: {
         <div className="otg__grid">
           {products.map((p, i) => (
             <div key={p.id} className={`otg__card otg__card--${i % 3}`} onMouseEnter={() => setHover(p.id)} onMouseLeave={() => setHover(null)}>
-              <div className="otg__img">
-                <div role="img" aria-label={p.name} className={`otg__bottle${hover === p.id ? ' is-hover' : ''}`} style={{ backgroundImage: `url("${p.image}")` }} />
-              </div>
+              <Link href={p.href} className="otg__img" aria-label={p.name}>
+                <span role="img" aria-label={p.name} className={`otg__bottle${hover === p.id ? ' is-hover' : ''}`} style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
+              </Link>
               <div className="otg__foot">
                 <span className="otg__info">
-                  <span className="otg__name">{p.name}</span>
-                  <span className="otg__meta">{p.size} · {ils(p.price)}</span>
+                  <Link href={p.href} className="otg__name" style={{ color: "inherit", textDecoration: "none" }}>{p.name}</Link>
+                  <span className="otg__meta">{p.size ? `${p.size} · ` : ""}{ils(p.price)}</span>
                 </span>
                 <button onClick={() => onAdd(p)} aria-label={`הוספת ${p.name} לסל`} className="otg__add">+</button>
               </div>

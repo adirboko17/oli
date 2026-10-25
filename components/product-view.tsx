@@ -222,24 +222,32 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           )}
 
           {giftAmounts.length === 0 && giftMax == null && bundles.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: bundles.some((item) => item.tag) ? 8 : 0 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>בחרי כמות</span>
               {bundles.map((item) => {
                 const on = bundle?.qty === item.qty;
                 const regular = unit * item.qty;
                 const saving = Math.round((regular - item.price) * 100) / 100;
                 return (
-                  <button key={item.qty} type="button" onClick={() => setQty(item.qty)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderRadius: 14, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: on ? "#FFFFFF" : "transparent", color: "#3A2826", textAlign: "right" }}>
-                    <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
-                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                  <button key={item.qty} type="button" onClick={() => setQty(item.qty)} style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: item.tag ? 10 : 0, padding: item.image ? "10px 12px 10px 16px" : "16px 18px", borderRadius: 18, border: "1.5px solid " + (on ? "#3A2826" : "#E1CDC0"), background: "#FFFFFF", color: "#3A2826", textAlign: "right" }}>
+                    {item.tag ? <span style={{ position: "absolute", top: 0, insetInlineEnd: 22, transform: "translateY(-50%)", background: "#2A211F", color: "#FFFFFF", borderRadius: 999, padding: "5px 10px", fontSize: 12, fontWeight: 600, lineHeight: 1, whiteSpace: "nowrap" }}>{item.tag}</span> : null}
+                    <span style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
+                      {item.image ? (
+                        <span style={{ width: 84, height: 72, borderRadius: 14, overflow: "hidden", background: "#F3E6DE", flex: "0 0 auto" }}>
+                          <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        </span>
+                      ) : null}
+                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, minWidth: 0 }}>
                         <span style={{ fontWeight: 600, fontSize: 16 }}>{item.label}</span>
                         {saving > 0 ? <span style={{ fontSize: 13, fontWeight: 600, color: "#A85A3A" }}>חיסכון {fmt(saving)}</span> : null}
                       </span>
                     </span>
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                      <span style={{ fontWeight: 700, fontSize: 17 }}>{fmt(item.price)}</span>
-                      {saving > 0 ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(regular)}</span> : null}
+                    <span style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 auto" }}>
+                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                        <span style={{ fontWeight: 700, fontSize: 17 }}>{fmt(item.price)}</span>
+                        {saving > 0 ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(regular)}</span> : null}
+                      </span>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: "1.5px solid #3A2826", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>{on && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A2826" }} />}</span>
                     </span>
                   </button>
                 );

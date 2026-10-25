@@ -140,6 +140,7 @@ export function CheckoutView({ shippingMethods, currency }: { shippingMethods: S
       user={profile}
       onEditCart={site.openCart}
       onLogin={site.openAccount}
+      onAddGift={(gift) => site.add({ id: gift.id, name: gift.name, sub: gift.sub, price: gift.price, image: gift.image || null }, gift.qty, true)}
       onPay={onPay}
     />
   );

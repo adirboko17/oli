@@ -54,7 +54,7 @@ type Site = {
   storeName: string;
   items: CartItem[];
   cartCount: number;
-  add: (item: CartDraft, qty?: number) => void;
+  add: (item: CartDraft, qty?: number, quiet?: boolean) => void;
   setQty: (id: string, d: number) => void;
   clearCart: () => void;
 };
@@ -213,7 +213,7 @@ export function SiteProvider({ children, products, collections, events, storeNam
     setMenu((m) => !m);
   }, []);
 
-  const add = useCallback((item: CartDraft, qty = 1) => {
+  const add = useCallback((item: CartDraft, qty = 1, quiet = false) => {
     setItems((prev) => {
       const next = prev.slice();
       const i = next.findIndex((x) => x.id === item.id);
@@ -221,8 +221,10 @@ export function SiteProvider({ children, products, collections, events, storeNam
       else next.push({ ...item, qty });
       return next;
     });
-    setCartOpen(true);
-    setMenu(false);
+    if (!quiet) {
+      setCartOpen(true);
+      setMenu(false);
+    }
     void trackAddToCart();
   }, []);
 

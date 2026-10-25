@@ -1,5 +1,5 @@
 import "server-only";
-import { giftAmountsFromTags, OPEN_GIFT_MAX, OPEN_GIFT_MIN, openGiftMax, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, OPEN_GIFT_MAX, OPEN_GIFT_MIN, openGiftMax, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import type { StoreLine } from "@/lib/storely-shop";
 
 function giftAmount(raw: string) {
@@ -63,15 +63,39 @@ export function storefrontLines(products: CatalogProduct[], items: { id: string;
     if (isGiftLine(item.id)) continue;
     const bundle = /^(.+):x(\d+)$/.exec(item.id);
     const baseId = bundle?.[1] ?? item.id;
-    const bundleQty = bundle ? Number(bundle[2]) : 1;
-    if (!Number.isInteger(bundleQty) || bundleQty < 1) return { ok: false };
+    const bundleQty = bundle ? Number(bundle[2]) : null;
+    if (bundleQty != null && (!Number.isInteger(bundleQty) || bundleQty < 1)) return { ok: false };
     const variantId = variantForLine(products, baseId);
     if (!variantId) return { ok: false };
-    const quantity = bundleQty * item.qty;
+    const quantity = (bundleQty ?? 1) * item.qty;
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return { ok: false };
-    const found = lines.find((line) => line.variantId === variantId);
+    const pack = bundleQty ?? 0;
+    const found = lines.find((line) => line.variantId === variantId && (line.bundleQty ?? 0) === pack);
     if (found) found.quantity += quantity;
+    else if (bundleQty) lines.push({ variantId, quantity, bundle: true, bundleQty });
     else lines.push({ variantId, quantity });
   }
   return { ok: true, lines };
+}
+
+export function checkoutGiftLine(products: CatalogProduct[], variantId: string, quantity: number, title: string) {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) return null;
+  const wanted = variantId.trim().toLowerCase();
+  for (const product of products) {
+    const variant = product.variants.find((item) => item.id.toLowerCase() === wanted);
+    if (!variant) continue;
+    const price = variant.price ?? product.price;
+    if (!Number.isFinite(price) || price < 0) return null;
+    const variantTitle = variant.title.trim();
+    const generic = !variantTitle || /^default(\s+title)?$/i.test(variantTitle);
+    return {
+      id: variant.id,
+      name: title.trim() || product.title,
+      sub: generic ? "מתנה" : variantTitle,
+      price,
+      image: productImage(product) ?? "",
+      qty: quantity,
+    };
+  }
+  return null;
 }

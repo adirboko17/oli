@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import OliminiPromise from './OliminiPromise';
 import OliminiToGo, { type ToGoProduct } from './OliminiToGo';
 import './OliminiPage.css';
@@ -7,14 +8,14 @@ import './OliminiPage.css';
 export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string };
 
 type Props = {
-  products: MiniProduct[];                 // in order: Pre & Shower, After Shower, Baby Spa
+  shelf: MiniProduct[];
+  products: MiniProduct[];
   toGo: ToGoProduct[];
-  onAdd: (id: string) => void;              // add to cart
+  related?: ReactNode;
+  onAdd: (id: string) => void;
   onAddToGo: (product: ToGoProduct) => void;
   formatPrice?: (n: number) => string;
 };
-
-const STEPS = [{ n: '1', name: 'רחצה' }, { n: '2', name: 'לחות' }, { n: '3', name: 'עיסוי' }];
 
 // Floating bubbles: [left, top, size, duration, delay, opacity]
 const FLOAT: [string, string, number, number, number, number][] = [
@@ -24,8 +25,9 @@ const FLOAT: [string, string, number, number, number, number][] = [
 const RISE: [string, number, number, number][] = [['20%', 18, 16, 0], ['62%', 24, 19, -6], ['38%', 12, 14, -10], ['88%', 16, 17, -3], ['8%', 22, 21, -13]];
 
 // olimini category page: hero with the wordmark and bubbles, the "החבילה של olimini" section (3 steps), and facts
-export default function OliminiPage({ products, toGo, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
+export default function OliminiPage({ shelf, products, toGo, related, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
   const total = products.reduce((a, p) => a + p.price, 0);
+  const eyebrow = products.length === 3 ? 'שלושה צעדים, רגע אחד שלכם' : 'הטיפוח של olimini';
 
   return (
     <main className="om" dir="rtl">
@@ -52,49 +54,52 @@ export default function OliminiPage({ products, toGo, onAdd, onAddToGo, formatPr
         </div>
 
         <div className="om-shelf">
-          {products.map((p, i) => (
+          {shelf.map((p, i) => (
             <Link key={p.id} href={p.href} className={`om-shelf__item${i === 1 ? ' is-tall' : ''}`} aria-label={p.name}>
               <span className="om-shadow" />
-              <span className="om-bottle" style={{ backgroundImage: `url("${p.image}")` }} />
+              <span className="om-bottle" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
             </Link>
           ))}
         </div>
         <div className="om-fade" />
       </section>
 
-      <section className="om-steps-sec">
-        <div className="om-steps-head">
-          <span className="om-eyebrow">שלושה צעדים, רגע אחד שלכם</span>
-          <h2 className="om-h2">החבילה של <span className="om-ltr">olimini</span></h2>
-        </div>
+      {products.length > 0 ? (
+        <section className="om-steps-sec">
+          <div className="om-steps-head">
+            <span className="om-eyebrow">{eyebrow}</span>
+            <h2 className="om-h2">החבילה של <span className="om-ltr">olimini</span></h2>
+          </div>
 
-        <div className="om-steps">
-          {products.map((p, i) => (
-            <div key={p.id} className={`om-step om-step--${i + 1}`}>
-              <div className="om-step__top">
-                <span className="om-step__label"><span className="om-step__num">{STEPS[i]?.n}</span>{STEPS[i]?.name}</span>
-                {p.oldPrice && <span className="om-save">חיסכון {Math.round((1 - p.price / p.oldPrice) * 100)}%</span>}
+          <div className="om-steps">
+            {products.map((p, i) => (
+              <div key={p.id} className={`om-step om-step--${(i % 3) + 1}`}>
+                <div className="om-step__top">
+                  <span className="om-step__label"><span className="om-step__num">{i + 1}</span></span>
+                  {p.oldPrice && <span className="om-save">חיסכון {Math.round((1 - p.price / p.oldPrice) * 100)}%</span>}
+                </div>
+                <Link href={p.href} className="om-step__img" aria-label={p.name}>
+                  <span className="om-shadow" />
+                  <span className="om-bottle" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
+                </Link>
+                <div className="om-step__text">
+                  <span className="om-step__name">{p.name}</span>
+                  {p.sub ? <span className="om-step__sub">{p.sub}</span> : null}
+                </div>
+                <div className="om-step__foot">
+                  <span className="om-step__price"><b>{formatPrice(p.price)}</b>{p.oldPrice && <s>{formatPrice(p.oldPrice)}</s>}</span>
+                  <button className="om-btn" onClick={() => onAdd(p.id)}>הוספה לסל</button>
+                </div>
               </div>
-              <Link href={p.href} className="om-step__img" aria-label={p.name}>
-                <span className="om-shadow" />
-                <span className="om-bottle" style={{ backgroundImage: `url("${p.image}")` }} />
-              </Link>
-              <div className="om-step__text">
-                <span className="om-step__name">{p.name}</span>
-                <span className="om-step__sub">{p.sub}</span>
-              </div>
-              <div className="om-step__foot">
-                <span className="om-step__price"><b>{formatPrice(p.price)}</b>{p.oldPrice && <s>{formatPrice(p.oldPrice)}</s>}</span>
-                <button className="om-btn" onClick={() => onAdd(p.id)}>הוספה לסל</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <button className="om-all" onClick={() => products.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button>
-      </section>
+          {products.length > 1 ? <button className="om-all" onClick={() => products.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button> : null}
+        </section>
+      ) : null}
 
-      <OliminiToGo products={toGo} onAdd={onAddToGo} />
+      <OliminiToGo products={toGo} onAdd={onAddToGo} formatPrice={formatPrice} />
+      {related}
       <OliminiPromise />
     </main>
   );

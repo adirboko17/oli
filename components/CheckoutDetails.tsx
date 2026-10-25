@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { formatMoney, formatShippingPrice, isPickupZone, type ShippingChoice } from '@/lib/shipping';
 import './CheckoutDetails.css';
@@ -26,6 +26,7 @@ type Props = {
   user?: { name?: string; phone?: string; email?: string; city?: string; street?: string } | null; // logged-in user: fills the fields automatically
   onEditCart: () => void;                          // opens the cart drawer
   onLogin: () => void;                             // opens the SMS login
+  onAddGift?: (item: CheckoutItem) => void;        // product-for-product code: the gift joins the cart before the total is shown
   onPay: (data: CheckoutPayload) => void | Promise<void>; // creates the order and redirects to the payment provider
 };
 
@@ -58,9 +59,26 @@ function Field({ label, optional, className = '', ...input }: { label: string; o
 }
 
 type StoreQuote = { total: number; currency: string; shipping: number | null; discount: number; discountCode: string };
+type QuoteBody = {
+  ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string;
+  reason?: string; message?: string; bundleBlocked?: boolean; addedGift?: unknown;
+};
+
+function readAddedGift(value: unknown): CheckoutItem | null {
+  if (!value || typeof value !== 'object') return null;
+  const gift = value as Record<string, unknown>;
+  const id = typeof gift.id === 'string' ? gift.id : '';
+  const name = typeof gift.name === 'string' ? gift.name.trim() : '';
+  const qty = gift.qty;
+  const price = gift.price;
+  if (!id || !name || typeof qty !== 'number' || !Number.isInteger(qty) || qty < 1 || typeof price !== 'number' || !Number.isFinite(price) || price < 0) return null;
+  return { id, name, sub: typeof gift.sub === 'string' ? gift.sub : 'מתנה', price, image: typeof gift.image === 'string' ? gift.image : '', qty };
+}
+
+const BUNDLE_CODE = 'הקוד לא חל כי המוצר הנדרש נקנה במארז';
 
 export default function CheckoutDetails({
-  items, shippingMethods, currency, user, onEditCart, onLogin, onPay,
+  items, shippingMethods, currency, user, onEditCart, onLogin, onAddGift, onPay,
 }: Props) {
   const [f, setF] = useState({
     name: user?.name || '', phone: user?.phone || '', email: user?.email || '',
@@ -96,6 +114,52 @@ export default function CheckoutDetails({
     }));
   }, [user]);
 
+  const onAddGiftRef = useRef(onAddGift);
+  onAddGiftRef.current = onAddGift;
+  const satisfied = useRef(new Set<string>());
+  const qtyOf = useRef(new Map<string, number>());
+
+  useEffect(() => {
+    const prev = qtyOf.current;
+    const next = new Map(items.map((item) => [item.id, item.qty]));
+    for (const [id, qty] of prev) {
+      if ((next.get(id) ?? 0) < qty) satisfied.current.clear();
+    }
+    qtyOf.current = next;
+  }, [items]);
+
+  const offerGift = useCallback((giftLine: CheckoutItem, sent: CheckoutItem[]) => {
+    const add = onAddGiftRef.current;
+    if (!add) return;
+    const key = `${sent.map((item) => `${item.id}x${item.qty}`).join('|')}>${giftLine.id}x${giftLine.qty}`;
+    if (satisfied.current.has(key)) return;
+    satisfied.current.add(key);
+    add(giftLine);
+  }, []);
+
+  const readQuote = useCallback((body: QuoteBody | null): StoreQuote => ({
+    total: body?.total ?? 0,
+    currency: body?.currency || currency,
+    shipping: typeof body?.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
+    discount: typeof body?.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
+    discountCode: typeof body?.discountCode === 'string' ? body.discountCode : '',
+  }), [currency]);
+
+  const acceptQuote = useCallback((body: QuoteBody, sent: CheckoutItem[], code: string) => {
+    if (body.bundleBlocked) {
+      if (code.trim()) setCouponMsg({ text: BUNDLE_CODE, ok: false });
+      setAcceptedCode('');
+      setQuote({ ...readQuote(body), discount: 0, discountCode: '' });
+      setQuoteMsg('');
+      return false;
+    }
+    const giftLine = readAddedGift(body.addedGift);
+    if (giftLine) offerGift(giftLine, sent);
+    setQuote(readQuote(body));
+    setQuoteMsg('');
+    return true;
+  }, [offerGift, readQuote]);
+
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); setErr(''); };
   const setGiftField = (k: keyof typeof to) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setTo({ ...to, [k]: e.target.value }); setErr(''); };
   const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
@@ -124,6 +188,7 @@ export default function CheckoutDetails({
       return;
     }
     const controller = new AbortController();
+    const sent = items;
     setQuoting(true);
     setQuote(null);
     setQuoteMsg('');
@@ -134,27 +199,20 @@ export default function CheckoutDetails({
         signal: controller.signal,
         body: JSON.stringify({
           shippingName: selected.name,
-          items: items.map((item) => ({ id: item.id, qty: item.qty })),
+          items: sent.map((item) => ({ id: item.id, qty: item.qty })),
           code: acceptedCode,
           customerEmail: f.email.trim(),
           giftCode,
         }),
       }).then(async (res) => {
-        const body = await res.json().catch(() => null) as { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string } | null;
+        const body = await res.json().catch(() => null) as QuoteBody | null;
         if (controller.signal.aborted) return;
         if (!res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total)) {
           setQuote(null);
           setQuoteMsg(body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום');
           return;
         }
-        setQuote({
-          total: body.total,
-          currency: body.currency || currency,
-          shipping: typeof body.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
-          discount: typeof body.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
-          discountCode: typeof body.discountCode === 'string' ? body.discountCode : '',
-        });
-        setQuoteMsg('');
+        acceptQuote(body, sent, acceptedCode);
       }).catch((error: unknown) => {
         if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
         setQuote(null);
@@ -167,17 +225,7 @@ export default function CheckoutDetails({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [selected, items, acceptedCode, giftCode, f.email, currency]);
-
-  type QuoteBody = { ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string; reason?: string; message?: string };
-
-  const readQuote = (body: QuoteBody | null) => ({
-    total: body?.total ?? 0,
-    currency: body?.currency || currency,
-    shipping: typeof body?.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
-    discount: typeof body?.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
-    discountCode: typeof body?.discountCode === 'string' ? body.discountCode : '',
-  });
+  }, [selected, items, acceptedCode, giftCode, f.email, currency, acceptQuote]);
 
   const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
@@ -230,6 +278,9 @@ export default function CheckoutDetails({
             setCouponMsg({ text: giftQuoted?.reason || giftQuoted?.message || reason, ok: false });
             return;
           }
+          if (giftQuoted.bundleBlocked) setAcceptedCode('');
+          const giftLine = readAddedGift(giftQuoted.addedGift);
+          if (giftLine) offerGift(giftLine, items);
           setGiftCode(code);
           setCoupon('');
           setQuote(readQuote(giftQuoted));
@@ -242,9 +293,9 @@ export default function CheckoutDetails({
         return;
       }
       if (!body || typeof body.total !== 'number') return;
+      if (!acceptQuote(body, items, code)) return;
       setCouponPhase('מעדכנים את הסכום');
       setAcceptedCode(code);
-      setQuote(readQuote(body));
       setCouponPhase('הקוד אושר');
       await pause(560);
       const shown = (typeof body.discountCode === 'string' && body.discountCode) || code;

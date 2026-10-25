@@ -6,7 +6,7 @@ import { parseShopPopups } from "@/lib/store-popups";
 import { requestHostname } from "@/lib/storely";
 import type { ShippingChoice } from "@/lib/shipping";
 
-export type StoreLine = { variantId: string; quantity: number };
+export type StoreLine = { variantId: string; quantity: number; bundle?: boolean; bundleQty?: number };
 
 export type ShopShipping = {
   currency: string;
@@ -14,8 +14,22 @@ export type ShopShipping = {
 };
 
 type Quote =
-  | { ok: true; total: number; currency: string; shipping: number | null; discount: number; discountCode: string }
+  | {
+      ok: true;
+      total: number;
+      currency: string;
+      shipping: number | null;
+      discount: number;
+      discountCode: string;
+      addGift: boolean;
+      bundleBlocked: boolean;
+      giftVariantId: string;
+      giftQuantity: number;
+      giftTitle: string;
+    }
   | { ok: false; reason: string };
+
+const VARIANT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function storelyEnv() {
   const url = (process.env.STORELY_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim().replace(/\/$/, "");
@@ -187,6 +201,8 @@ export async function quoteStorefront(input: {
     return { ok: false, reason: reasonOf(record) || "לא הצלחנו לחשב את הסכום לתשלום" };
   }
   const discountCode = typeof record.discountCode === "string" ? record.discountCode.trim() : "";
+  const giftQuantity = typeof record.giftQuantity === "number" ? record.giftQuantity : Number(record.giftQuantity);
+  const giftVariantId = typeof record.giftVariantId === "string" ? record.giftVariantId.trim() : "";
   return {
     ok: true,
     total,
@@ -194,6 +210,104 @@ export async function quoteStorefront(input: {
     shipping: amount(record.shipping),
     discount: amount(record.discount) ?? 0,
     discountCode,
+    addGift: record.addGift === true,
+    bundleBlocked: record.bundleBlocked === true,
+    giftVariantId,
+    giftQuantity: Number.isInteger(giftQuantity) ? giftQuantity : 0,
+    giftTitle: typeof record.giftTitle === "string" ? record.giftTitle.trim() : "",
+  };
+}
+
+function withGiftLine(lines: StoreLine[], variantId: string, quantity: number) {
+  const next = lines.map((line) => ({ ...line }));
+  const found = next.find((line) => line.variantId === variantId && line.bundle !== true);
+  if (found) found.quantity += quantity;
+  else next.push({ variantId, quantity });
+  return next;
+}
+
+export type SettledQuote =
+  | {
+      ok: true;
+      total: number;
+      currency: string;
+      shipping: number | null;
+      discount: number;
+      discountCode: string;
+      bundleBlocked: boolean;
+      lines: StoreLine[];
+      addedGift: { variantId: string; quantity: number; title: string } | null;
+    }
+  | { ok: false; reason: string };
+
+export async function quoteCheckout(input: {
+  hostHeader: string | null;
+  shippingName: string;
+  lines: StoreLine[];
+  code: string;
+  customerEmail: string;
+  giftCode: string;
+}): Promise<SettledQuote> {
+  const quoted = await quoteStorefront(input);
+  if (!quoted.ok) return quoted;
+  if (quoted.bundleBlocked) {
+    return {
+      ok: true,
+      total: quoted.total,
+      currency: quoted.currency,
+      shipping: quoted.shipping,
+      discount: 0,
+      discountCode: "",
+      bundleBlocked: true,
+      lines: input.lines,
+      addedGift: null,
+    };
+  }
+  if (!quoted.addGift) {
+    return {
+      ok: true,
+      total: quoted.total,
+      currency: quoted.currency,
+      shipping: quoted.shipping,
+      discount: quoted.discount,
+      discountCode: quoted.discountCode,
+      bundleBlocked: false,
+      lines: input.lines,
+      addedGift: null,
+    };
+  }
+  if (!VARIANT_ID.test(quoted.giftVariantId) || quoted.giftQuantity < 1 || quoted.giftQuantity > 99) {
+    return { ok: false, reason: "לא הצלחנו להוסיף את המוצר במתנה" };
+  }
+  const lines = withGiftLine(input.lines, quoted.giftVariantId, quoted.giftQuantity);
+  if (lines.some((line) => line.quantity > 99) || lines.length > 30) {
+    return { ok: false, reason: "לא הצלחנו להוסיף את המוצר במתנה" };
+  }
+  const again = await quoteStorefront({ ...input, lines });
+  if (!again.ok) return again;
+  if (again.bundleBlocked) {
+    return {
+      ok: true,
+      total: quoted.total,
+      currency: quoted.currency,
+      shipping: quoted.shipping,
+      discount: 0,
+      discountCode: "",
+      bundleBlocked: true,
+      lines: input.lines,
+      addedGift: null,
+    };
+  }
+  return {
+    ok: true,
+    total: again.total,
+    currency: again.currency,
+    shipping: again.shipping,
+    discount: again.discount,
+    discountCode: again.discountCode,
+    bundleBlocked: false,
+    lines,
+    addedGift: { variantId: quoted.giftVariantId, quantity: quoted.giftQuantity, title: quoted.giftTitle },
   };
 }
 

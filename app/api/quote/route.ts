@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { storefrontLines } from "@/lib/checkout-lines";
+import { checkoutGiftLine, storefrontLines } from "@/lib/checkout-lines";
 import { loadPublicCatalog } from "@/lib/catalog";
-import { loadShopShipping, quoteStorefront } from "@/lib/storely-shop";
+import { loadShopShipping, quoteCheckout } from "@/lib/storely-shop";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const lines = storefrontLines(catalog.catalog.products, items);
   if (!lines.ok) return NextResponse.json({ ok: false, message: "המוצר לא זמין להזמנה" }, { status: 400 });
 
-  const quoted = await quoteStorefront({
+  const quoted = await quoteCheckout({
     hostHeader: request.headers.get("host"),
     shippingName,
     lines: lines.lines,
@@ -44,6 +44,9 @@ export async function POST(request: Request) {
     giftCode,
   });
   if (!quoted.ok) return NextResponse.json({ ok: false, message: quoted.reason }, { status: 400 });
+  const addedGift = quoted.addedGift
+    ? checkoutGiftLine(catalog.catalog.products, quoted.addedGift.variantId, quoted.addedGift.quantity, quoted.addedGift.title)
+    : null;
   return NextResponse.json({
     ok: true,
     total: quoted.total,
@@ -51,5 +54,7 @@ export async function POST(request: Request) {
     discountCode: quoted.discountCode,
     shipping: quoted.shipping,
     currency: quoted.currency || shop.currency,
+    bundleBlocked: quoted.bundleBlocked,
+    addedGift,
   });
 }
