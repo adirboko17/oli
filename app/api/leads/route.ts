@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { Q1, Q2, RECOMMEND, q3Options } from "@/components/promo/quiz";
+import { builtinQuizFlow, quizRecommendation, type QuizAnswer } from "@/lib/shop-quiz";
 import { issuePromoLead } from "@/lib/promo-leads";
+import { loadShopQuiz } from "@/lib/storely-shop";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
@@ -10,6 +11,21 @@ const hits = new Map<string, { count: number; start: number }>();
 
 function text(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function answersOf(value: unknown): QuizAnswer[] {
+  if (!Array.isArray(value)) return [];
+  const answers: QuizAnswer[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const questionId = text(row.questionId, 25).toLowerCase();
+    const choiceId = text(row.choiceId, 25).toLowerCase();
+    if (!/^[a-z][a-z0-9_]{0,24}$/.test(questionId) || !/^[a-z][a-z0-9_]{0,24}$/.test(choiceId)) return [];
+    answers.push({ questionId, choiceId });
+    if (answers.length > 20) return [];
+  }
+  return answers;
 }
 
 function limited(ip: string) {
@@ -31,21 +47,23 @@ export async function POST(request: Request) {
   const name = text(body?.name, 80);
   const phone = text(body?.phone, 20).replace(/\D/g, "");
   const email = text(body?.email, 120).toLowerCase();
-  const a1 = text(body?.a1, 20);
-  const a2 = text(body?.a2, 20);
-  const a3 = text(body?.a3, 20);
-  const recommended = Array.isArray(body?.recommended) ? body.recommended.filter((id: unknown) => typeof id === "string").slice(0, 2) : [];
-  const q2 = Q2[a1];
-  const q3 = q3Options(a1, a2).some((opt) => opt.k === a3);
-  const expected = RECOMMEND[a3] || [];
-  if (!name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || !Q1.some((opt) => opt.k === a1) || !q2?.opts.some((opt) => opt.k === a2) || !q3) {
-    return NextResponse.json({ ok: false, error: "fields" }, { status: 400 });
-  }
-  if (recommended.some((id: string) => !expected.includes(id))) {
+  const answers = answersOf(body?.answers);
+  const flow = (await loadShopQuiz(request.headers.get("host"))) ?? builtinQuizFlow();
+  const recommended = quizRecommendation(flow, answers);
+  if (!name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || !recommended) {
     return NextResponse.json({ ok: false, error: "fields" }, { status: 400 });
   }
 
-  const code = await issuePromoLead({ name, phone, email, a1, a2, a3, recommended });
+  const code = await issuePromoLead({
+    name,
+    phone,
+    email,
+    a1: answers[0]?.choiceId ?? "",
+    a2: answers[1]?.choiceId ?? "",
+    a3: answers[2]?.choiceId ?? "",
+    path: answers,
+    recommended,
+  });
   if (!code) return NextResponse.json({ ok: false, error: "used" }, { status: 409 });
 
   const key = process.env.RESEND_API_KEY;

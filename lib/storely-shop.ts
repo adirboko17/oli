@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { parseShopQuiz } from "@/lib/shop-quiz";
 import { parseShopPopups } from "@/lib/store-popups";
 import { requestHostname } from "@/lib/storely";
 import type { ShippingChoice } from "@/lib/shipping";
@@ -141,9 +142,9 @@ const readShopContent = unstable_cache(
   async (hostname: string) => {
     const { record, responseOk } = await shopRecord(hostname);
     if (!responseOk || record?.ok !== true) throw new Error("Storely shop unavailable");
-    return { popups: record.popups ?? [], posts: Array.isArray(record.posts) ? record.posts : [] };
+    return { popups: record.popups ?? [], posts: Array.isArray(record.posts) ? record.posts : [], quiz: record.quiz ?? null };
   },
-  ["storely-shop-content"],
+  ["storely-shop-content-v2"],
   { revalidate: 60 },
 );
 
@@ -335,6 +336,13 @@ function postFocus(value: unknown) {
   return Math.min(100, Math.max(0, Math.round(number)));
 }
 
+export async function loadShopQuiz(hostHeader: string | null) {
+  const hostname = await storefrontHost(hostHeader);
+  if (!hostname) return null;
+  const content = await loadShopContent(hostname);
+  return content ? parseShopQuiz(content.quiz) : null;
+}
+
 export async function loadShopPopups(hostHeader: string | null) {
   const hostname = await storefrontHost(hostHeader);
   if (!hostname) return [];
@@ -371,6 +379,59 @@ export async function submitPopupLead(input: {
     return { ok: false as const, reason };
   }
   return { ok: true as const };
+}
+
+const CHECKOUT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function textField(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function localPhone(value: unknown) {
+  const raw = textField(value);
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("972") && digits.length >= 11) return `0${digits.slice(3, 12)}`;
+  return raw;
+}
+
+export async function loadRecoveredCheckout(hostHeader: string | null, checkoutId: string) {
+  const id = checkoutId.trim();
+  if (!CHECKOUT_ID.test(id)) return null;
+  const env = storelyEnv();
+  const hostname = await storefrontHost(hostHeader);
+  if (!env || !hostname) return null;
+  const { record, responseOk } = await storelyRpc("recover_storefront_checkout", {
+    tracking_key: env.trackingKey,
+    hostname,
+    checkout_id: id,
+  });
+  if (!responseOk || record?.ok !== true || !Array.isArray(record.lines)) return null;
+  const lines = record.lines.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const item = row as Record<string, unknown>;
+    const lineId = textField(item.id);
+    const name = textField(item.name);
+    const qty = typeof item.qty === "number" ? item.qty : Number(item.qty);
+    const price = typeof item.price === "number" ? item.price : Number(item.price);
+    if (!CHECKOUT_ID.test(lineId) || !name || !Number.isInteger(qty) || qty < 1 || !Number.isFinite(price) || price < 0) return [];
+    return [{
+      id: lineId,
+      name,
+      sub: typeof item.sub === "string" ? item.sub : "",
+      price,
+      image: typeof item.image === "string" && item.image.startsWith("http") ? item.image : null,
+      qty,
+    }];
+  });
+  if (!lines.length) return null;
+  const name = textField(record.name);
+  const email = textField(record.email);
+  const phone = localPhone(record.phone);
+  const city = textField(record.city);
+  const street = textField(record.street);
+  const zip = textField(record.zip);
+  const customer = name || email || phone || city || street || zip ? { name, phone, email, city, street, zip } : null;
+  return { lines, customer };
 }
 
 export async function loadShopPosts(hostHeader: string | null): Promise<ShopPostMedia[]> {

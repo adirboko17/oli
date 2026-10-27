@@ -1,11 +1,14 @@
 import { headers } from "next/headers";
 import { CheckoutView } from "@/components/checkout-view";
-import { loadShopShipping } from "@/lib/storely-shop";
+import { loadRecoveredCheckout, loadShopShipping } from "@/lib/storely-shop";
 
 export const dynamic = "force-dynamic";
 
-export default async function CheckoutPage() {
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ recover?: string }> }) {
   const headerList = await headers();
-  const shipping = await loadShopShipping(headerList.get("host"));
-  return <CheckoutView shippingMethods={shipping.methods} currency={shipping.currency} />;
+  const { recover } = await searchParams;
+  const host = headerList.get("host");
+  const shipping = await loadShopShipping(host);
+  const recovered = recover ? await loadRecoveredCheckout(host, recover) : null;
+  return <CheckoutView shippingMethods={shipping.methods} currency={shipping.currency} recovered={recovered} />;
 }

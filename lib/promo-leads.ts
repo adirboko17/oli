@@ -9,6 +9,7 @@ export type PromoLead = {
   a1: string;
   a2: string;
   a3: string;
+  path?: { questionId: string; choiceId: string }[];
   recommended: string[];
   used: boolean;
   createdAt: string;

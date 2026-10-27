@@ -1,81 +1,98 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { Q1, Q1_TITLE, Q2, Q3_TITLE, q3Options, RECOMMEND, Opt } from './quiz';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { builtinQuizFlow, type QuizAnswer, type QuizFlow } from '@/lib/shop-quiz';
 import './PromoQuiz.css';
 
 export type QuizProduct = { id: string; name: string; sub: string; priceLabel: string; image: string; href: string };
-export type QuizLead = { name: string; phone: string; email: string; a1: string; a2: string; a3: string; recommended: string[] };
+export type QuizLead = { name: string; phone: string; email: string; answers: QuizAnswer[]; recommended: string[] };
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (lead: QuizLead) => Promise<{ code: string }>; // saves the lead and returns the code (e.g. OLI5)
-  getProduct: (id: string) => QuizProduct | undefined;     // from the existing catalog
+  onSubmit: (lead: QuizLead) => Promise<{ code: string }>;
+  getProduct: (id: string) => QuizProduct | undefined;
   onAddToCart: (id: string) => void;
-  onShop: () => void;                                       // "לכל המוצרים"
+  onShop: () => void;
   image?: string;
+  flow?: QuizFlow | null;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
+const DEFAULT_IMAGE = 'https://static.wixstatic.com/media/db159b_023efbddb9054a1695b0af97979b8d28f000.jpg';
 
-function Options({ opts, value, onPick }: { opts: Opt[]; value?: string; onPick: (k: string) => void }) {
+function Options({ opts, value, onPick }: { opts: { id: string; label: string }[]; value?: string; onPick: (id: string) => void }) {
   return (
     <div className="pq-opts">
-      {opts.map(o => (
-        <button key={o.k} className={`pq-opt${value === o.k ? ' is-on' : ''}`} onClick={() => onPick(o.k)}>
+      {opts.map(option => (
+        <button key={option.id} className={`pq-opt${value === option.id ? ' is-on' : ''}`} onClick={() => onPick(option.id)}>
           <span className="pq-opt__dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
-          <span className="pq-opt__label">{o.label}</span>
+          <span className="pq-opt__label">{option.label}</span>
         </button>
       ))}
     </div>
   );
 }
 
-const INTRO_PILLS = ['3 שאלות קצרות', 'פחות מדקה', 'המלצות אישיות'];
+function lines(value: string) {
+  const parts = value.split('\n');
+  return parts.map((line, index) => <Fragment key={index}>{index > 0 ? <br /> : null}{line}</Fragment>);
+}
 
-// The quiz popup: welcome → 3 questions → details → code + recommended products.
-// Desktop: image on the side. Mobile: a centered popup with an image banner on top and the progress dots at the bottom.
-export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddToCart, onShop,
-  image = 'https://static.wixstatic.com/media/db159b_023efbddb9054a1695b0af97979b8d28f000.jpg' }: Props) {
-  const [step, setStep] = useState(0); // 0 welcome, 1-3 questions, 4 details, 5 done
-  const [a, setA] = useState<{ a1?: string; a2?: string; a3?: string }>({});
-  const [f, setF] = useState({ name: '', phone: '', email: '' });
+export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddToCart, onShop, image, flow }: Props) {
+  const quiz = flow ?? builtinQuizFlow();
+  const [stack, setStack] = useState<string[]>(['welcome']);
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState('');
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const node = stack[stack.length - 1] ?? 'welcome';
+  const question = quiz.questions.find(item => item.id === node);
 
   useEffect(() => { document.body.style.overflow = open ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [open]);
   useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Picking an answer advances to the next question after a short beat (so the selection is visible)
-  const pick = (key: 'a1' | 'a2' | 'a3', next: number) => (k: string) => {
-    setA(prev => ({ ...prev, [key]: k, ...(key === 'a1' && prev.a1 !== k ? { a2: undefined, a3: undefined } : {}) }));
+  const pick = (questionId: string, choiceId: string, next: string) => {
+    setPicked(prev => ({ ...prev, [questionId]: choiceId }));
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => setStep(next), 260);
+    timer.current = setTimeout(() => {
+      setStack(prev => {
+        const at = prev.lastIndexOf(questionId);
+        const base = at >= 0 ? prev.slice(0, at + 1) : prev;
+        return [...base, next];
+      });
+    }, 260);
   };
 
-  const phoneOk = PHONE_RE.test(f.phone.replace(/\D/g, ''));
-  const ok = !!f.name.trim() && phoneOk && EMAIL_RE.test(f.email);
-  const recIds = (RECOMMEND[a.a3 || 'self'] || RECOMMEND.self).slice(0, 2);
+  const phoneOk = PHONE_RE.test(form.phone.replace(/\D/g, ''));
+  const ok = !!form.name.trim() && phoneOk && EMAIL_RE.test(form.email);
+  const formAt = stack.indexOf('form');
+  const answeredId = formAt > 0 ? stack[formAt - 1] : '';
+  const answered = quiz.questions.find(item => item.id === answeredId)?.choices.find(choice => choice.id === picked[answeredId]);
+  const recIds = (answered?.products ?? []).slice(0, 4);
+  const marks = stack.filter(id => id !== 'welcome' && id !== 'done');
+  const asked = stack.filter(id => quiz.questions.some(item => item.id === id)).length;
+  const photo = image || quiz.image || DEFAULT_IMAGE;
+  const first = form.name.trim().split(' ')[0];
 
   const submit = async () => {
-    if (!ok) { setErr(!f.name.trim() ? 'נא למלא שם מלא' : !phoneOk ? 'מספר הטלפון לא תקין' : 'כתובת האימייל לא תקינה'); return; }
+    if (!ok) { setErr(!form.name.trim() ? 'נא למלא שם מלא' : !phoneOk ? 'מספר הטלפון לא תקין' : 'כתובת האימייל לא תקינה'); return; }
+    const answers = stack.filter(id => quiz.questions.some(item => item.id === id)).map(id => ({ questionId: id, choiceId: picked[id] || '' }));
     setBusy(true);
     try {
-      const r = await onSubmit({ ...f, phone: f.phone.replace(/\D/g, ''), a1: a.a1!, a2: a.a2!, a3: a.a3!, recommended: recIds });
-      setCode(r.code); setStep(5);
+      const result = await onSubmit({ name: form.name, phone: form.phone.replace(/\D/g, ''), email: form.email, answers, recommended: recIds });
+      setCode(result.code);
+      setStack(prev => [...prev.filter(id => id !== 'done'), 'done']);
     } catch { setErr('משהו השתבש, נסי שוב'); }
     finally { setBusy(false); }
   };
-
-  const q2 = Q2[a.a1 || 'preg'];
-  const first = f.name.trim().split(' ')[0];
 
   return (
     <>
@@ -83,80 +100,85 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
       <div className={`pq-panel${open ? ' is-open' : ''}`} dir="rtl" role="dialog" aria-modal="true" aria-label="5% הנחה">
         <button className="pq-close" onClick={onClose} aria-label="סגירה">✕</button>
         <div className="pq-grid">
-          {/* Image: on the side on desktop, a banner on top on mobile */}
           <div className="pq-media">
-            <img src={image} alt="" />
+            <img src={photo} alt="" />
             <div className="pq-media__shade" />
             <div className="pq-media__text">
-              <span className="pq-media__pct">5%</span>
-              <span className="pq-media__lbl"><span className="pq-media__eyebrow">מתנת הצטרפות</span><span>על ההזמנה הראשונה</span></span>
+              <span className="pq-media__pct">{quiz.mediaPercent}</span>
+              <span className="pq-media__lbl"><span className="pq-media__eyebrow">{quiz.mediaEyebrow}</span><span>{quiz.mediaLabel}</span></span>
             </div>
           </div>
 
           <div className="pq-body">
-            {step === 0 && (
+            {node === 'welcome' && (
               <div className="pq-intro">
                 <div className="pq-intro__copy">
-                  <span className="pq-intro__eyebrow">מתנת הצטרפות</span>
-                  <h3 className="pq-intro__title">ענו על 3 שאלות<br />וקבלו 5% הנחה</h3>
-                  <p className="pq-intro__text">לרכישה הקרובה שלכן באתר. ובדרך נתאים לכן את המוצרים שהכי מתאימים לתקופה שלכן.</p>
+                  <span className="pq-intro__eyebrow">{quiz.introEyebrow}</span>
+                  <h3 className="pq-intro__title">{lines(quiz.introTitle)}</h3>
+                  <p className="pq-intro__text">{quiz.introText}</p>
                 </div>
                 <div className="pq-pills">
-                  {INTRO_PILLS.map(label => <span key={label} className="pq-pill">{label}</span>)}
+                  {quiz.pills.map(label => <span key={label} className="pq-pill">{label}</span>)}
                 </div>
-                <button className="pq-cta" onClick={() => setStep(1)}>בואו נתחיל</button>
+                <button className="pq-cta" onClick={() => setStack(['welcome', quiz.entry])}>{quiz.startLabel}</button>
               </div>
             )}
-            {step > 0 && step < 5 && (
+            {node !== 'welcome' && node !== 'done' && (
               <div className="pq-flow">
                 <div className="pq-progress">
                   <div className="pq-progress__left">
-                    <div className="pq-dots">{[1, 2, 3, 4].map(n => <span key={n} className={`pq-dot${n === step ? ' is-cur' : n < step ? ' is-done' : ''}`} />)}</div>
-                    <span className="pq-progress__lbl">{step < 4 ? `${step} / 3` : 'כמעט סיימנו'}</span>
+                    <div className="pq-dots">{marks.map((id, index) => <span key={`${id}-${index}`} className={`pq-dot${index === marks.length - 1 ? ' is-cur' : ' is-done'}`} />)}</div>
+                    <span className="pq-progress__lbl">{node === 'form' ? 'כמעט סיימנו' : `שאלה ${asked}`}</span>
                   </div>
-                  <button className="pq-back" onClick={() => setStep(step - 1)}>→ חזרה</button>
+                  <button className="pq-back" onClick={() => setStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev)}>→ חזרה</button>
                 </div>
 
-                {step === 1 && <div key="s1" className="pq-step"><h3 className="pq-q">{Q1_TITLE}</h3><Options opts={Q1} value={a.a1} onPick={pick('a1', 2)} /></div>}
-                {step === 2 && <div key="s2" className="pq-step"><h3 className="pq-q">{q2.title}</h3><Options opts={q2.opts} value={a.a2} onPick={pick('a2', 3)} /></div>}
-                {step === 3 && <div key="s3" className="pq-step"><h3 className="pq-q">{Q3_TITLE}</h3><Options opts={q3Options(a.a1, a.a2)} value={a.a3} onPick={pick('a3', 4)} /></div>}
-                {step === 4 && (
-                  <div key="s4" className="pq-step pq-step--form">
+                {question && (
+                  <div key={question.id} className="pq-step">
+                    <h3 className="pq-q">{question.title}</h3>
+                    <Options opts={question.choices} value={picked[question.id]} onPick={(id) => {
+                      const choice = question.choices.find(item => item.id === id);
+                      if (choice) pick(question.id, choice.id, choice.next);
+                    }} />
+                  </div>
+                )}
+                {node === 'form' && (
+                  <div key="form" className="pq-step pq-step--form">
                     <div className="pq-form-head">
-                      <h3 className="pq-q">יש לנו משהו במיוחד בשבילך 🤎</h3>
-                      <p className="pq-text">השאירי פרטים, קבלי 5% הנחה וגלי את המוצרים שמתאימים לך.</p>
+                      <h3 className="pq-q">{quiz.formTitle}</h3>
+                      <p className="pq-text">{quiz.formText}</p>
                     </div>
-                    <input className="pq-input" value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); setErr(''); }} autoComplete="name" placeholder="שם מלא" />
-                    <input className="pq-input is-ltr" value={f.phone} onChange={e => { setF({ ...f, phone: e.target.value }); setErr(''); }} type="tel" inputMode="numeric" autoComplete="tel" placeholder="מספר טלפון" />
-                    <input className="pq-input is-ltr" value={f.email} onChange={e => { setF({ ...f, email: e.target.value }); setErr(''); }} type="email" autoComplete="email" placeholder="אימייל" />
+                    <input className="pq-input" value={form.name} onChange={event => { setForm({ ...form, name: event.target.value }); setErr(''); }} autoComplete="name" placeholder="שם מלא" />
+                    <input className="pq-input is-ltr" value={form.phone} onChange={event => { setForm({ ...form, phone: event.target.value }); setErr(''); }} type="tel" inputMode="numeric" autoComplete="tel" placeholder="מספר טלפון" />
+                    <input className="pq-input is-ltr" value={form.email} onChange={event => { setForm({ ...form, email: event.target.value }); setErr(''); }} type="email" autoComplete="email" placeholder="אימייל" />
                     {err && <span className="pq-err">{err}</span>}
-                    <button className={`pq-cta${ok ? '' : ' is-dim'}`} onClick={submit} disabled={busy}>{busy ? 'רגע…' : 'קבלי את ההטבה שלי'}</button>
-                    <span className="pq-legal">בהשארת הפרטים את מאשרת לקבל מאיתנו עדכונים והטבות. אפשר להסיר בכל עת.</span>
+                    <button className={`pq-cta${ok ? '' : ' is-dim'}`} onClick={submit} disabled={busy}>{busy ? 'רגע…' : quiz.submitLabel}</button>
+                    {quiz.legal ? <span className="pq-legal">{quiz.legal}</span> : null}
                   </div>
                 )}
               </div>
             )}
-            {step === 5 && (
+            {node === 'done' && (
               <div className="pq-step pq-done">
                 <div className="pq-form-head">
-                  <span className="pq-eyebrow">ברוכה הבאה, {first}</span>
-                  <h3 className="pq-q">ההטבה שלך מוכנה</h3>
-                  <p className="pq-text pq-text--sm">שלחנו את הקוד גם למייל. מזינים אותו בקופה.</p>
+                  <span className="pq-eyebrow">{quiz.doneEyebrow.replace('{name}', first)}</span>
+                  <h3 className="pq-q">{quiz.doneTitle}</h3>
+                  <p className="pq-text pq-text--sm">{quiz.doneText}</p>
                 </div>
                 <button className="pq-code" onClick={() => { navigator.clipboard?.writeText(code).catch(() => {}); setCopied(true); }}>
                   <span className="pq-code__val">{code}</span><span className="pq-code__copy">{copied ? 'הועתק ✓' : 'העתקה'}</span>
                 </button>
                 <div className="pq-reco">
-                  <span className="pq-reco__title">המוצרים שמתאימים לך</span>
-                  {recIds.map(id => getProduct(id)).filter(Boolean).map(p => (
-                    <div key={p!.id} className="pq-reco__item">
-                      <a href={p!.href} className="pq-reco__img" style={{ backgroundImage: `url("${p!.image}")` }} aria-label={p!.name} />
-                      <span className="pq-reco__text"><span className="pq-reco__name">{p!.name}</span><span className="pq-reco__sub">{p!.sub}</span><span className="pq-reco__price">{p!.priceLabel}</span></span>
-                      <button className="pq-reco__add" onClick={() => onAddToCart(p!.id)} aria-label="הוספה לסל">+</button>
+                  <span className="pq-reco__title">{quiz.recoTitle}</span>
+                  {recIds.map(id => getProduct(id)).filter(Boolean).map(product => (
+                    <div key={product!.id} className="pq-reco__item">
+                      <a href={product!.href} className="pq-reco__img" style={{ backgroundImage: `url("${product!.image}")` }} aria-label={product!.name} />
+                      <span className="pq-reco__text"><span className="pq-reco__name">{product!.name}</span><span className="pq-reco__sub">{product!.sub}</span><span className="pq-reco__price">{product!.priceLabel}</span></span>
+                      <button className="pq-reco__add" onClick={() => onAddToCart(product!.id)} aria-label="הוספה לסל">+</button>
                     </div>
                   ))}
                 </div>
-                <button className="pq-shop" onClick={onShop}>לכל המוצרים</button>
+                <button className="pq-shop" onClick={onShop}>{quiz.shopLabel}</button>
               </div>
             )}
           </div>

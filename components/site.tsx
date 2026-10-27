@@ -56,6 +56,7 @@ type Site = {
   cartCount: number;
   add: (item: CartDraft, qty?: number, quiet?: boolean) => void;
   setQty: (id: string, d: number) => void;
+  replaceCart: (next: CartItem[]) => void;
   clearCart: () => void;
 };
 
@@ -106,6 +107,7 @@ export function SiteProvider({ children, products, collections, events, storeNam
   const [cartOpen, setCartOpen] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartReady, setCartReady] = useState(false);
+  const restoredCart = useRef(false);
 
   useEffect(() => {
     const onResize = () => {
@@ -133,11 +135,7 @@ export function SiteProvider({ children, products, collections, events, storeNam
 
   useEffect(() => {
     const saved = readCart();
-    setItems((current) => {
-      if (!current.length) return saved;
-      const seen = new Set(current.map((item) => item.id));
-      return [...saved.filter((item) => !seen.has(item.id)), ...current];
-    });
+    setItems((current) => (restoredCart.current || current.length ? current : saved));
     setCartReady(true);
     const onStorage = (event: StorageEvent) => {
       if (event.key === CART_KEY) setItems(readCart());
@@ -233,6 +231,12 @@ export function SiteProvider({ children, products, collections, events, storeNam
     if (d > 0) void trackAddToCart();
   }, []);
 
+  const replaceCart = useCallback((next: CartItem[]) => {
+    restoredCart.current = true;
+    setItems(next.map((item) => ({ ...item, qty: item.qty })));
+    setCartReady(true);
+  }, []);
+
   const clearCart = useCallback(() => setItems([]), []);
 
   const cartCount = items.reduce((a, x) => a + x.qty, 0);
@@ -242,9 +246,9 @@ export function SiteProvider({ children, products, collections, events, storeNam
       mobile, wide, headerH, setHeaderH, headerRef, menu, toggleMenu,
       closeMenu: () => setMenu(false),
       search, q, setQ, openSearch, account, accTab, setAccTab, openAccount,
-      cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, clearCart,
+      cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, replaceCart, clearCart,
     }),
-    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, clearCart],
+    [mobile, wide, headerH, menu, toggleMenu, search, q, openSearch, account, accTab, openAccount, cartOpen, openCart, closeCart, closeAll, products, collections, events, storeName, items, cartCount, add, setQty, replaceCart, clearCart],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

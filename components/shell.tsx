@@ -18,6 +18,7 @@ import MobileMenu from "@/components/MobileMenu";
 import { ArticlesEventsNav } from "@/components/articles/ContentMenu";
 import { PodcastNavDropdown } from "@/components/podcasts/PodcastMenu";
 import PromoFivePercent from "@/components/PromoFivePercent";
+import type { QuizFlow } from "@/lib/shop-quiz";
 import { PromoGate } from "@/components/promo/promo-gate";
 import { SiteFooter } from "@/components/final/FooterAndPromo";
 import { HeaderContactLink } from "@/components/contact/ContactPage";
@@ -686,7 +687,7 @@ function scrollToTop() {
   document.body.scrollTop = 0;
 }
 
-export function Shell({ children, hello = "" }: { children: ReactNode; hello?: string }) {
+export function Shell({ children, hello = "", quiz = null }: { children: ReactNode; hello?: string; quiz?: QuizFlow | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const site = useSite();
@@ -725,6 +726,7 @@ export function Shell({ children, hello = "" }: { children: ReactNode; hello?: s
       <PromoFivePercent
         hidden={pathname === "/contact" || pathname.startsWith("/checkout") || !!user || site.menu || site.search || site.account || site.cartOpen}
         onShop={() => router.push("/products")}
+        flow={quiz}
       />
     </div>
     </PromoGate>

@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
 import "./globals.css";
 import { SiteProvider } from "@/components/site";
 import { Shell } from "@/components/shell";
 import { StorePopupSlot } from "@/components/store-popup-slot";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { loadShopQuiz } from "@/lib/storely-shop";
 import { loadPublicEvents } from "@/lib/cms-events";
 import { trackRenderedPageView } from "@/lib/storely-track";
 
@@ -26,7 +27,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await trackRenderedPageView();
-  const [result, events] = await Promise.all([loadPublicCatalog(), loadPublicEvents()]);
+  const host = (await headers()).get("host");
+  const [result, events, quiz] = await Promise.all([loadPublicCatalog(), loadPublicEvents(), loadShopQuiz(host)]);
   const helloCookie = (await cookies()).get("oli_hello")?.value ?? "";
   let hello = "";
   try { hello = decodeURIComponent(helloCookie).trim().slice(0, 40); } catch { hello = ""; }
@@ -40,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {result.status === "ready" ? (
           <SiteProvider products={result.catalog.products} collections={result.catalog.collections} events={events} storeName={result.catalog.name}>
-            <Shell hello={hello}>{children}</Shell>
+            <Shell hello={hello} quiz={quiz}>{children}</Shell>
             <Suspense fallback={null}>
               <StorePopupSlot />
             </Suspense>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import CheckoutDetails, { type CheckoutPayload } from "@/components/CheckoutDetails";
 import { useSite } from "@/components/site";
 import { readUser, saveOrder, useOliUser } from "@/lib/account-session";
@@ -9,26 +9,50 @@ import { FF, fmt } from "@/lib/format";
 import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
-export function CheckoutView({ shippingMethods, currency }: { shippingMethods: ShippingChoice[]; currency: string }) {
+export type RecoveredCheckout = {
+  lines: { id: string; name: string; sub: string; price: number; image: string | null; qty: number }[];
+  customer: { name: string; phone: string; email: string; city: string; street: string; zip: string } | null;
+};
+
+export function CheckoutView({ shippingMethods, currency, recovered = null }: { shippingMethods: ShippingChoice[]; currency: string; recovered?: RecoveredCheckout | null }) {
   const site = useSite();
   const user = useOliUser();
+  const restored = useRef(false);
   const [done, setDone] = useState(false);
   const [paid, setPaid] = useState(0);
   const [orderNumber, setOrderNumber] = useState("");
   const [issued, setIssued] = useState<{ code: string; amount: number }[]>([]);
 
-  const items = useMemo(() => site.items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    sub: item.sub,
-    price: item.price,
-    qty: item.qty,
-    image: item.image || "",
-  })), [site.items]);
+  const items = useMemo(() => {
+    const source = site.items.length ? site.items : (recovered?.lines ?? []);
+    return source.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sub: item.sub,
+      price: item.price,
+      qty: item.qty,
+      image: item.image || "",
+    }));
+  }, [site.items, recovered]);
+
+  useLayoutEffect(() => {
+    if (restored.current || !recovered?.lines.length) return;
+    restored.current = true;
+    site.replaceCart(recovered.lines.map((line) => ({
+      id: line.id,
+      name: line.name,
+      sub: line.sub,
+      price: line.price,
+      image: line.image,
+      qty: line.qty,
+    })));
+  }, [recovered, site]);
 
   const profile = useMemo(() => (
-    user ? { name: user.name, phone: user.phone, email: user.email, city: user.city, street: user.addr } : null
-  ), [user]);
+    user
+      ? { name: user.name, phone: user.phone, email: user.email, city: user.city, street: user.addr }
+      : recovered?.customer ?? null
+  ), [user, recovered]);
 
   async function onPay(data: CheckoutPayload) {
     const res = await fetch("/api/orders", {

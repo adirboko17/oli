@@ -8,6 +8,7 @@ import { fmt } from "@/lib/format";
 import { useSite } from "./site";
 import { usePromoGate } from "./promo/promo-gate";
 import PromoQuiz, { type QuizLead } from "./promo/PromoQuiz";
+import type { QuizFlow } from "@/lib/shop-quiz";
 import "./PromoFivePercent.css";
 
 type Props = {
@@ -15,11 +16,12 @@ type Props = {
   imageSrc?: string;
   onShop?: () => void;
   delayMs?: number;
+  flow?: QuizFlow | null;
 };
 
 const ALIAS: Record<string, string> = { babyafter: "bottle" };
 
-export default function PromoFivePercent({ hidden = false, imageSrc, onShop, delayMs = 6000 }: Props) {
+export default function PromoFivePercent({ hidden = false, imageSrc, onShop, delayMs = 6000, flow = null }: Props) {
   const site = useSite();
   const { quizOpen, openQuiz, closeQuiz, markFinished } = usePromoGate();
   const [entered, setEntered] = useState(false);
@@ -71,6 +73,7 @@ export default function PromoFivePercent({ hidden = false, imageSrc, onShop, del
         onClose={closeQuiz}
         onSubmit={submit}
         image={imageSrc}
+        flow={flow}
         getProduct={(id) => {
           const product = findCatalogProduct(site.products, ALIAS[id] || id);
           if (!product) return undefined;

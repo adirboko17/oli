@@ -23,7 +23,7 @@ type Props = {
   items: CheckoutItem[];
   shippingMethods: ShippingChoice[];
   currency: string;
-  user?: { name?: string; phone?: string; email?: string; city?: string; street?: string } | null; // logged-in user: fills the fields automatically
+  user?: { name?: string; phone?: string; email?: string; city?: string; street?: string; zip?: string } | null; // logged-in user: fills the fields automatically
   onEditCart: () => void;                          // opens the cart drawer
   onLogin: () => void;                             // opens the SMS login
   onAddGift?: (item: CheckoutItem) => void;        // product-for-product code: the gift joins the cart before the total is shown
@@ -82,7 +82,7 @@ export default function CheckoutDetails({
 }: Props) {
   const [f, setF] = useState({
     name: user?.name || '', phone: user?.phone || '', email: user?.email || '',
-    city: user?.city || '', street: user?.street || '', apt: '', floor: '', zip: '', notes: '',
+    city: user?.city || '', street: user?.street || '', apt: '', floor: '', zip: user?.zip || '', notes: '',
   });
   const [shippingName, setShippingName] = useState('');
   const [quote, setQuote] = useState<StoreQuote | null>(null);
@@ -111,6 +111,7 @@ export default function CheckoutDetails({
       email: prev.email || user.email || '',
       city: prev.city || user.city || '',
       street: prev.street || user.street || '',
+      zip: prev.zip || user.zip || '',
     }));
   }, [user]);
 
