@@ -10,6 +10,7 @@ import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
 import InciList from "@/components/product/InciList";
 import { FF, fmt } from "@/lib/format";
+import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
 import { FirstOrderLine } from "@/components/final/FooterAndPromo";
@@ -272,7 +273,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           </div>
           {giftAmounts.length === 0 && giftMax == null ? (
             <>
-              <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= 250 ? "✓ מגיע לך משלוח חינם" : "משלוח חינם בהזמנה מעל 250 ש״ח"}</span>
+              <span style={{ fontSize: 14, color: "#6E5650" }}>{cartTotal + line >= FREE_SHIPPING_FROM ? "✓ מגיע לך משלוח חינם" : `משלוח חינם בהזמנה מעל ${FREE_SHIPPING_FROM} ש״ח`}</span>
               {!user && !finished && <FirstOrderLine onOpen={openQuiz} />}
             </>
           ) : null}

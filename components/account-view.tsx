@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { clearUser, formatPhone, readOrders, readReview, saveReview, saveUser, useOliUser, type OliOrder, type OliOrderLine, type OliOrderStatus, type OliReview, type OliUser } from "@/lib/account-session";
 import { productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
+import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { useSite } from "@/components/site";
 
 const TABS = [
@@ -261,7 +262,7 @@ export function AccountView() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, color: "#5E4844" }}>
                       <span style={{ display: "flex", justifyContent: "space-between" }}><span>מוצרים</span><span>{fmt(order.subtotal)}</span></span>
-                      <span style={{ display: "flex", justifyContent: "space-between" }}><span>משלוח</span><span>{order.subtotal >= 250 ? "חינם" : "בתשלום"}</span></span>
+                      <span style={{ display: "flex", justifyContent: "space-between" }}><span>משלוח</span><span>{order.subtotal >= FREE_SHIPPING_FROM ? "חינם" : "בתשלום"}</span></span>
                       <span style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid #F1E5DD", fontSize: 16, fontWeight: 600, color: "#3A2826" }}><span>סה״כ</span><span>{fmt(order.subtotal + order.ship)}</span></span>
                     </div>
                     <button type="button" onClick={() => order.lines.forEach((line) => site.add({ id: line.id, name: line.name, sub: line.sub, price: line.price, image: line.image }, line.qty))} style={{ height: 46, borderRadius: 999, border: "1px solid #CDB5A8", background: "transparent", color: "#3A2826", fontSize: 14, fontWeight: 600 }}>הזמנה חוזרת</button>

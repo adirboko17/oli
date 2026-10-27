@@ -8,6 +8,7 @@ import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from 
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
+import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import {
   IconBag, IconSearch, IconUser,
@@ -23,7 +24,7 @@ import { PromoGate } from "@/components/promo/promo-gate";
 import { SiteFooter } from "@/components/final/FooterAndPromo";
 import { HeaderContactLink } from "@/components/contact/ContactPage";
 
-const PROMO = ["משלוח חינם בהזמנה מעל 250 ש״ח", "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
+const PROMO = [`משלוח חינם בהזמנה מעל ${FREE_SHIPPING_FROM} ש״ח`, "5% הנחה בהזמנה הראשונה לנרשמות", "בטוח לשימוש בהריון ולאחר לידה"];
 const POPULAR = ["סימני מתיחה", "שמן עיסוי", "הנקה", "מארזי מתנה", "ספרים"];
 
 const social = {
@@ -47,7 +48,7 @@ function Promo() {
   return (
     <>
       <div className="promo-desk" style={{ background: "#F3D9C6", color: "#3A2826", fontSize: 13, letterSpacing: ".04em", display: "flex", justifyContent: "center", gap: 28, padding: "9px 16px", flexWrap: "wrap" }}>
-        <span>משלוח חינם בהזמנה מעל 250 ש״ח</span>
+        <span>משלוח חינם בהזמנה מעל {FREE_SHIPPING_FROM} ש״ח</span>
         <span style={{ opacity: 0.5 }}>·</span>
         <span>5% הנחה בהזמנה הראשונה לנרשמות</span>
       </div>
@@ -521,7 +522,7 @@ function Soft({ label, value, onChange, placeholder, type, ltr, center }: { labe
 }
 
 const textBtn: CSSProperties = { background: "transparent", border: 0, padding: 0, fontSize: 14, color: "#A85A3A", textDecoration: "underline" };
-const FREE_SHIPPING = 250;
+const FREE_SHIPPING = FREE_SHIPPING_FROM;
 
 function shippingCompanions(products: CatalogProduct[], items: { id: string }[], total: number) {
   const gap = FREE_SHIPPING - total;

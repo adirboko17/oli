@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { formatMoney, formatShippingPrice, isPickupZone, type ShippingChoice } from '@/lib/shipping';
+import { formatMoney, formatShippingPrice, FREE_SHIPPING_FROM, isPickupZone, shippingAfterFreeThreshold, type ShippingChoice } from '@/lib/shipping';
 import './CheckoutDetails.css';
 
 /* Oli: details & shipping page (step 2 of 3: cart → details & shipping → payment) */
@@ -166,8 +166,10 @@ export default function CheckoutDetails({
   const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
+  const freeShipping = subtotal >= FREE_SHIPPING_FROM;
   const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
   const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
+  const amountDue = quote ? shippingAfterFreeThreshold(subtotal, quote.shipping ?? selected?.price ?? 0, quote.total).total : null;
   const pickup = selected ? isPickupZone(selected.zone) : false;
   const payCurrency = quote?.currency || currency;
 
@@ -393,7 +395,7 @@ export default function CheckoutDetails({
                       <button key={method.name} role="radio" aria-checked={shippingName === method.name} className={`ck-ship${shippingName === method.name ? ' is-on' : ''}`} onClick={() => { setShippingName(method.name); setErr(''); }}>
                         <span className="ck-radio"><span /></span>
                         <span className="ck-ship__text"><span className="ck-ship__title">{method.name}</span></span>
-                        <span className="ck-ship__price">{formatShippingPrice(method.price, currency)}</span>
+                        <span className="ck-ship__price">{formatShippingPrice(freeShipping ? 0 : method.price, currency)}</span>
                       </button>
                     ))}
                   </div>
@@ -551,9 +553,9 @@ export default function CheckoutDetails({
               {!couponPhase && couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
-                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
+                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
-                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{quote ? formatMoney(quote.total, payCurrency) : fmt(subtotal)}</span></div>
+                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(subtotal)}</span></div>
                 <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>
                 {quoteMsg && <span className="ck-err">{quoteMsg}</span>}
               </div>
@@ -571,7 +573,7 @@ export default function CheckoutDetails({
       {!!items.length && (
         <div className="ck-mobile-bar">
           {err && <span className="ck-err">{err}</span>}
-          <PayButton label={quote ? `לתשלום מאובטח · ${formatMoney(quote.total, payCurrency)}` : 'לתשלום מאובטח'} />
+          <PayButton label={amountDue != null ? `לתשלום מאובטח · ${formatMoney(amountDue, payCurrency)}` : 'לתשלום מאובטח'} />
         </div>
       )}
     </main>

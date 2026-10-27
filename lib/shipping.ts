@@ -4,6 +4,13 @@ export type ShippingChoice = {
   zone: string;
 };
 
+export const FREE_SHIPPING_FROM = 250;
+
+export function shippingAfterFreeThreshold(subtotal: number, shipping: number | null, total: number) {
+  if (subtotal < FREE_SHIPPING_FROM || shipping == null || shipping <= 0) return { shipping, total };
+  return { shipping: 0, total: Math.round((total - shipping) * 100) / 100 };
+}
+
 const SYMBOLS: Record<string, string> = { ILS: "₪", USD: "$", EUR: "€" };
 
 export function isPickupZone(zone: string) {

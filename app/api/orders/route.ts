@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { loadPublicCatalog } from "@/lib/catalog";
 import { isGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { settleGiftCards } from "@/lib/gift-cards";
-import { isPickupZone } from "@/lib/shipping";
+import { isPickupZone, shippingAfterFreeThreshold } from "@/lib/shipping";
 import { createVisitorKey, validVisitorKey, VISITOR_COOKIE, visitorCookieOptions } from "@/lib/storely";
 import { trackPurchase } from "@/lib/storely-actions";
 import { loadShopShipping, quoteCheckout, storefrontHost, type StoreLine } from "@/lib/storely-shop";
@@ -204,9 +204,10 @@ export async function POST(request: Request) {
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;
-    orderShipping = placed.order.shipping;
+    const waived = shippingAfterFreeThreshold(subtotal, placed.order.shipping, placed.order.total);
+    orderShipping = waived.shipping ?? placed.order.shipping;
     orderDiscount = placed.order.discount;
-    orderTotal = placed.order.total;
+    orderTotal = waived.total;
     try {
       await trackPurchase(orderTotal);
     } catch (error) {

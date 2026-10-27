@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { checkoutGiftLine, storefrontLines } from "@/lib/checkout-lines";
+import { checkoutGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { shippingAfterFreeThreshold } from "@/lib/shipping";
 import { loadShopShipping, quoteCheckout } from "@/lib/storely-shop";
 
 export async function POST(request: Request) {
@@ -44,15 +45,17 @@ export async function POST(request: Request) {
     giftCode,
   });
   if (!quoted.ok) return NextResponse.json({ ok: false, message: quoted.reason }, { status: 400 });
+  const merchandise = Math.round(items.reduce((sum, item) => sum + (resolvePrice(catalog.catalog.products, item.id) ?? 0) * item.qty, 0) * 100) / 100;
+  const waived = shippingAfterFreeThreshold(merchandise, quoted.shipping, quoted.total);
   const addedGift = quoted.addedGift
     ? checkoutGiftLine(catalog.catalog.products, quoted.addedGift.variantId, quoted.addedGift.quantity, quoted.addedGift.title)
     : null;
   return NextResponse.json({
     ok: true,
-    total: quoted.total,
+    total: waived.total,
     discount: quoted.discount,
     discountCode: quoted.discountCode,
-    shipping: quoted.shipping,
+    shipping: waived.shipping,
     currency: quoted.currency || shop.currency,
     bundleBlocked: quoted.bundleBlocked,
     addedGift,
