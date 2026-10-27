@@ -58,10 +58,10 @@ function Field({ label, optional, className = '', ...input }: { label: string; o
   );
 }
 
-type StoreQuote = { total: number; currency: string; shipping: number | null; discount: number; discountCode: string };
+type StoreQuote = { total: number; currency: string; shipping: number | null; discount: number; discountCode: string; saleLocked: boolean; saleCustom: number };
 type QuoteBody = {
   ok?: boolean; total?: number; currency?: string; shipping?: number | null; discount?: number; discountCode?: string;
-  reason?: string; message?: string; bundleBlocked?: boolean; addedGift?: unknown;
+  reason?: string; message?: string; bundleBlocked?: boolean; addedGift?: unknown; saleLocked?: boolean; saleCustom?: number;
 };
 
 function readAddedGift(value: unknown): CheckoutItem | null {
@@ -144,6 +144,8 @@ export default function CheckoutDetails({
     shipping: typeof body?.shipping === 'number' && Number.isFinite(body.shipping) ? body.shipping : null,
     discount: typeof body?.discount === 'number' && Number.isFinite(body.discount) ? body.discount : 0,
     discountCode: typeof body?.discountCode === 'string' ? body.discountCode : '',
+    saleLocked: body?.saleLocked === true,
+    saleCustom: typeof body?.saleCustom === 'number' && Number.isFinite(body.saleCustom) ? body.saleCustom : 0,
   }), [currency]);
 
   const acceptQuote = useCallback((body: QuoteBody, sent: CheckoutItem[], code: string) => {
@@ -166,10 +168,13 @@ export default function CheckoutDetails({
   const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
-  const freeShipping = subtotal >= FREE_SHIPPING_FROM;
+  const locked = quote?.saleLocked === true;
+  const freeShipping = !locked && subtotal >= FREE_SHIPPING_FROM;
   const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
   const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
-  const amountDue = quote ? shippingAfterFreeThreshold(subtotal, quote.shipping ?? selected?.price ?? 0, quote.total).total : null;
+  const amountDue = quote
+    ? (locked ? quote.total : shippingAfterFreeThreshold(subtotal, quote.shipping ?? selected?.price ?? 0, quote.total).total)
+    : null;
   const pickup = selected ? isPickupZone(selected.zone) : false;
   const payCurrency = quote?.currency || currency;
 
@@ -395,7 +400,7 @@ export default function CheckoutDetails({
                       <button key={method.name} role="radio" aria-checked={shippingName === method.name} className={`ck-ship${shippingName === method.name ? ' is-on' : ''}`} onClick={() => { setShippingName(method.name); setErr(''); }}>
                         <span className="ck-radio"><span /></span>
                         <span className="ck-ship__text"><span className="ck-ship__title">{method.name}</span></span>
-                        <span className="ck-ship__price">{formatShippingPrice(freeShipping ? 0 : method.price, currency)}</span>
+                        <span className="ck-ship__price">{formatShippingPrice(locked && quote?.shipping != null ? quote.shipping : freeShipping ? 0 : method.price, currency)}</span>
                       </button>
                     ))}
                   </div>
@@ -553,7 +558,8 @@ export default function CheckoutDetails({
               {!couponPhase && couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
-                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
+                {quote && quote.saleCustom > 0 && <div><span>סכום חופשי</span><span>{formatMoney(quote.saleCustom, payCurrency)}</span></div>}
+                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{locked && quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
                 <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(subtotal)}</span></div>
                 <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>

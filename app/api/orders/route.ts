@@ -204,7 +204,9 @@ export async function POST(request: Request) {
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;
-    const waived = shippingAfterFreeThreshold(subtotal, placed.order.shipping, placed.order.total);
+    const waived = quoted.saleLocked
+      ? { shipping: placed.order.shipping, total: placed.order.total }
+      : shippingAfterFreeThreshold(subtotal, placed.order.shipping, placed.order.total);
     orderShipping = waived.shipping ?? placed.order.shipping;
     orderDiscount = placed.order.discount;
     orderTotal = waived.total;

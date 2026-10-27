@@ -46,7 +46,9 @@ export async function POST(request: Request) {
   });
   if (!quoted.ok) return NextResponse.json({ ok: false, message: quoted.reason }, { status: 400 });
   const merchandise = Math.round(items.reduce((sum, item) => sum + (resolvePrice(catalog.catalog.products, item.id) ?? 0) * item.qty, 0) * 100) / 100;
-  const waived = shippingAfterFreeThreshold(merchandise, quoted.shipping, quoted.total);
+  const waived = quoted.saleLocked
+    ? { shipping: quoted.shipping, total: quoted.total }
+    : shippingAfterFreeThreshold(merchandise, quoted.shipping, quoted.total);
   const addedGift = quoted.addedGift
     ? checkoutGiftLine(catalog.catalog.products, quoted.addedGift.variantId, quoted.addedGift.quantity, quoted.addedGift.title)
     : null;
@@ -59,5 +61,7 @@ export async function POST(request: Request) {
     currency: quoted.currency || shop.currency,
     bundleBlocked: quoted.bundleBlocked,
     addedGift,
+    saleLocked: quoted.saleLocked,
+    saleCustom: quoted.saleCustom,
   });
 }

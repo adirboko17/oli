@@ -27,6 +27,8 @@ type Quote =
       giftVariantId: string;
       giftQuantity: number;
       giftTitle: string;
+      saleLocked: boolean;
+      saleCustom: number;
     }
   | { ok: false; reason: string };
 
@@ -216,6 +218,8 @@ export async function quoteStorefront(input: {
     giftVariantId,
     giftQuantity: Number.isInteger(giftQuantity) ? giftQuantity : 0,
     giftTitle: typeof record.giftTitle === "string" ? record.giftTitle.trim() : "",
+    saleLocked: record.saleLocked === true,
+    saleCustom: amount(record.saleCustom) ?? 0,
   };
 }
 
@@ -238,6 +242,8 @@ export type SettledQuote =
       bundleBlocked: boolean;
       lines: StoreLine[];
       addedGift: { variantId: string; quantity: number; title: string } | null;
+      saleLocked: boolean;
+      saleCustom: number;
     }
   | { ok: false; reason: string };
 
@@ -251,6 +257,21 @@ export async function quoteCheckout(input: {
 }): Promise<SettledQuote> {
   const quoted = await quoteStorefront(input);
   if (!quoted.ok) return quoted;
+  if (quoted.saleLocked) {
+    return {
+      ok: true,
+      total: quoted.total,
+      currency: quoted.currency,
+      shipping: quoted.shipping,
+      discount: quoted.discount,
+      discountCode: quoted.discountCode,
+      bundleBlocked: false,
+      lines: input.lines,
+      addedGift: null,
+      saleLocked: true,
+      saleCustom: quoted.saleCustom,
+    };
+  }
   if (quoted.bundleBlocked) {
     return {
       ok: true,
@@ -262,6 +283,8 @@ export async function quoteCheckout(input: {
       bundleBlocked: true,
       lines: input.lines,
       addedGift: null,
+      saleLocked: quoted.saleLocked,
+      saleCustom: quoted.saleCustom,
     };
   }
   if (!quoted.addGift) {
@@ -275,6 +298,8 @@ export async function quoteCheckout(input: {
       bundleBlocked: false,
       lines: input.lines,
       addedGift: null,
+      saleLocked: quoted.saleLocked,
+      saleCustom: quoted.saleCustom,
     };
   }
   if (!VARIANT_ID.test(quoted.giftVariantId) || quoted.giftQuantity < 1 || quoted.giftQuantity > 99) {
@@ -297,6 +322,8 @@ export async function quoteCheckout(input: {
       bundleBlocked: true,
       lines: input.lines,
       addedGift: null,
+      saleLocked: quoted.saleLocked,
+      saleCustom: quoted.saleCustom,
     };
   }
   return {
@@ -307,6 +334,8 @@ export async function quoteCheckout(input: {
     discount: again.discount,
     discountCode: again.discountCode,
     bundleBlocked: false,
+    saleLocked: again.saleLocked,
+    saleCustom: again.saleCustom,
     lines,
     addedGift: { variantId: quoted.giftVariantId, quantity: quoted.giftQuantity, title: quoted.giftTitle },
   };
