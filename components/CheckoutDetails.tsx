@@ -527,7 +527,11 @@ export default function CheckoutDetails({
                 {items.map(it => (
                   <div key={it.id} className="ck-item">
                     <div className="ck-item__thumb" style={{ backgroundImage: `url("${it.image}")` }}><span className="ck-item__qty">{it.qty}</span></div>
-                    <div className="ck-item__text"><span className="ck-item__name">{it.name}</span><span className="ck-item__sub">{it.sub}</span></div>
+                    <div className="ck-item__text">
+                      <span className="ck-item__name">{it.name}</span>
+                      {it.sub ? <span className="ck-item__sub">{it.sub}</span> : null}
+                      <span className="ck-item__meta">{fmt(it.price)} × {it.qty}</span>
+                    </div>
                     <span className="ck-item__price">{fmt(it.price * it.qty)}</span>
                   </div>
                 ))}
@@ -547,9 +551,9 @@ export default function CheckoutDetails({
               {!couponPhase && couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
-                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : '—'}</span></div>
+                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
-                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{quote ? formatMoney(quote.total, payCurrency) : '—'}</span></div>
+                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{quote ? formatMoney(quote.total, payCurrency) : fmt(subtotal)}</span></div>
                 <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>
                 {quoteMsg && <span className="ck-err">{quoteMsg}</span>}
               </div>

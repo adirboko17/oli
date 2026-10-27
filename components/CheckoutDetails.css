@@ -95,12 +95,13 @@
 .ck-summary__title { font-size:22px; }
 .ck-link { background:transparent; border:0; padding:0; font-size:13px; color:#A85A3A; text-decoration:underline; font-family:inherit; cursor:pointer; }
 .ck-items { display:flex; flex-direction:column; gap:14px; }
-.ck-item { display:grid; grid-template-columns:60px minmax(0,1fr) auto; gap:14px; align-items:center; }
+.ck-item { display:grid; grid-template-columns:60px minmax(0,1fr) auto; gap:14px; align-items:start; }
 .ck-item__thumb { position:relative; width:60px; height:75px; border-radius:12px; background:#F6EEE8 center/cover no-repeat; }
 .ck-item__qty { position:absolute; top:-6px; left:-6px; min-width:22px; height:22px; border-radius:999px; background:#3A2826; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; padding:0 6px; box-sizing:border-box; }
 .ck-item__text { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .ck-item__name { font-size:15px; font-weight:600; }
-.ck-item__sub { font-size:12px; color:#6E5650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ck-item__sub { font-size:12px; color:#6E5650; line-height:1.45; }
+.ck-item__meta { font-size:12px; color:#6E5650; }
 .ck-item__price { font-size:15px; font-weight:600; white-space:nowrap; }
 
 .ck-coupon { display:flex; gap:8px; }
