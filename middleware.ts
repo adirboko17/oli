@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { articleRedirectPath, articleSlugForPath, normalizeArticlePath } from "@/lib/article-paths";
+import { legacyProductRedirect, productPageRewrite } from "@/lib/catalog-model";
 import { updateSession } from "@/lib/supabase/middleware";
 import { ensureVisitor, trackPageView, VISITOR_COOKIE, visitorCookieOptions } from "@/lib/storely";
 
@@ -27,7 +28,24 @@ export async function middleware(request: NextRequest) {
   if (visitor.isNew) response.cookies.set(VISITOR_COOKIE, visitor.key, visitorCookieOptions());
   after(() => trackPageView(request, response));
 
-  if (request.headers.get("x-article-internal") === "1") return response;
+  if (request.headers.get("x-article-internal") === "1" || request.headers.get("x-product-internal") === "1") return response;
+
+  const legacyProduct = legacyProductRedirect(publicPath);
+  if (legacyProduct) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacyProduct;
+    return carryCookies(response, NextResponse.redirect(url, 308));
+  }
+
+  const productInternal = productPageRewrite(publicPath);
+  if (productInternal) {
+    const url = request.nextUrl.clone();
+    url.pathname = productInternal;
+    const headers = new Headers(request.headers);
+    headers.set("x-product-internal", "1");
+    headers.set("x-storely-path", encodeURI(publicPath));
+    return carryCookies(response, NextResponse.rewrite(url, { request: { headers } }));
+  }
 
   const redirectPath = articleRedirectPath(publicPath);
   if (redirectPath && redirectPath !== publicPath) {

@@ -329,7 +329,7 @@ export function popupMatchesPage(popup: StorefrontPopup, pathname: string) {
   const pages = popup.pages;
   if (pages.all) return true;
   if (pages.home && path === "/") return true;
-  if (pages.product && (path === "/product" || path.startsWith("/product/"))) return true;
+  if (pages.product && (path === "/product" || path.startsWith("/product/") || path === "/product-page" || path.startsWith("/product-page/"))) return true;
   if (pages.catalog && (path === "/products" || path.startsWith("/products/") || path === "/olimini" || path.startsWith("/olimini/"))) return true;
   if (pages.checkout && (path === "/checkout" || path.startsWith("/checkout/"))) return true;
   if (pages.content && (isArticleSection(path) || path === "/podcast" || path.startsWith("/podcast/"))) return true;

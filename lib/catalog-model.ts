@@ -76,7 +76,18 @@ export type PublicCatalog = {
 };
 
 export function productHref(product: Pick<CatalogProduct, "id" | "handle">) {
-  return "/product/" + encodeURIComponent(product.handle || product.id);
+  return "/product-page/" + encodeURIComponent(product.handle || product.id);
+}
+
+export function legacyProductRedirect(pathname: string) {
+  if (!pathname.startsWith("/product/")) return "";
+  return "/product-page/" + pathname.slice("/product/".length);
+}
+
+export function productPageRewrite(pathname: string) {
+  if (!pathname.startsWith("/product-page/")) return "";
+  const handle = pathname.slice("/product-page/".length);
+  return handle ? "/product/" + handle : "";
 }
 
 export function findCatalogProduct(products: CatalogProduct[], handle: string) {
