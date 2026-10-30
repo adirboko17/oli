@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { giftAmountsFromTags, giftPriceLabel, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, giftPriceLabel, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -10,6 +10,7 @@ import { useSite } from "@/components/site";
 export function CatalogCard({ p }: { p: CatalogProduct }) {
   const { add } = useSite();
   const src = productImage(p);
+  const soldOut = productSoldOut(p);
   const giftAmounts = giftAmountsFromTags(p.tags);
   const giftLabel = giftPriceLabel(p);
   const customOnly = openGiftMax(p.tags) != null && giftAmounts.length === 0;
@@ -20,8 +21,9 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
           {src ? <img src={src} alt="" style={productPhoto} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
           <ProductBadges product={p} />
+          {soldOut ? <span style={soldOutMark}>אזל מהמלאי</span> : null}
         </Link>
-        {customOnly ? null : <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: giftAmounts[0] ?? p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
+        {customOnly || soldOut ? null : <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: giftAmounts[0] ?? p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </Hx>}
       </div>
@@ -64,4 +66,9 @@ const plus: CSSProperties = {
   position: "absolute", bottom: 10, left: 10, width: 40, height: 40, borderRadius: "50%", border: 0,
   background: "#FFFFFF", color: "#3A2826", display: "flex", alignItems: "center", justifyContent: "center",
   boxShadow: "0 4px 14px rgba(58,40,38,.12)",
+};
+
+const soldOutMark: CSSProperties = {
+  position: "absolute", left: 10, bottom: 10, zIndex: 1, background: "#3A2826", color: "#FFFFFF",
+  borderRadius: 999, padding: "6px 10px", fontSize: 12, fontWeight: 600, lineHeight: 1,
 };

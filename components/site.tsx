@@ -13,7 +13,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import type { OliEvent } from "@/components/events/events";
-import type { CatalogCollection, CatalogProduct } from "@/lib/catalog-model";
+import { cappedCartQty, findCartProduct, productSoldOut, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
 import { trackAddToCart } from "@/lib/storely-actions";
 
 export type CartItem = {
@@ -154,6 +154,20 @@ export function SiteProvider({ children, products, collections, events, storeNam
   }, [items, cartReady]);
 
   useEffect(() => {
+    if (!products.length) return;
+    setItems((prev) => {
+      const next = prev.flatMap((line) => {
+        const product = findCartProduct(products, line.id);
+        if (product && productSoldOut(product)) return [];
+        const qty = cappedCartQty(product, line.id, line.qty);
+        return qty > 0 ? [{ ...line, qty }] : [];
+      });
+      if (next.length === prev.length && next.every((line, index) => line.id === prev[index]?.id && line.qty === prev[index]?.qty)) return prev;
+      return next;
+    });
+  }, [products]);
+
+  useEffect(() => {
     setMenu(false);
     setSearch(false);
     setAccount(false);
@@ -212,11 +226,16 @@ export function SiteProvider({ children, products, collections, events, storeNam
   }, []);
 
   const add = useCallback((item: CartDraft, qty = 1, quiet = false) => {
+    const product = findCartProduct(products, item.id);
+    if (product && productSoldOut(product)) return;
+    const existing = items.find((line) => line.id === item.id)?.qty ?? 0;
+    const allowed = cappedCartQty(product, item.id, existing + qty);
+    if (allowed <= existing) return;
     setItems((prev) => {
       const next = prev.slice();
-      const i = next.findIndex((x) => x.id === item.id);
-      if (i >= 0) next[i] = { ...next[i], qty: next[i].qty + qty };
-      else next.push({ ...item, qty });
+      const index = next.findIndex((line) => line.id === item.id);
+      if (index >= 0) next[index] = { ...next[index], qty: allowed };
+      else next.push({ ...item, qty: allowed });
       return next;
     });
     if (!quiet) {
@@ -224,12 +243,18 @@ export function SiteProvider({ children, products, collections, events, storeNam
       setMenu(false);
     }
     void trackAddToCart();
-  }, []);
+  }, [items, products]);
 
   const setQty = useCallback((id: string, d: number) => {
-    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, qty: x.qty + d } : x)).filter((x) => x.qty > 0));
+    setItems((prev) => prev.map((line) => {
+      if (line.id !== id) return line;
+      const next = line.qty + d;
+      if (d < 0) return { ...line, qty: next };
+      const product = findCartProduct(products, id);
+      return { ...line, qty: Math.max(line.qty, cappedCartQty(product, id, next)) };
+    }).filter((line) => line.qty > 0));
     if (d > 0) void trackAddToCart();
-  }, []);
+  }, [products]);
 
   const replaceCart = useCallback((next: CartItem[]) => {
     restoredCart.current = true;

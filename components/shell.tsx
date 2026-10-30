@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isArticleSection } from "@/lib/article-paths";
 import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
-import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
@@ -529,7 +529,7 @@ function shippingCompanions(products: CatalogProduct[], items: { id: string }[],
   if (gap <= 0) return [];
   const inCart = new Set(items.map((item) => item.id));
   const categories = new Set(products.flatMap((product) => inCart.has(product.id) && product.category.trim() ? [product.category.trim()] : []));
-  const pool = products.filter((product) => !inCart.has(product.id) && product.price > 0 && !giftPriceLabel(product) && openGiftMax(product.tags) == null);
+  const pool = products.filter((product) => !inCart.has(product.id) && product.price > 0 && !giftPriceLabel(product) && openGiftMax(product.tags) == null && !productSoldOut(product));
   const ranked = pool.map((product) => ({
     product,
     closes: product.price >= gap && product.price <= Math.max(gap * 1.8, gap + 90),

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { productMenuTarget } from "@/lib/catalog-menu";
-import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -48,6 +48,10 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const thumbFit = isGift ? "contain" : "cover";
   const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
   const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const stockCap = product.tracked ? product.stock : null;
+  const soldOut = productSoldOut(product);
+  const unitsWanted = bundle ? bundle.qty : qty;
+  const notEnough = stockCap != null && unitsWanted > stockCap;
   const active = images[thumb] ?? images[0];
   const description = paragraphs(product.description);
   const blurb = productBlurb(product);
@@ -257,19 +261,22 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
           )}
 
           <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", border: "1px solid #CDB5A8", borderRadius: 999 }}>
-              <button type="button" onClick={() => setQty((value) => value + 1)} style={qtyBtn}>+</button>
-              <span style={{ minWidth: 24, textAlign: "center", fontWeight: 600 }}>{qty}</span>
-              <button type="button" onClick={() => setQty((value) => Math.max(1, value - 1))} style={qtyBtn}>−</button>
-            </div>
-            <Hx as="button" onClick={() => {
+            {soldOut ? null : (
+              <div style={{ display: "flex", alignItems: "center", border: "1px solid #CDB5A8", borderRadius: 999 }}>
+                <button type="button" disabled={stockCap != null && qty >= stockCap} onClick={() => setQty((value) => stockCap == null ? value + 1 : Math.min(stockCap, value + 1))} style={{ ...qtyBtn, opacity: stockCap != null && qty >= stockCap ? 0.35 : 1 }}>+</button>
+                <span style={{ minWidth: 24, textAlign: "center", fontWeight: 600 }}>{qty}</span>
+                <button type="button" onClick={() => setQty((value) => Math.max(1, value - 1))} style={qtyBtn}>−</button>
+              </div>
+            )}
+            <Hx as="button" disabled={soldOut || notEnough || (isGift && giftSelected == null)} onClick={() => {
+              if (soldOut || notEnough) return;
               if (giftAmounts.length > 0 || giftMax != null) {
                 if (giftSelected == null) return;
                 add({ id: `${product.id}:gift:${giftSelected}`, name: product.title, sub: `כרטיס מתנה · ${fmt(giftSelected)}`, price: giftSelected, image: productImage(product) }, qty);
                 return;
               }
               add({ id: bundle ? `${variant?.id ?? product.id}:x${bundle.qty}` : (variant?.id ?? product.id), name: product.title, sub: bundle ? bundle.label : (variant?.title || blurb), price: bundle ? bundle.price : unit, image: productImage(product) }, bundle ? 1 : qty);
-            }} style={{ flex: 1, background: "#3A2826", color: "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54, opacity: isGift && giftSelected == null ? 0.4 : 1 }} hover={{ background: "#A85A3A" }}>הוספה לסל{isGift && giftSelected == null ? "" : ` · ${fmt(line)}`}</Hx>
+            }} style={{ flex: 1, background: soldOut || notEnough ? "#E7D9D2" : "#3A2826", color: soldOut || notEnough ? "#6E5650" : "#FFFFFF", border: 0, borderRadius: 999, fontSize: 17, fontWeight: 600, height: 54, opacity: !soldOut && !notEnough && isGift && giftSelected == null ? 0.4 : 1, cursor: soldOut || notEnough ? "default" : "pointer" }} hover={soldOut || notEnough ? undefined : { background: "#A85A3A" }}>{soldOut ? "אזל מהמלאי" : notEnough ? "אין מספיק במלאי" : `הוספה לסל${isGift && giftSelected == null ? "" : ` · ${fmt(line)}`}`}</Hx>
           </div>
           {giftAmounts.length === 0 && giftMax == null ? (
             <>

@@ -5,7 +5,7 @@ import OliminiPromise from './OliminiPromise';
 import OliminiToGo, { type ToGoProduct } from './OliminiToGo';
 import './OliminiPage.css';
 
-export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string };
+export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string; soldOut?: boolean };
 
 type Props = {
   shelf: MiniProduct[];
@@ -26,7 +26,8 @@ const RISE: [string, number, number, number][] = [['20%', 18, 16, 0], ['62%', 24
 
 // olimini category page: hero with the wordmark and bubbles, the "החבילה של olimini" section (3 steps), and facts
 export default function OliminiPage({ shelf, products, toGo, related, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
-  const total = products.reduce((a, p) => a + p.price, 0);
+  const buyable = products.filter((product) => !product.soldOut);
+  const total = buyable.reduce((a, p) => a + p.price, 0);
   const eyebrow = products.length === 3 ? 'שלושה צעדים, רגע אחד שלכם' : 'הטיפוח של olimini';
 
   return (
@@ -88,13 +89,13 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
                 </div>
                 <div className="om-step__foot">
                   <span className="om-step__price"><b>{formatPrice(p.price)}</b>{p.oldPrice && <s>{formatPrice(p.oldPrice)}</s>}</span>
-                  <button className="om-btn" onClick={() => onAdd(p.id)}>הוספה לסל</button>
+                  <button className="om-btn" disabled={p.soldOut} onClick={() => { if (!p.soldOut) onAdd(p.id); }}>{p.soldOut ? "אזל מהמלאי" : "הוספה לסל"}</button>
                 </div>
               </div>
             ))}
           </div>
 
-          {products.length > 1 ? <button className="om-all" onClick={() => products.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button> : null}
+          {buyable.length > 1 ? <button className="om-all" onClick={() => buyable.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button> : null}
         </section>
       ) : null}
 

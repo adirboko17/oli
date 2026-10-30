@@ -1,7 +1,7 @@
 "use client";
 
 import { CatalogCard } from "@/components/cards";
-import { productBlurb, productCardSub, productHref, productImage, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
+import { productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
 import { useSite } from "@/components/site";
 import OliminiPage, { type MiniProduct } from "./OliminiPage";
@@ -85,6 +85,7 @@ function toMini(product: CatalogProduct): MiniProduct {
     oldPrice: old,
     image: productImage(product) ?? "",
     href: productHref(product),
+    soldOut: productSoldOut(product),
   };
 }
 
@@ -96,6 +97,7 @@ function toGoCard(product: CatalogProduct): ToGoProduct {
     price: product.price,
     image: productImage(product) ?? "",
     href: productHref(product),
+    soldOut: productSoldOut(product),
   };
 }
 

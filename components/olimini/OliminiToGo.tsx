@@ -10,6 +10,7 @@ export interface ToGoProduct {
   price: number;
   image: string;
   href: string;
+  soldOut?: boolean;
 }
 
 /** olimini To Go strip – placed directly below "החבילה של olimini" on the olimini page. */
@@ -54,7 +55,11 @@ export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit, forma
                   <Link href={p.href} className="otg__name" style={{ color: "inherit", textDecoration: "none" }}>{p.name}</Link>
                   <span className="otg__meta">{p.size ? `${p.size} · ` : ""}{ils(p.price)}</span>
                 </span>
-                <button onClick={() => onAdd(p)} aria-label={`הוספת ${p.name} לסל`} className="otg__add">+</button>
+                {p.soldOut ? (
+                  <span className="otg__add" style={{ width: "auto", padding: "0 10px", fontSize: 12 }}>אזל</span>
+                ) : (
+                  <button onClick={() => onAdd(p)} aria-label={`הוספת ${p.name} לסל`} className="otg__add">+</button>
+                )}
               </div>
             </div>
           ))}

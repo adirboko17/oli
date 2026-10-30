@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
+import { menuHref, productsForMenu } from "@/lib/catalog-menu";
 import { paragraphs, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { BestLoop, ProductTile } from "@/components/best-loop";
@@ -11,19 +12,11 @@ import GiftCardSection from "@/components/gift-card/GiftCardSection";
 import HomeEvents from "@/components/events/HomeEvents";
 import PodcastsSection from "@/components/podcasts/PodcastsSection";
 import { Hx } from "@/components/hx";
-import { IconInstagram } from "@/components/icons";
+import { InstagramSection } from "@/components/instagram-feed";
 import { useSite } from "@/components/site";
 
 const W = "https://static.wixstatic.com/media/";
 const shot = (id: string, w = 600, h = 600) => `${W}${id}/v1/fill/w_${w},h_${h},al_c,q_85,enc_auto/file.jpg`;
-const IG = [
-  "db159b_bfe0061609ae4274a93b6491dd07ed08~mv2.jpg",
-  "db159b_6beb68bce7684106a7dbbf14bd9bf408~mv2.jpeg",
-  "db159b_512f372ce1bd443da5fe477b0e544113~mv2.jpeg",
-  "db159b_d83a36f5d9db48899f80d8c01a7f4c55~mv2.jpg",
-  "db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg",
-  "db159b_c3fca06807e24db585466c46f69e0b36~mv2.jpg",
-].map((id) => shot(id));
 const EXPERTISE = shot("db159b_85acba9ecd6d486285d017a9ce4307ac~mv2.jpg", 1600, 900);
 const OLILASTIC = "https://static.wixstatic.com/media/db159b_c6044a549cea41979a5612ff7b19c347~mv2.jpeg/v1/fill/w_900,h_1125,al_c,q_85,enc_auto/file.jpg";
 
@@ -98,11 +91,14 @@ export function HomeView() {
     const href = collection ? "/products?cat=" + encodeURIComponent(collection.title.trim()) : "/products";
     return { ...stage, href, count: count ? `${count} ${stage.title === "מתנות ליולדת" ? "מארזים" : "מוצרים"}` : "למוצרים" };
   });
-  const giftCollection = collections.find((item) => /מתנ/.test(item.title));
+  const giftCollection = collections.find((item) => item.title.trim() === "מתנות ליולדת") ?? null;
 
   const featured = findProduct(products, /olilastic|מתיחה/i) ?? products[0] ?? null;
-  const best = products.slice(0, 4);
-  const gifts = useMemo(() => products.filter((p) => /מתנ|gift|מארז/i.test(`${p.category} ${p.title} ${p.tags.join(" ")}`)).slice(0, 6), [products]);
+  const best = useMemo(() => products.filter((product) => product.tags.some((tag) => tag.trim() === "מומלץ")), [products]);
+  const gifts = useMemo(() => {
+    if (!giftCollection) return [];
+    return productsForMenu(products, collections, giftCollection.title.trim());
+  }, [products, collections, giftCollection]);
 
   useEffect(() => {
     if (!mobile) return;
@@ -122,8 +118,9 @@ export function HomeView() {
     return () => window.clearInterval(t);
   }, [gifts.length]);
 
-  const giftMain = gifts[gift] ?? null;
-  const giftSide = gifts.filter((_, i) => i !== gift).slice(0, 2);
+  const giftIndex = gifts.length ? gift % gifts.length : 0;
+  const giftMain = gifts[giftIndex] ?? null;
+  const giftSide = Array.from({ length: Math.min(2, Math.max(0, gifts.length - 1)) }, (_, step) => gifts[(giftIndex + step + 1) % gifts.length]);
 
   return (
     <main className="home">
@@ -279,8 +276,8 @@ export function HomeView() {
       <div style={{ display: "flex", flexDirection: mobile ? "column-reverse" : "column" }}>
         <section style={{ width: "100%", maxWidth: 1320, margin: "0 auto", paddingInline: "var(--page-pad)", paddingTop: mobile ? 8 : "clamp(64px,10vw,128px)", paddingBottom: mobile ? 56 : "clamp(64px,10vw,128px)" }}>
           <SectionHead title="המומלצים שלנו" href="/products" link="לכל המוצרים של Oli" />
-          {best.length === 0 ? <p style={{ color: "#5E4844" }}>אין כרגע מוצרים פעילים.</p> : mobile ? (
-            <BestLoop products={best} onAdd={(p) => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: productImage(p) })} />
+          {best.length === 0 ? <p style={{ color: "#5E4844" }}>אין כרגע מוצרים מומלצים.</p> : mobile || best.length > 4 ? (
+            <BestLoop perView={mobile ? 2 : 4} products={best} onAdd={(p) => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: productImage(p) })} />
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(calc(50% - 7px),240px),1fr))", gap: "clamp(28px,5vw,40px) clamp(12px,3vw,20px)" }}>
               {best.map((p) => <ProductTile key={p.id} p={p} onAdd={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: p.price, image: productImage(p) })} />)}
@@ -368,11 +365,11 @@ export function HomeView() {
               </Link>
               <div style={{ display: "flex", gap: 6 }}>
                 {gifts.map((p, i) => (
-                  <button key={p.id} type="button" aria-label={p.title} onClick={() => setGift(i)} style={{ width: gift === i ? 28 : 8, height: 3, borderRadius: 2, border: 0, padding: 0, background: gift === i ? "#3A2826" : "#D8C3B6" }} />
+                  <button key={p.id} type="button" aria-label={p.title} onClick={() => setGift(i)} style={{ width: giftIndex === i ? 28 : 8, height: 3, borderRadius: 2, border: 0, padding: 0, background: giftIndex === i ? "#3A2826" : "#D8C3B6" }} />
                 ))}
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", flexDirection: "column", opacity: giftFade ? 0 : 1, transform: giftFade ? "translateY(8px)" : "none", transition: "opacity .45s ease, transform .45s ease" }}>
               {giftSide.map((p) => (
                 <button key={p.id} type="button" className="gift-side" onClick={() => setGift(gifts.indexOf(p))} style={{ display: "grid", gridTemplateColumns: "clamp(96px,22vw,150px) minmax(0,1fr)", gap: "clamp(16px,3vw,24px)", alignItems: "center", padding: "clamp(16px,2.5vw,22px) 0", borderBottom: "1px solid #EFE4DC", color: "#3A2826", background: "transparent", textAlign: "right", borderLeft: 0, borderRight: 0, borderTop: 0 }}>
                   <div style={{ position: "relative", aspectRatio: "4/5", borderRadius: 14, overflow: "hidden", background: "#F6EEE8" }}>
@@ -393,24 +390,7 @@ export function HomeView() {
 
       <PodcastsSection />
 
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(8px,2vw,24px) var(--page-pad) clamp(64px,10vw,112px)", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(24px,4vw,40px)" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
-          <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#A85A3A", direction: "ltr" }}>@oli_safecare</a>
-          <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", lineHeight: 1.05, fontSize: "clamp(30px,5vw,48px)" }}>Oli באינסטגרם</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#6E5650", maxWidth: 420 }}>רגעים קטנים מהמסע, טיפים ומה שחדש אצלנו</p>
-        </div>
-        <div style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(30%,150px),1fr))", gap: "clamp(6px,1vw,12px)" }}>
-          {IG.map((src) => (
-            <a key={src} href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" aria-label="פוסט באינסטגרם" style={{ position: "relative", aspectRatio: "1/1", borderRadius: "clamp(10px,1.4vw,16px)", overflow: "hidden", background: "#F6EEE8" }}>
-              <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </a>
-          ))}
-        </div>
-        <a href="https://instagram.com/oli_safecare" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, height: 48, padding: "0 22px", borderRadius: 999, border: "1px solid #CDB5A8", fontSize: 15, fontWeight: 500 }}>
-          <IconInstagram />
-          לעקוב אחרינו
-        </a>
-      </section>
+      <InstagramSection />
 
       <style>{`
         .home { --page-pad: clamp(16px, 4.5vw, 32px); }
@@ -451,10 +431,13 @@ function HeroCopy() {
 }
 
 function HeroLinks() {
+  const { collections } = useSite();
+  const gift = collections.find((item) => item.title.trim() === "מתנות ליולדת") ?? collections.find((item) => /מתנ/.test(item.title));
+  const giftHref = menuHref(gift?.title.trim() || "מתנות ליולדת");
   return (
     <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
       <Hx as={Link} href="/products" style={{ background: "#3A2826", color: "#FFFFFF", border: 0, padding: "17px 32px", borderRadius: 999, fontSize: 16, fontWeight: 600 }} hover={{ background: "#A85A3A" }}>למוצרים של Oli</Hx>
-      <Link href="/products" style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor" }}>מתנות ליולדת</Link>
+      <Link href={giftHref} style={{ fontSize: 15, paddingBottom: 3, borderBottom: "1px solid currentColor" }}>מתנות ליולדת</Link>
     </div>
   );
 }

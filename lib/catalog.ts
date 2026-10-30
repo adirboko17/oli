@@ -28,7 +28,7 @@ async function fetchPublicCatalog(): Promise<CatalogLoad> {
   }
 }
 
-const readCachedCatalog = unstable_cache(fetchPublicCatalog, ["public-catalog", STORE_ID], { revalidate: 60 });
+const readCachedCatalog = unstable_cache(fetchPublicCatalog, ["public-catalog-stock", STORE_ID], { revalidate: 60 });
 
 export const loadPublicCatalog = cache(readCachedCatalog);
 
@@ -81,6 +81,8 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     headline: parseHeadline(row.merch),
     seoTitle: seoText(row.merch, "title", 70),
     seoDescription: seoText(row.merch, "description", 160),
+    tracked: row.tracked === true,
+    stock: whole(row.stock),
   };
 }
 
@@ -98,6 +100,8 @@ function parseVariant(value: unknown): CatalogVariant | null {
     sku: typeof row.sku === "string" && row.sku ? row.sku : null,
     price: money(row.price),
     position: money(row.position) ?? 0,
+    stock: whole(row.stock),
+    tracked: row.tracked === true,
   };
 }
 
@@ -306,4 +310,9 @@ function money(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value);
   return null;
+}
+
+function whole(value: unknown) {
+  const number = money(value);
+  return number == null ? 0 : Math.max(0, Math.trunc(number));
 }

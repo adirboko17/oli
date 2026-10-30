@@ -6,6 +6,8 @@ export type CatalogVariant = {
   sku: string | null;
   price: number | null;
   position: number;
+  stock: number;
+  tracked: boolean;
 };
 
 export type CatalogMedia = {
@@ -49,6 +51,8 @@ export type CatalogProduct = {
   headline: { mode: "single" | "split"; subtitle: string };
   seoTitle: string;
   seoDescription: string;
+  tracked: boolean;
+  stock: number;
 };
 
 export function emptyCatalogPage(): CatalogPage {
@@ -158,6 +162,23 @@ export function paragraphs(value: string) {
 export function productBlurb(product: CatalogProduct) {
   const line = product.description.split("\n").map((part) => part.trim()).find(Boolean);
   return product.category || line || product.vendor;
+}
+
+export function productSoldOut(product: Pick<CatalogProduct, "tracked" | "stock">) {
+  return product.tracked && product.stock <= 0;
+}
+
+export function cappedCartQty(product: Pick<CatalogProduct, "tracked" | "stock"> | null, id: string, qty: number) {
+  const wanted = Math.max(0, Math.floor(qty));
+  if (!product?.tracked) return wanted;
+  const pack = Number(/:x(\d+)$/.exec(id)?.[1] ?? 1);
+  const size = Number.isInteger(pack) && pack > 0 ? pack : 1;
+  return Math.min(wanted, Math.floor(Math.max(0, product.stock) / size));
+}
+
+export function findCartProduct(products: CatalogProduct[], id: string) {
+  const base = id.split(":")[0] ?? id;
+  return products.find((product) => product.id === base || product.variants.some((variant) => variant.id === base)) ?? null;
 }
 
 export function productCardSub(product: CatalogProduct) {

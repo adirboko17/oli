@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ProductBadges } from "@/components/cards";
 import { Hx } from "@/components/hx";
-import { giftPriceLabel, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { giftPriceLabel, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 
-export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAdd: (p: CatalogProduct) => void }) {
+export function BestLoop({ products, onAdd, perView = 2 }: { products: CatalogProduct[]; onAdd: (p: CatalogProduct) => void; perView?: number }) {
+  const view = Math.max(1, Math.round(perView));
   const frame = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
   const drag = useRef<{ x: number; origin: number; pid: number } | null>(null);
@@ -128,7 +129,7 @@ export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAd
     >
       <div onTransitionEnd={(e) => { if (e.propertyName !== "transform" || e.target !== e.currentTarget) return; const next = shift(xRef.current); if (next !== xRef.current) apply(next, false); }} style={{ display: "flex", gap: "var(--page-pad)", width: "max-content", paddingInline: "var(--page-pad)", transform: `translateX(${x}px)`, transition: anim ? "transform .7s cubic-bezier(.22,.8,.24,1)" : "none" }}>
         {loop.map((p, n) => (
-          <div key={`${p.id}-${n}`} data-best="" style={{ width: "calc((100cqw - (var(--page-pad) * 3)) / 2)", flex: "0 0 auto" }}>
+          <div key={`${p.id}-${n}`} data-best="" style={{ width: `calc((100cqw - (var(--page-pad) * ${view + 1})) / ${view})`, flex: "0 0 auto" }}>
             <ProductTile p={p} onAdd={() => onAdd(p)} />
           </div>
         ))}
@@ -139,6 +140,7 @@ export function BestLoop({ products, onAdd }: { products: CatalogProduct[]; onAd
 
 export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void }) {
   const src = productImage(p);
+  const soldOut = productSoldOut(p);
   const giftLabel = giftPriceLabel(p);
   const old = !giftLabel && p.compareAt && p.compareAt > p.price ? p.compareAt : null;
   return (
@@ -147,8 +149,9 @@ export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void
         <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
           {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
           <ProductBadges product={p} />
+          {soldOut ? <span style={{ position: "absolute", left: 10, bottom: 10, zIndex: 1, background: "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 10px", fontSize: 12, fontWeight: 600, lineHeight: 1 }}>אזל מהמלאי</span> : null}
         </Link>
-        <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>
+        {soldOut ? null : <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
