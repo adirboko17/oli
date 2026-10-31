@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
 import { useSite } from "@/components/site";
 import {
+  blockOnDevice,
   columnGrid,
   popupAlreadySeen,
   popupInWindow,
@@ -18,6 +19,25 @@ import {
 } from "@/lib/store-popups";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const POPUP_MOTION_CSS = `
+@keyframes storely-rise-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes storely-rise-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(12px); } }
+@keyframes storely-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes storely-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes storely-scale-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes storely-scale-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.98); } }
+@keyframes storely-slide-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes storely-slide-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(22px); } }
+@keyframes storely-bloom-in { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes storely-bloom-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { [data-popup-move] { animation: none !important; } }
+`;
+
+function motionAnimation(motion: "rise" | "fade" | "scale" | "slide" | "bloom" | "none", phase: "in" | "out") {
+  if (motion === "none") return undefined;
+  const time = phase === "in" ? ".56s cubic-bezier(.22,1,.36,1)" : ".42s cubic-bezier(.4,0,.2,1)";
+  return `storely-${motion}-${phase} ${time} both`;
+}
 
 function subscribeNarrow(listener: () => void) {
   const media = window.matchMedia("(max-width: 760px)");
@@ -29,7 +49,7 @@ function getNarrow() {
   return window.matchMedia("(max-width: 760px)").matches;
 }
 
-function closeButtonStyle(design: PopupDesign): CSSProperties {
+function closeButtonStyle(design: { closeSize: number; closePlace: PopupDesign["closePlace"]; closeColor: string }): CSSProperties {
   const edge = 8;
   const box = design.closeSize + 10;
   const corner = design.closePlace === "top-right"
@@ -63,17 +83,25 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
   const blocked = site.menu || site.search || site.account || site.cartOpen;
   const [shown, setShown] = useState<StorefrontPopup | null>(null);
   const [done, setDone] = useState(false);
+  const [coupon, setCoupon] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const visible = useRef(false);
+  const leaving = useRef(false);
+  const closeTimer = useRef(0);
+  const [present, setPresent] = useState<"in" | "out">("in");
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
   const narrow = useSyncExternalStore(subscribeNarrow, getNarrow, () => false);
 
   useEffect(() => {
+    window.clearTimeout(closeTimer.current);
+    leaving.current = false;
     visible.current = false;
+    setPresent("in");
     setShown(null);
     setDone(false);
+    setCoupon("");
     setError("");
   }, [pathname]);
 
@@ -87,6 +115,8 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
     const reveal = () => {
       if (visible.current) return;
       visible.current = true;
+      leaving.current = false;
+      setPresent("in");
       setShown(chosen);
     };
     const delayMs = Math.max(chosen.delaySeconds, chosen.trigger === "immediate" ? 0 : 4) * 1000;
@@ -145,17 +175,38 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
   }, [shown]);
 
   function close() {
-    if (shown) rememberPopup(shown);
+    if (!shown || leaving.current) return;
+    rememberPopup(shown);
     visible.current = true;
-    setShown(null);
+    const motion = popupLook(shown.design, narrow ? "mobile" : "desktop").motion;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (motion === "none" || reduceMotion) {
+      setShown(null);
+      return;
+    }
+    leaving.current = true;
+    setPresent("out");
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => {
+      leaving.current = false;
+      setPresent("in");
+      setShown(null);
+    }, 440);
   }
 
   if (!shown) return null;
   const active = shown;
   const design = active.design;
-  const look = popupLook(design, narrow ? "mobile" : "desktop");
+  const device = narrow ? "mobile" : "desktop";
+  const look = popupLook(design, device);
+  const blocks = design.blocks.map((block) => blockOnDevice(block, device));
+  const lead = blocks[0];
+  const leadBleed = (lead?.type === "image" && lead.bleed) || (lead?.type === "row" && lead.columns.some((column, columnIndex) => {
+    const child = column.blocks[0];
+    const across = look.stackColumns || lead.columns.length < 2;
+    return (across || columnIndex === 0 || columnIndex === lead.columns.length - 1) && child?.type === "image" && child.bleed;
+  }));
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const hasFields = design.blocks.some((block) => block.type === "field" || (block.type === "row" && block.columns.some((column) => column.blocks.some((item) => item.type === "field"))));
   const hasRow = design.blocks.some((block) => block.type === "row");
   const split = !hasRow && look.media !== "none" && !look.stackMedia && look.layout !== "bar";
   const card: CSSProperties = {
@@ -163,23 +214,20 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
     display: "flex",
     flexDirection: look.stackMedia ? "column" : "row",
     width: look.layout === "bar" ? "100%" : `min(${look.width}px, calc(100vw - 32px))`,
-    background: design.background,
-    backgroundImage: design.backgroundImage ? `url("${design.backgroundImage}")` : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
+    height: look.height > 0 ? look.height : undefined,
+    background: look.background,
     borderRadius: look.layout === "bar" ? `${look.radius}px ${look.radius}px 0 0` : look.radius,
     boxShadow: "0 24px 70px rgba(20,16,14,.28)",
     color: "#1a1a1a",
+    animation: reduce || look.motion === "none" ? undefined : motionAnimation(look.motion, present),
     maxHeight: "min(86dvh, 760px)",
-    overflow: "auto",
+    overflow: "hidden",
   };
   const place: CSSProperties = look.layout === "bar"
     ? { position: "fixed", right: 0, bottom: 0, left: 0, zIndex: 80 }
     : look.layout === "corner"
       ? { position: "fixed", bottom: 18, left: 18, zIndex: 80 }
       : { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 80 };
-  if (!reduce && look.layout === "modal") place.animation = "storelyPopupIn .35s ease";
-  else if (!reduce) place.animation = "storelyPopupUp .35s ease";
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -188,6 +236,15 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
     const fieldsBlocks = design.blocks.flatMap((block) => block.type === "row" ? block.columns.flatMap((column) => column.blocks) : [block]);
     for (const block of fieldsBlocks) {
       if (block.type !== "field") continue;
+      if (block.fieldType === "checkbox") {
+        const checked = data.get(block.name) === "yes";
+        if (block.required && !checked) {
+          setError("יש לסמן את השדות החובה");
+          return;
+        }
+        if (checked) fields[block.name] = "yes";
+        continue;
+      }
       const value = String(data.get(block.name) ?? "").trim();
       if (block.required && !value) {
         setError("מלאו את השדות החובה");
@@ -211,13 +268,14 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ popupId: active.id, fields, path: pathname }),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; reason?: string } | null;
+      const payload = await response.json().catch(() => null) as { ok?: boolean; reason?: string; coupon?: string } | null;
       if (!response.ok || payload?.ok !== true) {
         setError(payload?.reason || "לא הצלחנו לשלוח");
         setSending(false);
         return;
       }
       rememberPopup(active);
+      setCoupon(typeof payload.coupon === "string" ? payload.coupon : "");
       setDone(true);
     } catch {
       setError("לא הצלחנו לשלוח");
@@ -228,35 +286,47 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
 
   return (
     <>
-      <style>{`@keyframes storelyPopupIn { from { opacity: 0; transform: translate(-50%, -46%); } to { opacity: 1; transform: translate(-50%, -50%); } } @keyframes storelyPopupUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }`}</style>
+      <style>{POPUP_MOTION_CSS}</style>
       {look.layout === "modal" ? (
-        <button type="button" aria-label="סגירה" onClick={() => { if (design.closeOnOverlay) close(); }} style={{ position: "fixed", inset: 0, zIndex: 80, border: 0, background: `rgba(20,16,14,${design.overlay / 100})` }} />
+        <button type="button" aria-label="סגירה" data-popup-move onClick={() => { if (design.closeOnOverlay) close(); }} style={{ position: "fixed", inset: 0, zIndex: 80, border: 0, background: `rgba(20,16,14,${look.overlay / 100})`, animation: reduce || look.motion === "none" ? undefined : motionAnimation("fade", present) }} />
       ) : null}
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} style={place}>
-        <div style={card}>
-          <button type="button" aria-label="סגירה" onClick={close} style={{ ...closeButtonStyle(design), zIndex: 2 }}>×</button>
+        <div data-popup-move style={card}>
+          {look.backgroundImage ? <span aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url("${look.backgroundImage}")`, backgroundSize: "cover", backgroundPosition: "center", opacity: (100 - look.imageFade) / 100, pointerEvents: "none" }} /> : null}
+          {look.backgroundImage && look.imageWash ? <span aria-hidden style={{ position: "absolute", inset: 0, background: look.imageWash, opacity: look.imageWashOpacity / 100, pointerEvents: "none" }} /> : null}
+          <button type="button" aria-label="סגירה" onClick={close} style={{ ...closeButtonStyle(look), zIndex: 2 }}>×</button>
           {!hasRow && look.media !== "none" && (look.media === "right" || look.stackMedia) ? look.mediaImage ? <img src={look.mediaImage} alt="" style={{ width: split ? "42%" : "100%", flex: split ? "0 0 42%" : "none", height: split ? "auto" : 160, minHeight: split ? 220 : 160, objectFit: "cover" }} /> : <div style={{ width: split ? "42%" : "100%", flex: split ? "0 0 42%" : "none", minHeight: split ? 220 : 120, display: "grid", placeItems: "center", padding: 16, textAlign: "center" }}>אזור</div> : null}
           {done ? (
             <div style={{ flex: 1, textAlign: "center", padding: look.padding }}>
               <b id={titleId} style={{ display: "block", fontSize: 26 }}>{design.successTitle}</b>
               <p style={{ margin: "10px 0 0", lineHeight: 1.5 }}>{design.successText}</p>
+              {coupon ? <p style={{ margin: "16px 0 0", fontSize: 22, fontWeight: 700, letterSpacing: "0.06em" }}>{coupon}</p> : null}
             </div>
           ) : (
-            <form onSubmit={(event) => void onSubmit(event)} style={{ flex: 1, minWidth: 0, padding: look.padding, display: "grid", gridTemplateColumns: "1fr 1fr", gap: look.gap, alignContent: "center" }}>
-              {design.blocks.map((block, index) => block.type === "row" ? (
-                <div key={block.id} style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: columnGrid(block.columns, look.stackColumns), gap: look.gap }}>
-                  {block.columns.map((column) => (
-                    <div key={column.id}>
-                      {column.blocks.map((child, childIndex) => <BlockView key={child.id} block={child} titleId={index === 0 && childIndex === 0 ? titleId : undefined} />)}
-                    </div>
-                  ))}
+            <form onSubmit={(event) => void onSubmit(event)} style={{ position: "relative", zIndex: 1, flex: 1, minWidth: 0, minHeight: 0, overflow: look.height > 0 ? "auto" : undefined, padding: look.padding, display: "grid", gridTemplateColumns: "1fr 1fr", gap: look.gap, alignContent: leadBleed ? "start" : "center" }}>
+              {blocks.map((block, index) => block.type === "row" ? (
+                <div key={block.id} style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: columnGrid(block.columns, look.stackColumns), gap: look.gap, alignItems: "stretch" }}>
+                  {block.columns.map((column, columnIndex) => {
+                    const across = look.stackColumns || block.columns.length < 2;
+                    const edges = { start: across || columnIndex === 0, end: across || columnIndex === block.columns.length - 1 };
+                    const poster = !across && column.blocks[0]?.type === "image" && column.blocks[0].bleed && (columnIndex === 0 || columnIndex === block.columns.length - 1);
+                    const photo = poster && column.blocks[0]?.type === "image" ? column.blocks[0] : null;
+                    return (
+                      <div key={column.id} style={{ position: "relative", alignSelf: "stretch", minHeight: photo ? Math.max(photo.frame, 1) : undefined }}>
+                        {column.blocks.map((child, childIndex) => (
+                          <div key={child.id} style={poster && childIndex > 0 ? { position: "relative", zIndex: 2 } : undefined}>
+                            <BlockView block={child} busy={sending} titleId={index === 0 && childIndex === 0 ? titleId : undefined} pad={look.padding} flushTop={index === 0 && childIndex === 0} edges={edges} fill={poster && childIndex === 0} surface={design.background} />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div key={block.id} style={{ gridColumn: !look.stackColumns && block.span === "half" ? "span 1" : "1 / -1" }}>
-                  <BlockView block={block} titleId={index === 0 ? titleId : undefined} />
+                  <BlockView block={block} busy={sending} titleId={index === 0 ? titleId : undefined} pad={look.padding} flushTop={index === 0} surface={design.background} />
                 </div>
               ))}
-              {hasFields ? <button type="submit" disabled={sending} style={{ gridColumn: "1 / -1", height: 44, border: 0, borderRadius: 999, background: design.submitBackground, color: design.submitColor, fontWeight: 700, cursor: "pointer" }}>{sending ? "שולחים…" : design.submitLabel}</button> : null}
               {error ? <p style={{ gridColumn: "1 / -1", margin: 0, color: "#8a1f11", fontSize: 13 }}>{error}</p> : null}
             </form>
           )}
@@ -267,15 +337,84 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
   );
 }
 
-function BlockView({ block, titleId }: { block: Exclude<PopupBlock, { type: "row" }>; titleId?: string }) {
+function richCopy(value: string) {
+  return value.split(/(\*\*[^*]+\*\*)/g).map((part, index) => (
+    part.startsWith("**") && part.endsWith("**") && part.length > 4
+      ? <strong key={index} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+      : part
+  ));
+}
+
+function textFontStack(font: "inherit" | "heebo" | "frank") {
+  if (font === "heebo") return '"Heebo","Assistant",sans-serif';
+  if (font === "frank") return '"Frank Ruhl Libre","Times New Roman",serif';
+  return undefined;
+}
+
+function textWeightValue(weight: "regular" | "medium" | "semibold" | "bold") {
+  if (weight === "bold") return 700;
+  if (weight === "semibold") return 600;
+  if (weight === "medium") return 500;
+  return 400;
+}
+
+function ImageVeil({ fade, fadeSide, edges, surface }: { fade: number; fadeSide: number; edges?: { start: boolean; end: boolean }; surface: string }) {
+  const alongEnd = !(edges && edges.end && !edges.start);
+  return (
+    <>
+      {fade > 0 ? <span aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `${fade}%`, background: `linear-gradient(to top, ${surface}, transparent)`, pointerEvents: "none" }} /> : null}
+      {fadeSide > 0 ? <span aria-hidden style={{ position: "absolute", top: 0, bottom: 0, width: `${fadeSide}%`, insetInlineStart: alongEnd ? undefined : 0, insetInlineEnd: alongEnd ? 0 : undefined, background: alongEnd ? `linear-gradient(to inline-start, ${surface}, transparent)` : `linear-gradient(to inline-end, ${surface}, transparent)`, pointerEvents: "none" }} /> : null}
+    </>
+  );
+}
+
+function BlockView({ block, titleId, pad = 0, flushTop = false, edges, fill = false, surface = "#ffffff", busy = false }: { block: Exclude<PopupBlock, { type: "row" }>; titleId?: string; pad?: number; flushTop?: boolean; edges?: { start: boolean; end: boolean }; fill?: boolean; surface?: string; busy?: boolean }) {
   const align = block.type === "heading" || block.type === "text" ? block.align : "right";
-  if (block.type === "heading") return <div id={titleId} style={{ color: block.color, fontSize: block.size, fontWeight: block.weight === "bold" ? 700 : 500, textAlign: align, lineHeight: 1.25, whiteSpace: "pre-wrap" }}>{block.text}</div>;
-  if (block.type === "text") return <div id={titleId} style={{ color: block.color, fontSize: block.size, textAlign: align, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{block.text}</div>;
-  if (block.type === "image" && block.src) return <img src={block.src} alt={block.alt} style={{ display: "block", width: `${block.width}%`, maxWidth: "100%", maxHeight: 240, objectFit: "cover", borderRadius: block.radius, margin: "0 auto" }} />;
-  if (block.type === "logo" && block.src) return <img src={block.src} alt="" style={{ display: "block", width: block.width, maxWidth: "100%", height: "auto", margin: "0 auto", objectFit: "contain" }} />;
-  if (block.type === "button" && block.href) return <a id={titleId} href={block.href} style={{ display: "grid", height: 44, placeItems: "center", background: block.background, color: block.color, borderRadius: block.radius, fontWeight: 700, textDecoration: "none" }}>{block.label}</a>;
+  if (block.type === "heading") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.25, whiteSpace: "pre-wrap" }}>{richCopy(block.text)}</div>;
+  if (block.type === "text") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{richCopy(block.text)}</div>;
+  if (block.type === "image" && block.src) {
+    const fit = block.fit === "contain" ? "contain" : "cover";
+    const bleed = block.bleed && pad > 0;
+    const pullStart = bleed && (edges ? edges.start : true);
+    const pullEnd = bleed && (edges ? edges.end : true);
+    const pull = (pullStart ? pad : 0) + (pullEnd ? pad : 0);
+    const frame = fit === "cover" && block.frame > 0 ? block.frame : 0;
+    const fade = block.fade > 0 ? block.fade : 0;
+    const fadeSide = block.fadeSide > 0 ? block.fadeSide : 0;
+    const radius = bleed || fade > 0 || fadeSide > 0 ? 0 : block.radius;
+    const veil = <ImageVeil fade={fade} fadeSide={fadeSide} edges={edges} surface={surface} />;
+    if (fill) {
+      return (
+        <div style={{ position: "absolute", top: flushTop ? -pad : 0, bottom: -pad, insetInlineStart: pullStart ? -pad : 0, insetInlineEnd: pullEnd ? -pad : 0, overflow: "hidden" }}>
+          <img src={block.src} alt={block.alt} style={{ display: "block", width: "100%", height: "100%", objectFit: fit, objectPosition: block.focus }} />
+          {veil}
+        </div>
+      );
+    }
+    return (
+      <div style={{ position: "relative", width: pull ? `calc(100% + ${pull}px)` : `${block.width}%`, maxWidth: pull ? "none" : "100%", marginInline: pull ? undefined : "auto", marginInlineStart: pullStart ? -pad : undefined, marginInlineEnd: pullEnd ? -pad : undefined, marginTop: bleed && flushTop ? -pad : undefined, height: frame || undefined, overflow: radius || fade || fadeSide ? "hidden" : undefined, borderRadius: radius || undefined }}>
+        <img src={block.src} alt={block.alt} style={{ display: "block", width: "100%", height: frame ? "100%" : "auto", maxHeight: frame ? undefined : fit === "cover" ? 420 : undefined, objectFit: fit, objectPosition: block.focus }} />
+        {veil}
+      </div>
+    );
+  }
+  if (block.type === "logo" && block.src) return <div style={{ width: "100%", textAlign: block.align }}><img src={block.src} alt="" style={{ display: "inline-block", width: block.width, maxWidth: "100%", height: "auto", objectFit: "contain" }} /></div>;
+  if (block.type === "button") {
+    const buttonStyle = { display: "grid", width: "100%", height: 44, placeItems: "center", background: block.background, color: block.color, borderRadius: block.radius, fontWeight: 700, textDecoration: "none", border: 0, cursor: "pointer", font: "inherit" } as const;
+    if (block.action === "submit") return <button type="submit" id={titleId} disabled={busy} style={buttonStyle}>{busy ? "שולחים…" : block.label}</button>;
+    if (block.href) return <a id={titleId} href={block.href} style={buttonStyle}>{block.label}</a>;
+    return <span style={buttonStyle}>{block.label}</span>;
+  }
   if (block.type === "field") {
     const common = { name: block.name, required: block.required, placeholder: block.placeholder, style: { width: "100%", boxSizing: "border-box" as const, border: "1px solid rgba(0,0,0,.14)", borderRadius: 12, padding: "10px 12px", background: "rgba(255,255,255,.86)", font: "inherit" } };
+    if (block.fieldType === "checkbox") {
+      return (
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, lineHeight: 1.45, cursor: "pointer" }}>
+          <input type="checkbox" name={block.name} value="yes" required={block.required} style={{ width: 18, height: 18, marginTop: 1, accentColor: "#1a1a1a" }} />
+          <span>{block.label || "אני מאשר/ת"}{block.required ? " *" : ""}</span>
+        </label>
+      );
+    }
     return (
       <label style={{ display: "block" }}>
         {block.label ? <span style={{ display: "block", marginBottom: 4, fontSize: 13, fontWeight: 600 }}>{block.label}</span> : null}

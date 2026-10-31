@@ -8,19 +8,40 @@ export type PopupDevice = "all" | "desktop" | "mobile";
 export type PopupClosePlace = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type PopupSpan = "full" | "half";
 export type PopupMedia = "none" | "right" | "left";
+export type PopupMotion = "rise" | "fade" | "scale" | "slide" | "bloom" | "none";
 
-export type PopupBlock =
-  | { id: string; type: "heading"; text: string; color: string; size: number; align: PopupAlign; weight: "regular" | "bold"; span: PopupSpan }
-  | { id: string; type: "text"; text: string; color: string; size: number; align: PopupAlign; span: PopupSpan }
-  | { id: string; type: "image"; src: string; alt: string; radius: number; width: number; span: PopupSpan }
-  | { id: string; type: "logo"; src: string; width: number; span: PopupSpan }
-  | { id: string; type: "button"; label: string; href: string; background: string; color: string; radius: number; span: PopupSpan }
-  | { id: string; type: "field"; fieldType: "text" | "email" | "tel" | "textarea"; label: string; name: string; placeholder: string; required: boolean; span: PopupSpan }
+type PopupBlockShape =
+  | { id: string; type: "heading"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan }
+  | { id: string; type: "text"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan }
+  | { id: string; type: "image"; src: string; alt: string; radius: number; width: number; fit: "cover" | "contain"; focus: "center" | "top" | "bottom"; frame: number; bleed: boolean; fade: number; fadeSide: number; span: PopupSpan }
+  | { id: string; type: "logo"; src: string; width: number; align: PopupAlign; span: PopupSpan }
+  | { id: string; type: "button"; label: string; href: string; action: "link" | "submit"; background: string; color: string; radius: number; span: PopupSpan }
+  | { id: string; type: "field"; fieldType: "text" | "email" | "tel" | "textarea" | "checkbox"; label: string; name: string; placeholder: string; required: boolean; span: PopupSpan }
   | { id: string; type: "spacer"; height: number; span: PopupSpan }
   | { id: string; type: "row"; span: PopupSpan; columns: PopupColumn[] };
 
-export type PopupLeaf = Exclude<PopupBlock, { type: "row" }>;
-export type PopupColumn = { id: string; width: number; blocks: PopupLeaf[] };
+export type PopupBlock = PopupBlockShape & { phone?: PopupPhoneTune };
+export type PopupLeaf = Exclude<PopupBlockShape, { type: "row" }> & { phone?: PopupPhoneTune };
+export type PopupPhoneTune = {
+  span?: PopupSpan;
+  size?: number;
+  color?: string;
+  align?: PopupAlign;
+  font?: "inherit" | "heebo" | "frank";
+  weight?: "regular" | "medium" | "semibold" | "bold";
+  width?: number;
+  radius?: number;
+  fit?: "cover" | "contain";
+  focus?: "center" | "top" | "bottom";
+  frame?: number;
+  bleed?: boolean;
+  fade?: number;
+  fadeSide?: number;
+  height?: number;
+  background?: string;
+};
+
+export type PopupColumn = { id: string; width: number; blocks: PopupLeaf[]; phoneWidth?: number };
 
 export type PopupMobile = {
   layout: "same" | PopupLayout;
@@ -30,6 +51,18 @@ export type PopupMobile = {
   gap: number;
   media: "same" | "stack" | "hide";
   columns: "same" | "stack";
+  closeSize: number;
+  closePlace: "same" | PopupClosePlace;
+  closeColor: string;
+  background: string;
+  overlay: number;
+  submitBackground: string;
+  submitColor: string;
+  height: number;
+  imageFade: number;
+  imageWash: string;
+  imageWashOpacity: number;
+  motion: "same" | PopupMotion;
 };
 
 export type PopupDesign = {
@@ -42,6 +75,11 @@ export type PopupDesign = {
   mediaImage: string;
   background: string;
   backgroundImage: string;
+  height: number;
+  imageFade: number;
+  imageWash: string;
+  imageWashOpacity: number;
+  motion: PopupMotion;
   overlay: number;
   closeOnOverlay: boolean;
   closeColor: string;
@@ -117,6 +155,7 @@ function parseMobile(value: unknown): PopupMobile {
   const row = record(value);
   const layout: PopupMobile["layout"] = row?.layout === "modal" || row?.layout === "bar" || row?.layout === "corner" ? row.layout : "same";
   const media: PopupMobile["media"] = row?.media === "same" || row?.media === "hide" ? row.media : "stack";
+  const closePlace: PopupMobile["closePlace"] = row?.closePlace === "top-left" || row?.closePlace === "top-right" || row?.closePlace === "bottom-left" || row?.closePlace === "bottom-right" ? row.closePlace : "same";
   return {
     layout,
     width: num(row?.width, 0, 480, 0),
@@ -125,6 +164,18 @@ function parseMobile(value: unknown): PopupMobile {
     gap: typeof row?.gap === "number" ? num(row.gap, 0, 40, 0) : -1,
     media,
     columns: row?.columns === "same" ? "same" : "stack",
+    closeSize: typeof row?.closeSize === "number" ? num(row.closeSize, 14, 36, 0) : 0,
+    closePlace,
+    closeColor: hex(row?.closeColor, ""),
+    background: hex(row?.background, ""),
+    overlay: typeof row?.overlay === "number" ? num(row.overlay, 0, 80, 0) : -1,
+    submitBackground: hex(row?.submitBackground, ""),
+    submitColor: hex(row?.submitColor, ""),
+    height: typeof row?.height === "number" ? num(row.height, 0, 960, -1) : -1,
+    imageFade: typeof row?.imageFade === "number" ? num(row.imageFade, 0, 100, -1) : -1,
+    imageWash: row?.imageWash == null || row.imageWash === "same" ? "same" : hex(row.imageWash, ""),
+    imageWashOpacity: typeof row?.imageWashOpacity === "number" ? num(row.imageWashOpacity, 0, 100, -1) : -1,
+    motion: row?.motion === "fade" || row?.motion === "scale" || row?.motion === "slide" || row?.motion === "bloom" || row?.motion === "none" || row?.motion === "rise" ? row.motion : "same",
   };
 }
 
@@ -142,6 +193,19 @@ export function popupLook(design: PopupDesign, device: "desktop" | "mobile") {
     mediaImage: design.mediaImage,
     stackColumns: mobile && phone.columns === "stack",
     stackMedia: mobile && phone.media === "stack" && design.media !== "none" && Boolean(design.mediaImage),
+    background: mobile && phone.background ? phone.background : design.background,
+    closeColor: mobile && phone.closeColor ? phone.closeColor : design.closeColor,
+    closeSize: mobile && phone.closeSize > 0 ? phone.closeSize : design.closeSize,
+    closePlace: mobile && phone.closePlace !== "same" ? phone.closePlace : design.closePlace,
+    overlay: mobile && phone.overlay >= 0 ? phone.overlay : design.overlay,
+    submitBackground: mobile && phone.submitBackground ? phone.submitBackground : design.submitBackground,
+    submitColor: mobile && phone.submitColor ? phone.submitColor : design.submitColor,
+    height: mobile && phone.height >= 0 ? phone.height : design.height,
+    imageFade: mobile && phone.imageFade >= 0 ? phone.imageFade : design.imageFade,
+    imageWash: mobile && phone.imageWash !== "same" ? phone.imageWash : design.imageWash,
+    imageWashOpacity: mobile && phone.imageWashOpacity >= 0 ? phone.imageWashOpacity : design.imageWashOpacity,
+    motion: mobile && phone.motion !== "same" ? phone.motion : design.motion,
+    backgroundImage: design.backgroundImage,
   };
 }
 
@@ -176,7 +240,23 @@ function fitColumnWidths(columns: PopupColumn[]): PopupColumn[] {
   return columns.map((column, index) => ({ ...column, width: scaled[index] ?? column.width }));
 }
 
-function parseBlock(value: unknown, index: number): PopupBlock | null {
+function imageRadius(row: Record<string, unknown>) {
+  const style = row.style && typeof row.style === "object" ? row.style as Record<string, unknown> : null;
+  const legacy = Boolean(style && (style.radius != null || style.height != null || style.background));
+  const radius = num(row.radius, 0, 40, 0);
+  return legacy && radius === 12 ? 0 : radius;
+}
+
+function textFont(value: unknown): "inherit" | "heebo" | "frank" {
+  return value === "heebo" || value === "frank" ? value : "inherit";
+}
+
+function textWeight(value: unknown, fallback: "regular" | "medium" | "semibold" | "bold") {
+  if (value === "bold" || value === "semibold" || value === "medium" || value === "regular") return value;
+  return fallback;
+}
+
+function parseShape(value: unknown, index: number): PopupBlock | null {
   const row = record(value);
   if (!row) return null;
   const id = text(row.id, 80) || `block-${index}`;
@@ -188,24 +268,26 @@ function parseBlock(value: unknown, index: number): PopupBlock | null {
         const next = parseBlock(child, childIndex);
         return next && next.type !== "row" ? [next] : [];
       }).slice(0, 8) : [];
-      return [{ id: text(column.id, 80) || `column-${index}`, width: num(column.width, 15, 100, 0), blocks }];
+      const phoneWidth = typeof column.phoneWidth === "number" ? num(column.phoneWidth, 15, 100, 0) : 0;
+      return [{ id: text(column.id, 80) || `column-${index}`, width: num(column.width, 15, 100, 0), blocks, ...(phoneWidth > 0 ? { phoneWidth } : {}) }];
     }).slice(0, 4);
     if (!columns.length) return null;
     return { id, type: "row", span: "full", columns: fitColumnWidths(columns) };
   }
   const align: PopupAlign = row.align === "center" || row.align === "left" ? row.align : "right";
   if (row.type === "heading") {
-    return { id, type: "heading", text: text(row.text, 160), color: hex(row.color, "#1a1a1a"), size: num(row.size, 16, 48, 28), align, weight: row.weight === "regular" ? "regular" : "bold", span: spanOf(row.span) };
+    return { id, type: "heading", text: text(row.text, 160), color: hex(row.color, "#1a1a1a"), size: num(row.size, 16, 48, 28), align, font: textFont(row.font), weight: row.weight === "regular" ? "medium" : textWeight(row.weight, "bold"), span: spanOf(row.span) };
   }
-  if (row.type === "text") return { id, type: "text", text: text(row.text, 800), color: hex(row.color, "#4a4a4a"), size: num(row.size, 12, 24, 15), align, span: spanOf(row.span) };
-  if (row.type === "image") return { id, type: "image", src: safeImage(text(row.src, 500)), alt: text(row.alt, 120), radius: num(row.radius, 0, 40, 12), width: num(row.width, 30, 100, 100), span: spanOf(row.span) };
-  if (row.type === "logo") return { id, type: "logo", src: safeImage(text(row.src, 500)), width: num(row.width, 48, 220, 112), span: spanOf(row.span) };
+  if (row.type === "text") return { id, type: "text", text: text(row.text, 800), color: hex(row.color, "#4a4a4a"), size: num(row.size, 12, 24, 15), align, font: textFont(row.font), weight: textWeight(row.weight, "regular"), span: spanOf(row.span) };
+  if (row.type === "image") return { id, type: "image", src: safeImage(text(row.src, 500)), alt: text(row.alt, 120), radius: imageRadius(row), width: num(row.width, 30, 100, 100), fit: row.fit === "contain" ? "contain" : "cover", focus: row.focus === "top" || row.focus === "bottom" ? row.focus : "center", frame: num(row.frame, 0, 480, 0), bleed: row.bleed === true, fade: num(row.fade, 0, 80, 0), fadeSide: num(row.fadeSide, 0, 80, 0), span: spanOf(row.span) };
+  if (row.type === "logo") return { id, type: "logo", src: safeImage(text(row.src, 500)), width: num(row.width, 48, 220, 112), align: row.align === "left" || row.align === "right" || row.align === "center" ? row.align : "center", span: spanOf(row.span) };
   if (row.type === "button") {
     return {
       id,
       type: "button",
       label: text(row.label, 40) || "לחצו כאן",
       href: safeHref(text(row.href, 300)),
+      action: row.action === "submit" ? "submit" : "link",
       background: hex(row.background, "#1a1a1a"),
       color: hex(row.color, "#ffffff"),
       radius: row.radius === 999 ? 999 : num(row.radius, 0, 28, 12),
@@ -213,13 +295,61 @@ function parseBlock(value: unknown, index: number): PopupBlock | null {
     };
   }
   if (row.type === "field") {
-    const fieldType = row.fieldType === "email" || row.fieldType === "tel" || row.fieldType === "textarea" ? row.fieldType : "text";
+    const fieldType = row.fieldType === "email" || row.fieldType === "tel" || row.fieldType === "textarea" || row.fieldType === "checkbox" || row.fieldType === "consent" ? (row.fieldType === "consent" ? "checkbox" : row.fieldType) : "text";
     const name = text(row.name, 32).toLowerCase();
     if (!/^[a-z][a-z0-9_]{0,31}$/.test(name)) return null;
     return { id, type: "field", fieldType, label: text(row.label, 60), name, placeholder: text(row.placeholder, 80), required: row.required !== false, span: spanOf(row.span) };
   }
   if (row.type === "spacer") return { id, type: "spacer", height: num(row.height, 4, 80, 16), span: spanOf(row.span) };
   return null;
+}
+
+function parsePhone(value: unknown): PopupPhoneTune | undefined {
+  const row = record(value);
+  if (!row) return undefined;
+  const tune: PopupPhoneTune = {};
+  if (row.span === "full" || row.span === "half") tune.span = row.span;
+  if (typeof row.size === "number") tune.size = num(row.size, 12, 48, 15);
+  const color = hex(row.color, "");
+  if (color) tune.color = color;
+  if (row.align === "right" || row.align === "center" || row.align === "left") tune.align = row.align;
+  if (row.font === "inherit" || row.font === "heebo" || row.font === "frank") tune.font = row.font;
+  if (row.weight === "regular" || row.weight === "medium" || row.weight === "semibold" || row.weight === "bold") tune.weight = row.weight;
+  if (typeof row.width === "number") tune.width = num(row.width, 10, 220, 100);
+  if (typeof row.radius === "number") tune.radius = row.radius === 999 ? 999 : num(row.radius, 0, 40, 0);
+  if (row.fit === "cover" || row.fit === "contain") tune.fit = row.fit;
+  if (row.focus === "center" || row.focus === "top" || row.focus === "bottom") tune.focus = row.focus;
+  if (typeof row.frame === "number") tune.frame = num(row.frame, 0, 480, 0);
+  if (typeof row.bleed === "boolean") tune.bleed = row.bleed;
+  if (typeof row.fade === "number") tune.fade = num(row.fade, 0, 80, 0);
+  if (typeof row.fadeSide === "number") tune.fadeSide = num(row.fadeSide, 0, 80, 0);
+  if (typeof row.height === "number") tune.height = num(row.height, 4, 80, 16);
+  const background = hex(row.background, "");
+  if (background) tune.background = background;
+  return Object.keys(tune).length ? tune : undefined;
+}
+
+function parseBlock(value: unknown, index: number): PopupBlock | null {
+  const row = record(value);
+  const block = parseShape(value, index);
+  if (!block || !row) return block;
+  const phone = parsePhone(row.phone);
+  return phone ? { ...block, phone } : block;
+}
+
+export function blockOnDevice(block: PopupBlock, device: "desktop" | "mobile"): PopupBlock {
+  if (block.type === "row") {
+    return { ...block, columns: block.columns.map((column) => ({ ...column, width: device === "mobile" && column.phoneWidth ? column.phoneWidth : column.width, blocks: column.blocks.map((child) => blockOnDevice(child, device)).filter((child): child is PopupLeaf => child.type !== "row") })) };
+  }
+  if (device === "desktop" || !block.phone) return block;
+  const tune = block.phone;
+  const span = tune.span ?? block.span;
+  if (block.type === "heading" || block.type === "text") return { ...block, span, size: tune.size ?? block.size, color: tune.color ?? block.color, align: tune.align ?? block.align, font: tune.font ?? block.font, weight: tune.weight ?? block.weight };
+  if (block.type === "image") return { ...block, span, width: tune.width ?? block.width, radius: tune.radius ?? block.radius, fit: tune.fit ?? block.fit, focus: tune.focus ?? block.focus, frame: tune.frame ?? block.frame, bleed: tune.bleed ?? block.bleed, fade: tune.fade ?? block.fade, fadeSide: tune.fadeSide ?? block.fadeSide };
+  if (block.type === "logo") return { ...block, span, width: tune.width ?? block.width, align: tune.align ?? block.align };
+  if (block.type === "button") return { ...block, span, background: tune.background ?? block.background, color: tune.color ?? block.color, radius: tune.radius ?? block.radius };
+  if (block.type === "spacer") return { ...block, span, height: tune.height ?? block.height };
+  return { ...block, span };
 }
 
 export function parseShopPopups(value: unknown): StorefrontPopup[] {
@@ -258,6 +388,11 @@ export function parseShopPopups(value: unknown): StorefrontPopup[] {
         mediaImage: safeImage(text(design.mediaImage, 500)),
         background: hex(design.background, "#fffaf6"),
         backgroundImage: safeImage(text(design.backgroundImage, 500)),
+        height: num(design.height, 0, 960, 0),
+        imageFade: num(design.imageFade, 0, 100, 0),
+        imageWash: hex(design.imageWash, ""),
+        imageWashOpacity: num(design.imageWashOpacity, 0, 100, 0),
+        motion: design.motion === "fade" || design.motion === "scale" || design.motion === "slide" || design.motion === "bloom" || design.motion === "none" ? design.motion : "rise",
         overlay: num(design.overlay, 0, 80, 46),
         closeOnOverlay: design.closeOnOverlay !== false,
         closeColor: hex(design.closeColor, "#1a1a1a"),

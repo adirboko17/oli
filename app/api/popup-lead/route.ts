@@ -30,5 +30,5 @@ export async function POST(request: Request) {
   const host = (await headers()).get("host");
   const result = await submitPopupLead({ hostHeader: host, popupId, fields, pagePath: path });
   if (!result.ok) return NextResponse.json(result, { status: 400 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(result.coupon ? { ok: true, coupon: result.coupon } : { ok: true });
 }

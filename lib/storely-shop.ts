@@ -407,7 +407,8 @@ export async function submitPopupLead(input: {
     const reason = typeof record?.reason === "string" ? record.reason : "לא הצלחנו לשלוח";
     return { ok: false as const, reason };
   }
-  return { ok: true as const };
+  const coupon = typeof record.coupon === "string" ? record.coupon : "";
+  return { ok: true as const, ...(coupon ? { coupon } : {}) };
 }
 
 const CHECKOUT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
