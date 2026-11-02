@@ -28,9 +28,22 @@ async function fetchPublicCatalog(): Promise<CatalogLoad> {
   }
 }
 
-const readCachedCatalog = unstable_cache(fetchPublicCatalog, ["public-catalog-stock", STORE_ID], { revalidate: 60 });
+const readCachedCatalog = unstable_cache(async () => {
+  const result = await fetchPublicCatalog();
+  if (result.status !== "ready") throw new Error(result.status);
+  return result;
+}, ["public-catalog-stock", STORE_ID], { revalidate: 60 });
 
-export const loadPublicCatalog = cache(readCachedCatalog);
+export const loadPublicCatalog = cache(async (): Promise<CatalogLoad> => {
+  try {
+    return await readCachedCatalog();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    if (message === "inactive") return { status: "inactive" };
+    if (message === "error") return { status: "error" };
+    return fetchPublicCatalog();
+  }
+});
 
 async function parseCatalog(data: unknown): Promise<PublicCatalog | null> {
   const row = record(data);

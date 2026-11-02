@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import ArticleView from "@/components/articles/ArticleView";
 import { AddToCart } from "@/components/articles/AddToCart";
-import { ARTICLES, CATEGORY_PRODUCT, blocksFrom, getArticle } from "@/components/articles/articles";
+import { ARTICLES, CATEGORY_PRODUCT, articleRemainder, blocksFrom, getArticle } from "@/components/articles/articles";
 import type { CalloutProduct } from "@/components/articles/ArticleView";
 import { articlePublicPath } from "@/lib/article-paths";
 import { loadPublicCatalog } from "@/lib/catalog";
@@ -57,7 +57,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     imageY: match?.image ? match.imageY : article.imageY,
     imageScale: match?.image ? match.imageScale : article.imageScale,
     video: match?.video || article.video,
-    body: match?.body.trim() ? blocksFrom(match.body) : article.body,
+    body: match?.body.trim() ? blocksFrom(articleRemainder(match.body)) : article.body,
   };
   const result = await loadPublicCatalog();
   const products = result.status === "ready" ? result.catalog.products : [];

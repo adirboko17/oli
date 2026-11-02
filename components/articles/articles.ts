@@ -145,6 +145,45 @@ export function blocksFrom(text: string): Block[] {
   return blocks;
 }
 
+export function articleRemainder(text: string) {
+  const lines = text.split("\n").map((line) => line.trim());
+  let cursor = 0;
+  let sawMeta = false;
+  const nameBeforeRole = (index: number) => {
+    let next = index + 1;
+    while (next < lines.length && !lines[next]) next += 1;
+    return isNameLine(lines[index]) && isRoleLine(lines[next]);
+  };
+  while (cursor < lines.length && lines[cursor] && !lines[cursor].startsWith("עודכן") && !isAuthor(lines[cursor]) && !nameBeforeRole(cursor) && !countsAsHeading(lines[cursor])) cursor += 1;
+  while (cursor < lines.length && (!lines[cursor] || lines[cursor].startsWith("עודכן") || isAuthor(lines[cursor]) || nameBeforeRole(cursor))) {
+    if (lines[cursor].startsWith("עודכן") || isAuthor(lines[cursor]) || nameBeforeRole(cursor)) sawMeta = true;
+    if (nameBeforeRole(cursor)) {
+      let role = cursor + 1;
+      while (role < lines.length && !lines[role]) role += 1;
+      cursor = role;
+    }
+    cursor += 1;
+  }
+  if (!sawMeta) {
+    for (let scan = cursor; scan < lines.length; scan += 1) {
+      if (!lines[scan].startsWith("עודכן")) continue;
+      let byline = scan + 1;
+      while (byline < lines.length && !lines[byline]) byline += 1;
+      if (!isAuthor(lines[byline]) && !nameBeforeRole(byline)) continue;
+      lines[scan] = "";
+      if (nameBeforeRole(byline)) {
+        let role = byline + 1;
+        while (role < lines.length && !lines[role]) role += 1;
+        lines[byline] = "";
+        lines[role] = "";
+      } else lines[byline] = "";
+      sawMeta = true;
+      break;
+    }
+  }
+  return sawMeta ? lines.slice(cursor).join("\n") : text;
+}
+
 function present(raw: (typeof journal)[number], index: number): Article {
   const lines = raw.body.split("\n").map((line) => line.trim());
   let cursor = 0;
