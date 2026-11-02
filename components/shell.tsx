@@ -8,6 +8,7 @@ import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from 
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
+import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import {
@@ -546,7 +547,9 @@ function shippingCompanions(products: CatalogProduct[], items: { id: string }[],
 
 function CartDrawer() {
   const site = useSite();
-  const total = site.items.reduce((a, x) => a + x.price * x.qty, 0);
+  const listTotal = site.items.reduce((a, x) => a + x.price * x.qty, 0);
+  const bundle = oliminiBundleOffer(site.products, site.collections, site.items);
+  const total = Math.max(0, Math.round((listTotal - bundle.amount) * 100) / 100);
   const gap = Math.max(0, FREE_SHIPPING - total);
   const companions = shippingCompanions(site.products, site.items, total);
   const { present, visible } = useShown(site.cartOpen);
@@ -636,6 +639,12 @@ function CartDrawer() {
               )}
             </div>
             <div style={{ padding: "18px 24px calc(20px + env(safe-area-inset-bottom))", borderTop: "1px solid #F1E5DD", display: "flex", flexDirection: "column", gap: 14, background: "#FFFFFF" }}>
+              {bundle.parts.map((part) => (
+                <div key={part.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 14, color: "#A85A3A" }}>
+                  <span>הנחת {part.label}</span>
+                  <span>−{fmt(part.amount)}</span>
+                </div>
+              ))}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 15, color: "#5E4844" }}>סכום ביניים</span>
                 <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 24 }}>{fmt(total)}</span>

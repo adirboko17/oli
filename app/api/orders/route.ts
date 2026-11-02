@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { loadPublicCatalog } from "@/lib/catalog";
 import { isGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { settleGiftCards } from "@/lib/gift-cards";
-import { isPickupZone, shippingAfterFreeThreshold } from "@/lib/shipping";
+import { moneyRound, oliminiBundleOffer, totalAfterOliminiBundle } from "@/lib/olimini-kits";
+import { isPickupZone } from "@/lib/shipping";
 import { createVisitorKey, validVisitorKey, VISITOR_COOKIE, visitorCookieOptions } from "@/lib/storely";
 import { trackPurchase } from "@/lib/storely-actions";
 import { loadShopShipping, quoteCheckout, storefrontHost, type StoreLine } from "@/lib/storely-shop";
@@ -156,7 +157,8 @@ export async function POST(request: Request) {
       for (let copy = 0; copy < qty; copy += 1) purchases.push(price);
     }
   }
-  subtotal = Math.round(subtotal * 100) / 100;
+  subtotal = moneyRound(subtotal);
+  const bundle = oliminiBundleOffer(catalog.catalog.products, catalog.catalog.collections, [...qtyById].map(([id, qty]) => ({ id, qty })));
 
   const coupon = typeof body?.coupon === "string" ? body.coupon.trim() : "";
   const giftCode = typeof body?.giftCard === "string" ? body.giftCard.trim() : "";
@@ -204,12 +206,17 @@ export async function POST(request: Request) {
     });
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;
-    const waived = quoted.saleLocked
-      ? { shipping: placed.order.shipping, total: placed.order.total }
-      : shippingAfterFreeThreshold(subtotal, placed.order.shipping, placed.order.total);
+    const waived = totalAfterOliminiBundle({
+      merchandise: subtotal,
+      shipping: placed.order.shipping,
+      total: placed.order.total,
+      savings: bundle.amount,
+      saleLocked: quoted.saleLocked,
+    });
     orderShipping = waived.shipping ?? placed.order.shipping;
-    orderDiscount = placed.order.discount;
+    orderDiscount = moneyRound(placed.order.discount + bundle.amount);
     orderTotal = waived.total;
+    subtotal = waived.merchandise;
     try {
       await trackPurchase(orderTotal);
     } catch (error) {

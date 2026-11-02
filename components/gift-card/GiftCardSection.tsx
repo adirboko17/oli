@@ -100,7 +100,7 @@ export default function GiftCardSection() {
             {presets.map((value) => (
               <button key={value} type="button" className="oli-gc__amount" aria-pressed={preset === value} onClick={() => choose(value)}>₪{value}</button>
             ))}
-            {allowCustom ? <button type="button" className="oli-gc__amount" aria-pressed={customOpen} onClick={() => choose("custom")}>סכום אחר</button> : null}
+            {allowCustom ? <button type="button" className="oli-gc__amount oli-gc__amount--other" aria-pressed={customOpen} onClick={() => choose("custom")}>סכום אחר</button> : null}
           </div>
           <div className={customOpen ? "oli-gc__custom is-open" : "oli-gc__custom"}>
             <label className="oli-gc__field">

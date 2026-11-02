@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkoutGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { loadPublicCatalog } from "@/lib/catalog";
-import { shippingAfterFreeThreshold } from "@/lib/shipping";
+import { moneyRound, oliminiBundleOffer, totalAfterOliminiBundle } from "@/lib/olimini-kits";
 import { loadShopShipping, quoteCheckout } from "@/lib/storely-shop";
 
 export async function POST(request: Request) {
@@ -45,18 +45,23 @@ export async function POST(request: Request) {
     giftCode,
   });
   if (!quoted.ok) return NextResponse.json({ ok: false, message: quoted.reason }, { status: 400 });
-  const merchandise = Math.round(items.reduce((sum, item) => sum + (resolvePrice(catalog.catalog.products, item.id) ?? 0) * item.qty, 0) * 100) / 100;
-  const waived = quoted.saleLocked
-    ? { shipping: quoted.shipping, total: quoted.total }
-    : shippingAfterFreeThreshold(merchandise, quoted.shipping, quoted.total);
+  const merchandise = moneyRound(items.reduce((sum, item) => sum + (resolvePrice(catalog.catalog.products, item.id) ?? 0) * item.qty, 0));
+  const bundle = oliminiBundleOffer(catalog.catalog.products, catalog.catalog.collections, items);
+  const waived = totalAfterOliminiBundle({
+    merchandise,
+    shipping: quoted.shipping,
+    total: quoted.total,
+    savings: bundle.amount,
+    saleLocked: quoted.saleLocked,
+  });
   const addedGift = quoted.addedGift
     ? checkoutGiftLine(catalog.catalog.products, quoted.addedGift.variantId, quoted.addedGift.quantity, quoted.addedGift.title)
     : null;
   return NextResponse.json({
     ok: true,
     total: waived.total,
-    discount: quoted.discount,
-    discountCode: quoted.discountCode,
+    discount: moneyRound(quoted.discount + bundle.amount),
+    discountCode: quoted.discountCode || bundle.label,
     shipping: waived.shipping,
     currency: quoted.currency || shop.currency,
     bundleBlocked: quoted.bundleBlocked,

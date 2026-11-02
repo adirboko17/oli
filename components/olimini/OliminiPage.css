@@ -30,9 +30,10 @@
 @media (prefers-reduced-motion:reduce) { .om-bubble { animation:none !important; } .om-bubble--rise { display:none; } }
 
 /* Bottle shelf (hero) */
-.om-shelf { position:relative; max-width:900px; margin:clamp(20px,4vw,40px) auto 0; padding:0 clamp(12px,4vw,40px); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:clamp(4px,2vw,24px); }
-.om-shelf__item { position:relative; display:flex; align-items:flex-end; justify-content:center; height:clamp(180px,28vw,330px); }
-.om-shelf__item.is-tall { height:clamp(220px,34vw,400px); }
+.om-shelf { position:relative; max-width:1100px; margin:clamp(20px,4vw,40px) auto 0; padding:0 clamp(12px,4vw,40px); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:end; gap:clamp(0px,1vw,12px); }
+.om-shelf__item { position:relative; display:flex; align-items:flex-end; justify-content:center; }
+.om-shelf__item.is-back { height:clamp(148px,18vw,230px); z-index:1; }
+.om-shelf__item.is-front { height:clamp(210px,30vw,390px); z-index:2; margin-inline:clamp(-18px,-2vw,-8px); }
 .om-fade { height:clamp(28px,5vw,48px); background:linear-gradient(to bottom,rgba(255,255,255,0),#fff); }
 
 /* Bottle + shadow + gentle hover grow (the bottle only) */
@@ -73,6 +74,7 @@
 .om-btn { height:44px; padding:0 20px; border-radius:999px; border:0; background:#3A2826; color:#fff; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:background .25s; }
 .om-btn:hover { background:#A85A3A; }
 .om-all { align-self:center; display:flex; align-items:center; gap:12px; height:56px; padding:0 28px; border-radius:999px; border:1.5px solid #3A2826; background:transparent; color:#3A2826; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .25s; }
+.om-all s { font-weight:500; opacity:.7; }
 .om-all:hover { background:#3A2826; color:#fff; }
 
 /* Facts */

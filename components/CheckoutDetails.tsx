@@ -28,6 +28,7 @@ type Props = {
   onLogin: () => void;                             // opens the SMS login
   onAddGift?: (item: CheckoutItem) => void;        // product-for-product code: the gift joins the cart before the total is shown
   onPay: (data: CheckoutPayload) => void | Promise<void>; // creates the order and redirects to the payment provider
+  bundleSavings?: number;
 };
 
 const fmt = (n: number) => '₪ ' + (Math.round(n * 10) / 10).toLocaleString('he-IL');
@@ -78,7 +79,7 @@ function readAddedGift(value: unknown): CheckoutItem | null {
 const BUNDLE_CODE = 'הקוד לא חל כי המוצר הנדרש נקנה במארז';
 
 export default function CheckoutDetails({
-  items, shippingMethods, currency, user, onEditCart, onLogin, onAddGift, onPay,
+  items, shippingMethods, currency, user, onEditCart, onLogin, onAddGift, onPay, bundleSavings = 0,
 }: Props) {
   const [f, setF] = useState({
     name: user?.name || '', phone: user?.phone || '', email: user?.email || '',
@@ -168,12 +169,13 @@ export default function CheckoutDetails({
   const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
+  const merchandise = Math.max(0, Math.round((subtotal - bundleSavings) * 100) / 100);
   const locked = quote?.saleLocked === true;
-  const freeShipping = !locked && subtotal >= FREE_SHIPPING_FROM;
+  const freeShipping = !locked && merchandise >= FREE_SHIPPING_FROM;
   const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
   const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
   const amountDue = quote
-    ? (locked ? quote.total : shippingAfterFreeThreshold(subtotal, quote.shipping ?? selected?.price ?? 0, quote.total).total)
+    ? (locked ? quote.total : shippingAfterFreeThreshold(merchandise, quote.shipping ?? selected?.price ?? 0, quote.total).total)
     : null;
   const pickup = selected ? isPickupZone(selected.zone) : false;
   const payCurrency = quote?.currency || currency;
@@ -560,8 +562,9 @@ export default function CheckoutDetails({
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
                 {quote && quote.saleCustom > 0 && <div><span>סכום חופשי</span><span>{formatMoney(quote.saleCustom, payCurrency)}</span></div>}
                 <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{locked && quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
+                {bundleSavings > 0 && !quote && <div className="ck-totals__disc"><span>הנחת חבילה</span><span>−{fmt(bundleSavings)}</span></div>}
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
-                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(subtotal)}</span></div>
+                <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(merchandise)}</span></div>
                 <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>
                 {quoteMsg && <span className="ck-err">{quoteMsg}</span>}
               </div>

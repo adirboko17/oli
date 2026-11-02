@@ -6,6 +6,7 @@ import CheckoutDetails, { type CheckoutPayload } from "@/components/CheckoutDeta
 import { useSite } from "@/components/site";
 import { readUser, saveOrder, useOliUser } from "@/lib/account-session";
 import { FF, fmt } from "@/lib/format";
+import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
@@ -165,6 +166,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
       onEditCart={site.openCart}
       onLogin={site.openAccount}
       onAddGift={(gift) => site.add({ id: gift.id, name: gift.name, sub: gift.sub, price: gift.price, image: gift.image || null }, gift.qty, true)}
+      bundleSavings={oliminiBundleOffer(site.products, site.collections, items).amount}
       onPay={onPay}
     />
   );

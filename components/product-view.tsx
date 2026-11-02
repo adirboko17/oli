@@ -10,6 +10,7 @@ import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
 import InciList from "@/components/product/InciList";
 import { FF, fmt } from "@/lib/format";
+import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { FREE_SHIPPING_FROM } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -18,7 +19,7 @@ import { usePromoGate } from "@/components/promo/promo-gate";
 import { useOliUser } from "@/lib/account-session";
 
 export function ProductView({ product, related, initialGiftAmount }: { product: CatalogProduct; related: CatalogProduct[]; initialGiftAmount?: string }) {
-  const { mobile, wide, headerH, add, items, collections } = useSite();
+  const { mobile, wide, headerH, add, items, products, collections } = useSite();
   const user = useOliUser();
   const { openQuiz, finished } = usePromoGate();
   const images = product.media.filter((item) => item.src);
@@ -47,7 +48,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const isGift = giftAmounts.length > 0 || giftMax != null;
   const thumbFit = isGift ? "contain" : "cover";
   const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
-  const cartTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const cartTotal = Math.max(0, items.reduce((sum, item) => sum + item.price * item.qty, 0) - oliminiBundleOffer(products, collections, items).amount);
   const stockCap = product.tracked ? product.stock : null;
   const soldOut = productSoldOut(product);
   const unitsWanted = bundle ? bundle.qty : qty;

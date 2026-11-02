@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
 import { menuHref, productsForMenu } from "@/lib/catalog-menu";
-import { paragraphs, productBlurb, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { paragraphs, productBlurb, productCardSub, productHref, productImage, type CatalogProduct } from "@/lib/catalog-model";
+import { oliminiShelfProducts } from "@/components/olimini/OliminiView";
 import { FF, fmt } from "@/lib/format";
 import { BestLoop, ProductTile } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
@@ -27,12 +28,6 @@ const STAGES = [
   { n: "04", title: "תינוקות", desc: "קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים.", img: "/assets/stage-baby.png", flat: true, test: /תינוק|baby|olimini/i },
 ];
 
-const MINI = [
-  { id: "pre", name: "Pre & Shower Ritual", sub: "מרקם רחצה לתינוקות", price: 69, img: "/assets/olimini-pre-cut.png", test: /pre\s*(&|and)?\s*shower|מרקם רחצה/i },
-  { id: "spa", name: "Baby Spa Ritual", sub: "קרם עיסוי לתינוק", price: 59, old: 74, img: "/assets/olimini-spa-cut.png", big: true, test: /baby spa|spa ritual/i },
-  { id: "after", name: "After Shower Ritual", sub: "קרם לחות לתינוק", price: 69, img: "/assets/olimini-after-cut.png", test: /after shower/i },
-];
-
 const PILLARS = [
   { n: "01", t: "ידע רפואי", d: "המוצרים פותחו בשיתוף רופאים בכירים וכימאים, על בסיס המומחיות הרפואית של המשפחה." },
   { n: "02", t: "רכיבים טבעיים", d: "שמנים וחומרי גלם טבעיים באיכות גבוהה, שנבחרו בקפידה עבור עור בהריון ואחרי לידה." },
@@ -43,6 +38,12 @@ const h2: CSSProperties = { fontFamily: FF, fontWeight: 400, letterSpacing: "-.0
 
 function findProduct(products: CatalogProduct[], test: RegExp) {
   return products.find((p) => test.test(`${p.title} ${p.category} ${p.tags.join(" ")}`)) ?? null;
+}
+
+function carouselOffset(index: number, active: number, count: number) {
+  let delta = (index - active + count) % count;
+  if (delta > count / 2) delta -= count;
+  return delta;
 }
 
 function Waves({ flip }: { flip?: boolean }) {
@@ -84,8 +85,12 @@ export function HomeView() {
     return () => window.removeEventListener("resize", sync);
   }, [kick]);
 
+  const miniProducts = useMemo(() => oliminiShelfProducts(products, collections), [products, collections]);
+  const miniCount = miniProducts.length;
+  const miniIndex = miniCount ? ((mini % miniCount) + miniCount) % miniCount : 0;
+
   const stages = STAGES.map((stage) => {
-    if (stage.title === "תינוקות") return { ...stage, href: "/olimini", count: "3 מוצרים" };
+    if (stage.title === "תינוקות") return { ...stage, href: "/olimini", count: miniCount ? `${miniCount} מוצרים` : "למוצרים" };
     const collection = collections.find((item) => stage.test.test(item.title));
     const count = collection ? products.filter((product) => collection.productIds.includes(product.id)).length : 0;
     const href = collection ? "/products?cat=" + encodeURIComponent(collection.title.trim()) : "/products";
@@ -101,10 +106,10 @@ export function HomeView() {
   }, [products, collections, giftCollection]);
 
   useEffect(() => {
-    if (!mobile) return;
-    const t = window.setInterval(() => setMini((i) => (i + 1) % 3), 3200);
+    if (!mobile || miniCount < 2) return;
+    const t = window.setInterval(() => setMini((i) => (i + 1) % miniCount), 3200);
     return () => window.clearInterval(t);
-  }, [mobile]);
+  }, [mobile, miniCount]);
 
   useEffect(() => {
     if (gifts.length < 2) return;
@@ -220,53 +225,56 @@ export function HomeView() {
           <h2 style={{ width: "min(92vw,720px)", margin: 0, lineHeight: 0 }}><img src="/assets/olimini-logo.svg" alt="olimini" style={{ display: "block", width: "100%", height: "auto" }} /></h2>
           <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520 }}>קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים, פרפום ופתלטים.</p>
         </div>
-        <div className="mini-desk" style={{ position: "relative", maxWidth: 940, margin: "0 auto", padding: "clamp(8px,2vw,20px) clamp(8px,3vw,32px) clamp(48px,7vw,80px)" }}>
-          <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", alignItems: "end", gap: "clamp(0px,1vw,16px)" }}>
-            {MINI.map((item) => {
-              const match = findProduct(products, item.test);
-              const price = match ? match.price : item.price;
-              const old = match?.compareAt && match.compareAt > match.price ? match.compareAt : item.old;
+        {miniCount > 0 ? (
+        <div className="mini-desk" style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "clamp(8px,2vw,20px) clamp(8px,3vw,32px) clamp(48px,7vw,80px)" }}>
+          <div style={{ position: "relative", display: "grid", gridTemplateColumns: `repeat(${miniCount},minmax(0,1fr))`, alignItems: "end", gap: "clamp(0px,1vw,12px)" }}>
+            {miniProducts.map((item, index) => {
+              const front = index === 1 || index === 2;
+              const old = item.compareAt != null && item.compareAt > item.price ? item.compareAt : undefined;
+              const image = productImage(item) ?? "";
               const hot = miniHover === item.id;
               return (
-                <Link key={item.id} href={match ? productHref(match) : "/products"} onMouseEnter={() => setMiniHover(item.id)} onMouseLeave={() => setMiniHover(null)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(14px,2vw,22px)", color: "#3A2826" }}>
-                  <div style={{ position: "relative", width: item.big ? "112%" : "100%", aspectRatio: "1/1", marginBottom: item.big ? "-2%" : 0, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                    <span style={{ position: "absolute", left: "28%", right: "28%", bottom: "5%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.22),transparent)", filter: "blur(4px)" }} />
-                    <span role="img" aria-label={item.name} style={{ position: "relative", width: "100%", height: "84%", backgroundImage: `url("${item.img}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom", transformOrigin: "center bottom", transform: hot ? "scale(1.08)" : "scale(1)", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }} />
+                <Link key={item.id} href={productHref(item)} onMouseEnter={() => setMiniHover(item.id)} onMouseLeave={() => setMiniHover(null)} style={{ position: "relative", zIndex: front ? 2 : 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: "clamp(14px,2vw,22px)", color: "#3A2826", marginInline: front ? "clamp(-20px,-1.6vw,-8px)" : 0 }}>
+                  <div style={{ position: "relative", width: front ? "100%" : "78%", height: front ? "clamp(230px,26vw,360px)" : "clamp(150px,16vw,230px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                    <span style={{ position: "absolute", left: "28%", right: "28%", bottom: "4%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.22),transparent)", filter: "blur(4px)" }} />
+                    <span role="img" aria-label={item.title} style={{ position: "relative", width: "100%", height: "100%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom", transformOrigin: "center bottom", transform: hot ? "scale(1.08)" : "scale(1)", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }} />
                   </div>
-                  <BottleCaption name={item.name} sub={item.sub} price={fmt(price)} old={old ? fmt(old) : ""} />
+                  <BottleCaption name={item.title} sub={productCardSub(item)} price={fmt(item.price)} old={old ? fmt(old) : ""} />
                 </Link>
               );
             })}
           </div>
         </div>
+        ) : null}
         <div className="mini-mob" onTouchStart={(e) => { (e.currentTarget as HTMLElement).dataset.x = String(e.changedTouches[0].clientX); }} onTouchEnd={(e) => {
+          if (miniCount < 2) return;
           const start = Number((e.currentTarget as HTMLElement).dataset.x || 0);
           const dx = e.changedTouches[0].clientX - start;
-          if (Math.abs(dx) > 30) setMini((i) => (i + (dx > 0 ? 1 : 2)) % 3);
+          if (Math.abs(dx) > 30) setMini((i) => (i + (dx > 0 ? 1 : miniCount - 1)) % miniCount);
         }} style={{ position: "relative", height: "clamp(420px,118vw,520px)", marginTop: 24, overflow: "hidden" }}>
-          {MINI.map((item, k) => {
-            const d = ((k - mini + 4) % 3) - 1;
+          {miniProducts.map((item, k) => {
+            const d = carouselOffset(k, miniIndex, miniCount);
             const on = d === 0;
-            const match = findProduct(products, item.test);
-            const price = match ? match.price : item.price;
+            const hidden = Math.abs(d) > 1;
+            const image = productImage(item) ?? "";
             return (
-              <Link key={item.id} href={match ? productHref(match) : "/products"} style={{ position: "absolute", top: 0, left: "50%", width: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, color: "#3A2826", textAlign: "center", transform: `translateX(calc(-50% + ${-d * 78}%)) scale(${on ? 1 : 0.72})`, transformOrigin: "center 60%", opacity: on ? 1 : 0.5, zIndex: on ? 2 : 1, pointerEvents: on ? "auto" : "none", transition: "transform .8s cubic-bezier(.65,0,.25,1), opacity .6s ease" }}>
+              <Link key={item.id} href={productHref(item)} style={{ position: "absolute", top: 0, left: "50%", width: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, color: "#3A2826", textAlign: "center", transform: `translateX(calc(-50% + ${-d * 78}%)) scale(${on ? 1 : 0.72})`, transformOrigin: "center 60%", opacity: hidden ? 0 : on ? 1 : 0.5, zIndex: on ? 2 : 1, pointerEvents: on ? "auto" : "none", transition: "transform .8s cubic-bezier(.65,0,.25,1), opacity .6s ease" }}>
                 <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "18px 0 22px" }}>
                   <span style={{ position: "absolute", left: "30%", right: "30%", bottom: 16, height: 14, borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.2),transparent)", filter: "blur(3px)" }} />
-                  <span role="img" aria-label={item.name} style={{ position: "relative", width: "78%", height: "92%", backgroundImage: `url("${item.img}")`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom" }} />
+                  <span role="img" aria-label={item.title} style={{ position: "relative", width: "78%", height: "92%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, opacity: on ? 1 : 0, transition: "opacity .4s ease" }}>
-                  <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 19, lineHeight: 1.2, direction: "ltr", whiteSpace: "nowrap" }}>{item.name}</span>
-                  <span style={{ fontSize: 13, color: "#6E5650" }}>{item.sub}</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{fmt(price)}</span>
+                  <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 19, lineHeight: 1.2, direction: "ltr", whiteSpace: "nowrap" }}>{item.title}</span>
+                  <span style={{ fontSize: 13, color: "#6E5650" }}>{productCardSub(item)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{fmt(item.price)}</span>
                 </div>
               </Link>
             );
           })}
         </div>
         <div className="mini-dots" style={{ justifyContent: "center", gap: 8, padding: "4px 0 44px" }}>
-          {MINI.map((item, i) => (
-            <button key={item.name} type="button" aria-label={item.name} onClick={() => setMini(i)} style={{ width: mini === i ? 22 : 7, height: 7, borderRadius: 99, border: 0, padding: 0, background: mini === i ? "#3A2826" : "#D8C3B6", transition: "all .35s" }} />
+          {miniProducts.map((item, i) => (
+            <button key={item.id} type="button" aria-label={item.title} onClick={() => setMini(i)} style={{ width: miniIndex === i ? 22 : 7, height: 7, borderRadius: 99, border: 0, padding: 0, background: miniIndex === i ? "#3A2826" : "#D8C3B6", transition: "all .35s" }} />
           ))}
         </div>
       </section>

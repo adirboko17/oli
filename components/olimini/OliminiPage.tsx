@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { OLIMINI_KIT_PRICE, OLIMINI_TOGO_PRICE } from '@/lib/olimini-kits';
 import OliminiPromise from './OliminiPromise';
 import OliminiToGo, { type ToGoProduct } from './OliminiToGo';
 import './OliminiPage.css';
@@ -26,8 +27,9 @@ const RISE: [string, number, number, number][] = [['20%', 18, 16, 0], ['62%', 24
 
 // olimini category page: hero with the wordmark and bubbles, the "החבילה של olimini" section (3 steps), and facts
 export default function OliminiPage({ shelf, products, toGo, related, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
-  const buyable = products.filter((product) => !product.soldOut);
-  const total = buyable.reduce((a, p) => a + p.price, 0);
+  const kitReady = products.length === 4 && products.every((product) => !product.soldOut);
+  const kitFull = products.reduce((sum, product) => sum + product.price, 0);
+  const toGoReady = toGo.length >= 2 && toGo.every((product) => !product.soldOut);
   const eyebrow = products.length === 3 ? 'שלושה צעדים, רגע אחד שלכם' : 'הטיפוח של olimini';
 
   return (
@@ -56,7 +58,7 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
 
         <div className="om-shelf">
           {shelf.map((p, i) => (
-            <Link key={p.id} href={p.href} className={`om-shelf__item${i === 1 ? ' is-tall' : ''}`} aria-label={p.name}>
+            <Link key={p.id} href={p.href} className={`om-shelf__item${i === 1 || i === 2 ? " is-front" : " is-back"}`} aria-label={p.name}>
               <span className="om-shadow" />
               <span className="om-bottle" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
             </Link>
@@ -95,11 +97,16 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
             ))}
           </div>
 
-          {buyable.length > 1 ? <button className="om-all" onClick={() => buyable.forEach(p => onAdd(p.id))}>הוספת החבילה המלאה לסל · {formatPrice(total)}</button> : null}
+          {kitReady ? (
+            <button className="om-all" onClick={() => products.forEach((product) => onAdd(product.id))}>
+              הוספת החבילה המלאה לסל · {formatPrice(OLIMINI_KIT_PRICE)}
+              {kitFull > OLIMINI_KIT_PRICE ? <s>{formatPrice(kitFull)}</s> : null}
+            </button>
+          ) : null}
         </section>
       ) : null}
 
-      <OliminiToGo products={toGo} onAdd={onAddToGo} formatPrice={formatPrice} />
+      <OliminiToGo products={toGo} kitPrice={toGoReady ? OLIMINI_TOGO_PRICE : undefined} onAdd={onAddToGo} onAddKit={toGoReady ? () => toGo.forEach((product) => onAddToGo(product)) : undefined} formatPrice={formatPrice} />
       {related}
       <OliminiPromise />
     </main>

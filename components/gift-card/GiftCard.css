@@ -27,6 +27,17 @@
 .oli-gc__amount{height:44px;min-width:78px;padding:0 18px;border-radius:999px;border:0;background:transparent;color:var(--ink);
   font:500 16px 'Google Sans','Heebo',sans-serif;cursor:pointer;transition:all .2s}
 .oli-gc__amount[aria-pressed="true"]{background:var(--blush);font-weight:600}
+@media (max-width:767px){
+  .oli-gc__buy{width:min(100%,400px);gap:12px}
+  .oli-gc__amounts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;border-radius:26px;padding:6px;gap:6px}
+  .oli-gc__amount{min-width:0;padding:0 4px;font-size:15px}
+  .oli-gc__amount--other{grid-column:1 / -1;height:42px;font-size:15px;background:#F8F1EC}
+  .oli-gc__amount--other[aria-pressed="true"]{background:var(--blush)}
+  .oli-gc__custom,.oli-gc__field,.oli-gc__cta{width:100%}
+  .oli-gc__field{justify-content:center}
+  .oli-gc__field input{flex:1;width:auto}
+  .oli-gc__cta{padding:0 16px}
+}
 .oli-gc__custom{display:none;flex-direction:column;align-items:center;gap:8px;animation:oliRise .4s cubic-bezier(.2,.8,.2,1) both}
 .oli-gc__custom.is-open{display:flex}
 .oli-gc__field{display:flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;background:#FFFFFF;border:1.5px solid var(--ink);direction:ltr}

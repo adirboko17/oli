@@ -25,6 +25,10 @@ export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit, forma
   if (!products?.length) return null;
   const full = products.reduce((a, p) => a + p.price, 0);
   const ils = formatPrice;
+  const exact = (value: number) => {
+    const rounded = Math.round(value * 100) / 100;
+    return "₪" + (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2));
+  };
 
   return (
     <section className="otg" dir="rtl">
@@ -38,8 +42,8 @@ export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit, forma
           <p className="otg__text">בקבוקים קטנים לתיק החיתולים, לביקורים ולחופשות.</p>
           {kitPrice != null && onAddKit && (
             <div className="otg__kit">
-              <span>ערכה מלאה · <strong>{ils(kitPrice)}</strong> {full > kitPrice && <s>{ils(full)}</s>}</span>
-              <button onClick={onAddKit} className="otg__link">הוספת שלושתם לסל</button>
+              <span>ערכה מלאה · <strong>{exact(kitPrice)}</strong> {full > kitPrice && <s>{exact(full)}</s>}</span>
+              <button onClick={onAddKit} className="otg__link">{products.length === 3 ? "הוספת שלושתם לסל" : "הוספת כולם לסל"}</button>
             </div>
           )}
         </div>
