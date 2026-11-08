@@ -8,7 +8,19 @@ import './Articles.css';
 // Connect this to the site's existing products/cart (name, short description, price, image, product link, add to cart)
 export type CalloutProduct = { id: string; name: string; sub: string; priceLabel: string; image: string; href: string };
 
-const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|<u>([^<\n]+)<\/u>/g;
+const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([^<]+)<\/a>|((?:https?:\/\/|www\.)[^\s<]+)|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|<u>([^<\n]+)<\/u>/g;
+
+function safeHref(raw: string) {
+  const href = raw.trim();
+  if (/^https?:\/\//i.test(href)) return href;
+  if (/^www\./i.test(href)) return "https://" + href;
+  if (href.startsWith("/") && !href.startsWith("//")) return href;
+  return "";
+}
+
+function articleLink(key: number, href: string, label: string) {
+  return <a key={key} href={href} target="_blank" rel="noopener noreferrer">{label}</a>;
+}
 
 export function articleText(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -16,10 +28,23 @@ export function articleText(text: string): ReactNode[] {
   for (const match of text.matchAll(INLINE)) {
     const start = match.index ?? 0;
     if (start > cursor) nodes.push(text.slice(cursor, start));
-    if (match[1] && match[2]) nodes.push(<a key={start} href={match[2]}>{match[1]}</a>);
-    else if (match[3]) nodes.push(<strong key={start}>{match[3]}</strong>);
-    else if (match[4]) nodes.push(<em key={start}>{match[4]}</em>);
-    else if (match[5]) nodes.push(<u key={start}>{match[5]}</u>);
+    if (match[1] && match[2]) {
+      const href = safeHref(match[2]);
+      nodes.push(href ? articleLink(start, href, match[1]) : match[1]);
+    } else if (match[3] && match[4]) {
+      const href = safeHref(match[3]);
+      nodes.push(href ? articleLink(start, href, match[4]) : match[4]);
+    } else if (match[5]) {
+      const trimmed = match[5].replace(/[),.;:!?]+$/, "");
+      const trail = match[5].slice(trimmed.length);
+      const href = safeHref(trimmed);
+      if (href) {
+        nodes.push(articleLink(start, href, trimmed));
+        if (trail) nodes.push(trail);
+      } else nodes.push(match[5]);
+    } else if (match[6]) nodes.push(<strong key={start}>{match[6]}</strong>);
+    else if (match[7]) nodes.push(<em key={start}>{match[7]}</em>);
+    else if (match[8]) nodes.push(<u key={start}>{match[8]}</u>);
     cursor = start + match[0].length;
   }
   if (cursor < text.length) nodes.push(text.slice(cursor));
@@ -52,10 +77,10 @@ export default function ArticleView({ article: a, media, getProduct, AddToCart }
         <header className="oa-article__head">
           <Link href={catHref} className="oa-eyebrow">{cat}</Link>
           <h1 className="oa-article__title">{a.title}</h1>
-          {a.lead && <p className="oa-article__lead">{a.lead}</p>}
+          {a.lead && <p className="oa-article__lead">{articleText(a.lead)}</p>}
           {a.author && (
             <div className="oa-article__meta">
-              <span className="oa-article__author">{a.author}</span>
+              <span className="oa-article__author">{articleText(a.author)}</span>
               {a.updated && <span>עודכן: {a.updated}</span>}
             </div>
           )}
