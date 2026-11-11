@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { checkoutGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
+import { checkoutGiftLine, isGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
 import { loadPublicCatalog } from "@/lib/catalog";
+import { lookupGiftCard } from "@/lib/gift-cards";
 import { moneyRound, oliminiBundleOffer, totalAfterOliminiBundle } from "@/lib/olimini-kits";
 import { loadShopShipping, quoteCheckout } from "@/lib/storely-shop";
 
@@ -11,7 +12,6 @@ export async function POST(request: Request) {
   const code = typeof body?.code === "string" ? body.code.trim() : "";
   const giftCode = typeof body?.giftCode === "string" ? body.giftCode.trim() : "";
   const rawItems = Array.isArray(body?.items) ? body.items : [];
-  if (!shippingName) return NextResponse.json({ ok: false, message: "בחרי אפשרות משלוח" }, { status: 400 });
 
   const items: { id: string; qty: number }[] = [];
   for (const item of rawItems) {
@@ -24,14 +24,44 @@ export async function POST(request: Request) {
   }
   if (!items.length) return NextResponse.json({ ok: false, message: "הסל ריק" }, { status: 400 });
 
-  const shop = await loadShopShipping(request.headers.get("host"));
-  if (!shop.methods.some((method) => method.name === shippingName)) {
-    return NextResponse.json({ ok: false, message: "אפשרות המשלוח לא זמינה" }, { status: 400 });
-  }
-
   const catalog = await loadPublicCatalog();
   if (catalog.status !== "ready") {
     return NextResponse.json({ ok: false, message: "לא הצלחנו לחשב את הסכום לתשלום" }, { status: 503 });
+  }
+  const digital = items.every((item) => isGiftLine(item.id));
+  const shop = await loadShopShipping(request.headers.get("host"));
+  if (digital) {
+    if (code) return NextResponse.json({ ok: false, message: "קוד ההנחה לא חל על כרטיס מתנה" }, { status: 400 });
+    let merchandise = 0;
+    for (const item of items) {
+      const price = resolvePrice(catalog.catalog.products, item.id);
+      if (price == null || price < 0) return NextResponse.json({ ok: false, message: "המוצר לא זמין להזמנה" }, { status: 400 });
+      merchandise += price * item.qty;
+    }
+    merchandise = moneyRound(merchandise);
+    let discount = 0;
+    if (giftCode) {
+      const card = await lookupGiftCard(giftCode);
+      if (!card.ok || !card.balance) {
+        return NextResponse.json({ ok: false, message: card.ok ? "היתרה בכרטיס נוצלה" : card.reason }, { status: 400 });
+      }
+      discount = Math.min(card.balance, merchandise);
+    }
+    return NextResponse.json({
+      ok: true,
+      total: moneyRound(merchandise - discount),
+      discount,
+      discountCode: discount > 0 ? "כרטיס מתנה" : "",
+      shipping: 0,
+      currency: shop.currency,
+      bundleBlocked: false,
+      addedGift: null,
+      saleLocked: false,
+      saleCustom: 0,
+    });
+  }
+  if (!shippingName || !shop.methods.some((method) => method.name === shippingName)) {
+    return NextResponse.json({ ok: false, message: shippingName ? "אפשרות המשלוח לא זמינה" : "בחרי אפשרות משלוח" }, { status: 400 });
   }
   const lines = storefrontLines(catalog.catalog.products, items);
   if (!lines.ok) return NextResponse.json({ ok: false, message: "המוצר לא זמין להזמנה" }, { status: 400 });

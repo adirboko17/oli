@@ -14,7 +14,7 @@ export type CheckoutPayload = {
   name: string; phone: string; email: string;
   shippingName: string; zone: string;
   city: string; street: string; apt: string; floor: string; zip: string; notes: string;
-  pregnancyWeek: string; babyAge: string; heard: string; heardOther: string;
+  pregnancyWeek: string; babyBirth: string; heard: string; heardOther: string;
   newsletter: boolean; coupon: string | null; giftCard: string | null;
   gift: GiftDetails | null;
 };
@@ -49,6 +49,60 @@ const GiftIcon = () => (
     <path d="M12 10c0-3.2 1.2-5.5 3.4-5.5S18.2 7 15.8 9.2 12 10 12 10z" />
   </svg>
 );
+
+function isoDay(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function birthFace(iso: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return "";
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "long", year: "numeric" }).format(date);
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.2" />
+      <path d="M3.5 10h17" />
+      <path d="M8 3.5V6" />
+      <path d="M16 3.5V6" />
+    </svg>
+  );
+}
+
+function BirthDateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const today = isoDay(new Date());
+  const earliest = isoDay(new Date(new Date().getFullYear() - 8, new Date().getMonth(), new Date().getDate()));
+  const shown = birthFace(value);
+  return (
+    <label className="ck-field">
+      <span>תאריך לידה של הבייבי<span className="ck-field__opt"> (לא חובה)</span></span>
+      <span className="ck-date-wrap">
+        <span className="ck-input ck-date-face" aria-hidden>
+          <span className={shown ? "" : "is-ph"}>{shown || "בחרי תאריך"}</span>
+          <span className="ck-date-ico"><CalendarIcon /></span>
+        </span>
+        <input
+          className="ck-date-native"
+          type="date"
+          lang="he"
+          aria-label="תאריך לידה של הבייבי"
+          value={value}
+          min={earliest}
+          max={today}
+          onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => {
+            try { e.currentTarget.showPicker(); } catch { /* the browser still opens the calendar from the field */ }
+          }}
+        />
+      </span>
+    </label>
+  );
+}
 
 function Field({ label, optional, className = '', ...input }: { label: string; optional?: boolean; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -91,7 +145,7 @@ export default function CheckoutDetails({
   const [quoteMsg, setQuoteMsg] = useState('');
   const [gift, setGift] = useState(false);
   const [to, setTo] = useState({ name: '', phone: '', email: '', message: '' });
-  const [about, setAbout] = useState({ pregnancyWeek: '', babyAge: '', heard: '', heardOther: '' });
+  const [about, setAbout] = useState({ pregnancyWeek: '', babyBirth: '', heard: '', heardOther: '' });
   const [terms, setTerms] = useState(false);
   const [news, setNews] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -166,7 +220,7 @@ export default function CheckoutDetails({
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); setErr(''); };
   const setGiftField = (k: keyof typeof to) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setTo({ ...to, [k]: e.target.value }); setErr(''); };
-  const setAboutField = (k: 'pregnancyWeek' | 'babyAge' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
+  const setAboutField = (k: 'pregnancyWeek' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
   const merchandise = Math.max(0, Math.round((subtotal - bundleSavings) * 100) / 100);
@@ -185,13 +239,14 @@ export default function CheckoutDetails({
   const addressReady = digital || (!!f.city.trim() && (pickup || !!f.street.trim()));
   const week = about.pregnancyWeek.trim();
   const weekOk = !week || (/^\d{1,2}$/.test(week) && Number(week) >= 1 && Number(week) <= 42);
+  const canShip = digital || (shippingMethods.length > 0 && !!selected);
   const valid = useMemo(() =>
     !!f.name.trim() && PHONE_RE.test(f.phone.replace(/\D/g, '')) && EMAIL_RE.test(f.email) &&
-    addressReady && terms && giftReady && weekOk && !!about.heard && shippingMethods.length > 0 && !!selected && quote != null && !quoting,
-  [f, terms, addressReady, giftReady, weekOk, about.heard, shippingMethods.length, selected, quote, quoting]);
+    addressReady && terms && giftReady && weekOk && !!about.heard && canShip && quote != null && !quoting,
+  [f, terms, addressReady, giftReady, weekOk, about.heard, canShip, quote, quoting]);
 
   useEffect(() => {
-    if (!selected) {
+    if (!digital && !selected) {
       setQuote(null);
       setQuoting(false);
       setQuoteMsg('');
@@ -208,7 +263,7 @@ export default function CheckoutDetails({
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          shippingName: selected.name,
+          shippingName: selected?.name ?? '',
           items: sent.map((item) => ({ id: item.id, qty: item.qty })),
           code: acceptedCode,
           customerEmail: f.email.trim(),
@@ -235,14 +290,14 @@ export default function CheckoutDetails({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [selected, items, acceptedCode, giftCode, f.email, currency, acceptQuote]);
+  }, [digital, selected, items, acceptedCode, giftCode, f.email, currency, acceptQuote]);
 
   const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
   const applyCoupon = async () => {
     const code = coupon.trim();
     if (couponBusy) return;
-    if (!selected) { setCouponMsg({ text: 'בחרי אפשרות משלוח', ok: false }); return; }
+    if (!digital && !selected) { setCouponMsg({ text: 'בחרי אפשרות משלוח', ok: false }); return; }
     if (!code) { setAcceptedCode(''); setGiftCode(''); setCouponMsg(null); return; }
     setCouponBusy(true);
     setCouponMsg(null);
@@ -252,7 +307,7 @@ export default function CheckoutDetails({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          shippingName: selected.name,
+          shippingName: selected?.name ?? '',
           items: items.map((item) => ({ id: item.id, qty: item.qty })),
           code,
           customerEmail: f.email.trim(),
@@ -276,7 +331,7 @@ export default function CheckoutDetails({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              shippingName: selected.name,
+              shippingName: selected?.name ?? '',
               items: items.map((item) => ({ id: item.id, qty: item.qty })),
               code: acceptedCode,
               customerEmail: f.email.trim(),
@@ -319,10 +374,11 @@ export default function CheckoutDetails({
   };
 
   const pay = async () => {
-    if (!shippingMethods.length) { setErr('אין אפשרות משלוח, ואי אפשר להמשיך לתשלום'); return; }
-    if (!selected) { setErr('בחרי אפשרות משלוח'); return; }
+    if (!digital && !shippingMethods.length) { setErr('אין אפשרות משלוח, ואי אפשר להמשיך לתשלום'); return; }
+    if (!digital && !selected) { setErr('בחרי אפשרות משלוח'); return; }
     if (quoting || !quote) { setErr(quoteMsg || 'הסכום לתשלום עדיין לא מוכן'); return; }
     if (gift && !giftReady) { setErr('נא למלא שם, מייל, טלפון וברכה של מי שמקבלת את המתנה'); return; }
+    if (about.babyBirth && (about.babyBirth > isoDay(new Date()) || !/^\d{4}-\d{2}-\d{2}$/.test(about.babyBirth))) { setErr('תאריך הלידה צריך להיות היום או תאריך שעבר'); return; }
     if (!weekOk) { setErr('שבוע הריון צריך להיות בין 1 ל־42'); return; }
     if (!about.heard) { setErr('נשמח לדעת איך שמעת עלינו'); return; }
     if (!valid) { setErr('נא למלא את כל השדות ולאשר את התקנון'); return; }
@@ -331,10 +387,10 @@ export default function CheckoutDetails({
       await onPay({
         ...f,
         phone: f.phone.replace(/\D/g, ''),
-        shippingName: selected?.name || '',
-        zone: selected?.zone || '',
+        shippingName: digital ? '' : (selected?.name || ''),
+        zone: digital ? '' : (selected?.zone || ''),
         pregnancyWeek: week,
-        babyAge: about.babyAge.trim(),
+        babyBirth: about.babyBirth,
         heard: about.heard,
         heardOther: about.heard === 'אחר' ? about.heardOther.trim() : '',
         newsletter: news,
@@ -348,7 +404,7 @@ export default function CheckoutDetails({
   };
 
   const PayButton = ({ label }: { label: string }) => (
-    <button className={`ck-pay${valid ? '' : ' is-disabled'}`} onClick={pay} disabled={busy || shippingMethods.length === 0}>
+    <button className={`ck-pay${valid ? '' : ' is-disabled'}`} onClick={pay} disabled={busy || (!digital && shippingMethods.length === 0)}>
       <LockIcon /><span>{busy ? 'מעבירים לתשלום…' : label}</span>
     </button>
   );
@@ -394,7 +450,12 @@ export default function CheckoutDetails({
               {/* 2. Shipping */}
               <section className="ck-card">
                 <div className="ck-card__head"><span className="ck-num">2</span><h2>משלוח</h2></div>
-                {shippingMethods.length === 0 ? (
+                {digital ? (
+                  <div className="ck-digital">
+                    <span className="ck-digital__title">משלוח דיגיטלי · חינם</span>
+                    <span className="ck-digital__sub">כרטיס המתנה נשלח במייל, בלי דמי משלוח.</span>
+                  </div>
+                ) : shippingMethods.length === 0 ? (
                   <p className="ck-ship-empty">אין אפשרות משלוח, ואי אפשר להמשיך לתשלום.</p>
                 ) : (
                   <div className="ck-ships" role="radiogroup">
@@ -407,7 +468,6 @@ export default function CheckoutDetails({
                     ))}
                   </div>
                 )}
-                {digital && <span className="ck-digital__sub">כרטיס המתנה נשלח למייל ולטלפון.</span>}
 
                 <label className={`ck-gift${gift ? ' is-on' : ''}`}>
                   <input type="checkbox" checked={gift} onChange={e => {
@@ -422,7 +482,7 @@ export default function CheckoutDetails({
                   <span className="ck-gift__icon"><GiftIcon /></span>
                   <span className="ck-gift__copy">
                     <span className="ck-gift__title">האם זו מתנה?</span>
-                    <span className="ck-gift__sub">נשלח אל מישהי אחרת, למייל ולטלפון, עם ברכה</span>
+                    <span className="ck-gift__sub">{digital ? "נשלח אל מישהי אחרת, למייל, עם ברכה" : "נשלח אל מישהי אחרת, למייל ולטלפון, עם ברכה"}</span>
                   </span>
                 </label>
 
@@ -430,7 +490,7 @@ export default function CheckoutDetails({
                   <div className="ck-gift-panel" id="ck-gift-panel">
                     <div className="ck-gift-panel__head">
                       <span className="ck-gift-panel__kicker">למי השמחה</span>
-                      <span className="ck-gift-panel__hint">{digital ? 'הקבלה נשארת אצלך. הכרטיס והברכה נשלחים למייל ולטלפון של המקבלת.' : 'הקבלה נשארת אצלך. הברכה נשלחת למייל ולטלפון, והחבילה יוצאת לכתובת של המקבלת.'}</span>
+                      <span className="ck-gift-panel__hint">{digital ? 'הקבלה נשארת אצלך. הכרטיס והברכה נשלחים למייל של המקבלת.' : 'הקבלה נשארת אצלך. הברכה נשלחת למייל ולטלפון, והחבילה יוצאת לכתובת של המקבלת.'}</span>
                     </div>
                     <div className="ck-row ck-row--auto">
                       <Field label="שם המקבלת" value={to.name} onChange={setGiftField('name')} autoComplete="off" placeholder="שם מלא" />
@@ -494,7 +554,7 @@ export default function CheckoutDetails({
                 <div className="ck-card__head"><span className="ck-num">3</span><h2>עלייך</h2></div>
                 <div className="ck-row ck-row--auto">
                   <Field label="שבוע הריון" optional className="is-ltr" value={about.pregnancyWeek} onChange={setAboutField('pregnancyWeek')} type="number" inputMode="numeric" min={1} max={42} placeholder="למשל 24" />
-                  <Field label="גיל הבייבי" optional value={about.babyAge} onChange={setAboutField('babyAge')} placeholder="למשל 3 חודשים" />
+                  <BirthDateField value={about.babyBirth} onChange={(value) => { setAbout({ ...about, babyBirth: value }); setErr(''); }} />
                 </div>
                 <div className="ck-hear">
                   <span className="ck-hear__q">נשמח לשמוע איך שמעת עלינו</span>
@@ -561,7 +621,7 @@ export default function CheckoutDetails({
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
                 {quote && quote.saleCustom > 0 && <div><span>סכום חופשי</span><span>{formatMoney(quote.saleCustom, payCurrency)}</span></div>}
-                <div><span>משלוח{selected ? ` · ${selected.name}` : ''}</span><span>{locked && quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
+                <div><span>משלוח{digital ? ' · דיגיטלי' : selected ? ` · ${selected.name}` : ''}</span><span>{digital ? formatShippingPrice(0, payCurrency) : locked && quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
                 {bundleSavings > 0 && !quote && <div className="ck-totals__disc"><span>הנחת חבילה</span><span>−{fmt(bundleSavings)}</span></div>}
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
                 <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(merchandise)}</span></div>

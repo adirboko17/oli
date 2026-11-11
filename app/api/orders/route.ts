@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { loadPublicCatalog } from "@/lib/catalog";
 import { isGiftLine, resolvePrice, storefrontLines } from "@/lib/checkout-lines";
+import { sendGiftCardEmail } from "@/lib/gift-card-mail";
 import { settleGiftCards } from "@/lib/gift-cards";
 import { moneyRound, oliminiBundleOffer, totalAfterOliminiBundle } from "@/lib/olimini-kits";
 import { isPickupZone } from "@/lib/shipping";
@@ -18,6 +19,17 @@ type PlacedOrder = { orderNumber: string; total: number; shipping: number; disco
 function orderAmount(value: unknown, fallback: number) {
   const amount = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : fallback;
+}
+
+function giftRecipient(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const gift = value as Record<string, unknown>;
+  const name = typeof gift.name === "string" ? gift.name.trim() : "";
+  const email = typeof gift.email === "string" ? gift.email.trim() : "";
+  const phone = typeof gift.phone === "string" ? gift.phone.replace(/\D/g, "") : "";
+  const message = typeof gift.message === "string" ? gift.message.trim().slice(0, 500) : "";
+  if (!name || !EMAIL_RE.test(email)) return null;
+  return { name, email, phone, message };
 }
 
 function orderReason(value: unknown) {
@@ -127,7 +139,8 @@ export async function POST(request: Request) {
   const street = typeof body?.street === "string" ? body.street.trim() : "";
   const zip = typeof body?.zip === "string" ? body.zip.trim() : "";
   const rawItems = Array.isArray(body?.items) ? body.items : [];
-  if (!shippingName || !name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email)) {
+  const recipient = giftRecipient(body?.gift);
+  if (!name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email)) {
     return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
   }
 
@@ -164,33 +177,42 @@ export async function POST(request: Request) {
   const giftCode = typeof body?.giftCard === "string" ? body.giftCard.trim() : "";
 
   const digital = lines.every((line) => isGiftLine(line.id));
+  if (digital && coupon) {
+    return NextResponse.json({ ok: false, error: "quote", message: "קוד ההנחה לא חל על כרטיס מתנה" }, { status: 400 });
+  }
   const shop = await loadShopShipping(request.headers.get("host"));
-  const choice = shop.methods.find((method) => method.name === shippingName);
-  if (!choice) return NextResponse.json({ ok: false, error: "shipping", message: "אפשרות המשלוח לא זמינה" }, { status: 400 });
-  if (!digital && (!city || (!isPickupZone(choice.zone) && !street))) {
+  const choice = shop.methods.find((method) => method.name === shippingName) ?? null;
+  if (!digital && !choice) return NextResponse.json({ ok: false, error: "shipping", message: "אפשרות המשלוח לא זמינה" }, { status: 400 });
+  if (!digital && choice && (!city || (!isPickupZone(choice.zone) && !street))) {
     return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
   }
 
-  const quotedLines = storefrontLines(catalog.catalog.products, lines);
-  if (!quotedLines.ok) return NextResponse.json({ ok: false, error: "price", message: "המוצר לא זמין להזמנה" }, { status: 400 });
-  const quoted = await quoteCheckout({
-    hostHeader: request.headers.get("host"),
-    shippingName: choice.name,
-    lines: quotedLines.lines,
-    code: coupon,
-    customerEmail: email,
-    giftCode,
-  });
-  if (!quoted.ok) return NextResponse.json({ ok: false, error: "quote", message: quoted.reason }, { status: 400 });
-  const payable = quoted.total;
+  let payable = subtotal;
   let gift = 0;
   let issued: { code: string; amount: number }[] = [];
   let orderNumber = "";
-  const placedProducts = quoted.lines.length > 0;
-  let orderShipping = quoted.shipping ?? 0;
-  let orderDiscount = quoted.discount;
-  let orderTotal = payable;
-  if (placedProducts) {
+  let placedProducts = false;
+  let orderShipping = 0;
+  let orderDiscount = 0;
+  let orderTotal = subtotal;
+  if (!digital && choice) {
+    const quotedLines = storefrontLines(catalog.catalog.products, lines);
+    if (!quotedLines.ok) return NextResponse.json({ ok: false, error: "price", message: "המוצר לא זמין להזמנה" }, { status: 400 });
+    const quoted = await quoteCheckout({
+      hostHeader: request.headers.get("host"),
+      shippingName: choice.name,
+      lines: quotedLines.lines,
+      code: coupon,
+      customerEmail: email,
+      giftCode,
+    });
+    if (!quoted.ok) return NextResponse.json({ ok: false, error: "quote", message: quoted.reason }, { status: 400 });
+    payable = quoted.total;
+    placedProducts = quoted.lines.length > 0;
+    orderShipping = quoted.shipping ?? 0;
+    orderDiscount = quoted.discount;
+    orderTotal = payable;
+    if (placedProducts) {
     const placed = await placeStorefrontOrder({
       lines: quoted.lines,
       name,
@@ -223,6 +245,7 @@ export async function POST(request: Request) {
       console.error("purchase event failed", error instanceof Error ? error.name : "Error");
     }
   }
+  }
   if (purchases.length || (giftCode && !placedProducts)) {
     const settled = await settleGiftCards({
       name,
@@ -231,7 +254,7 @@ export async function POST(request: Request) {
       street,
       city,
       zip,
-      shippingName: choice.name,
+      shippingName: choice?.name ?? "",
       code: placedProducts ? "" : giftCode,
       payable,
       purchases,
@@ -240,6 +263,22 @@ export async function POST(request: Request) {
     gift = Math.round((settled.applied ?? 0) * 100) / 100;
     issued = settled.issued ?? [];
     if (!orderNumber && settled.orderNumber) orderNumber = String(settled.orderNumber);
+    if (digital) {
+      orderShipping = 0;
+      orderDiscount = gift;
+      orderTotal = moneyRound(Math.max(0, subtotal - gift));
+    }
+  }
+
+  let emailed = false;
+  if (recipient && issued.length) {
+    emailed = await sendGiftCardEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      senderName: name,
+      message: recipient.message,
+      cards: issued,
+    });
   }
 
   return NextResponse.json({
@@ -253,5 +292,6 @@ export async function POST(request: Request) {
     total: orderTotal,
     lines,
     issued,
+    emailed,
   });
 }

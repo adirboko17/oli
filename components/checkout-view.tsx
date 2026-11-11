@@ -10,6 +10,11 @@ import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
+function birthLabel(iso: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return match ? `${Number(match[3])}.${Number(match[2])}.${match[1]}` : iso;
+}
+
 export type RecoveredCheckout = {
   lines: { id: string; name: string; sub: string; price: number; image: string | null; qty: number }[];
   customer: { name: string; phone: string; email: string; city: string; street: string; zip: string } | null;
@@ -23,6 +28,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
   const [paid, setPaid] = useState(0);
   const [orderNumber, setOrderNumber] = useState("");
   const [issued, setIssued] = useState<{ code: string; amount: number }[]>([]);
+  const [sentTo, setSentTo] = useState("");
 
   const items = useMemo(() => {
     const source = site.items.length ? site.items : (recovered?.lines ?? []);
@@ -75,11 +81,12 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
           data.floor && `קומה ${data.floor}`,
           data.notes,
           data.pregnancyWeek && `שבוע הריון ${data.pregnancyWeek}`,
-          data.babyAge && `גיל הבייבי ${data.babyAge}`,
+          data.babyBirth && `תאריך לידה ${birthLabel(data.babyBirth)}`,
           data.heard && `שמעה עלינו: ${data.heard}${data.heardOther ? ` (${data.heardOther})` : ""}`,
           data.gift?.message && `ברכה: ${data.gift.message}`,
         ].filter(Boolean).join(", "),
         zip: data.zip,
+        gift: data.gift,
       }),
     });
     const body = await res.json().catch(() => null) as {
@@ -91,6 +98,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
       total?: number;
       lines?: { id: string; qty: number; price: number }[];
       issued?: { code: string; amount: number }[];
+      emailed?: boolean;
       message?: string;
     } | null;
     const number = body?.orderNumber || body?.orderId;
@@ -104,7 +112,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
       const prices = new Map((body.lines ?? []).map((line) => [line.id, line.price]));
       const digitalOrder = items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
       const place = digitalOrder
-        ? data.shippingName
+        ? "משלוח דיגיטלי"
         : [
             data.shippingName,
             !isPickupZone(data.zone) ? data.street : "",
@@ -120,13 +128,14 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
         status: "new",
         lines: items.map((item) => ({ id: item.id, name: item.name, sub: item.sub, qty: item.qty, price: prices.get(item.id) ?? item.price, image: item.image || null })),
         subtotal: body.subtotal ?? body.total,
-        ship: body.shipping ?? 0,
+        ship: digitalOrder ? 0 : (body.shipping ?? 0),
         addr: addr || "הכתובת מהחשבון",
       });
     }
     setPaid(body.total);
     setOrderNumber(number);
     setIssued(body.issued ?? []);
+    setSentTo(body.emailed && data.gift ? data.gift.name : "");
     setDone(true);
     site.clearCart();
   }
@@ -142,7 +151,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
           <p style={{ fontSize: 17, lineHeight: 1.6, color: "#5E4844" }}>קיבלנו את ההזמנה. מספר ההזמנה הוא {orderNumber}. הסכום שנרשם הוא {fmt(paid)}.</p>
           {issued.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ fontSize: 16, lineHeight: 1.5, color: "#3A2826" }}>הקוד של כרטיס המתנה מוכן. אפשר להעתיק אותו ולשלוח למי שמקבלת.</p>
+              <p style={{ fontSize: 16, lineHeight: 1.5, color: "#3A2826" }}>{sentTo ? `שלחנו את כרטיס המתנה למייל של ${sentTo}.` : "הקוד של כרטיס המתנה מוכן. אפשר להעתיק אותו ולשלוח למי שמקבלת."}</p>
               {issued.map((card) => (
                 <div key={card.code} dir="ltr" style={{ display: "flex", justifyContent: "space-between", gap: 16, background: "#FFFFFF", border: "1px solid #E7D5C9", borderRadius: 16, padding: "14px 18px", fontFamily: "ui-monospace, monospace", fontSize: 18 }}>
                   <span>{card.code}</span>
