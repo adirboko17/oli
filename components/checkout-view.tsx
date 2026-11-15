@@ -10,11 +10,6 @@ import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
-function birthLabel(iso: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  return match ? `${Number(match[3])}.${Number(match[2])}.${match[1]}` : iso;
-}
-
 export type RecoveredCheckout = {
   lines: { id: string; name: string; sub: string; price: number; image: string | null; qty: number }[];
   customer: { name: string; phone: string; email: string; city: string; street: string; zip: string } | null;
@@ -80,13 +75,15 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
           data.apt && `דירה ${data.apt}`,
           data.floor && `קומה ${data.floor}`,
           data.notes,
-          data.pregnancyWeek && `שבוע הריון ${data.pregnancyWeek}`,
-          data.babyBirth && `תאריך לידה ${birthLabel(data.babyBirth)}`,
-          data.heard && `שמעה עלינו: ${data.heard}${data.heardOther ? ` (${data.heardOther})` : ""}`,
           data.gift?.message && `ברכה: ${data.gift.message}`,
         ].filter(Boolean).join(", "),
         zip: data.zip,
         gift: data.gift,
+        pregnancyWeek: data.pregnancyWeek,
+        babyBirth: data.babyBirth,
+        heard: data.heard,
+        heardOther: data.heardOther,
+        newsletter: data.newsletter,
       }),
     });
     const body = await res.json().catch(() => null) as {

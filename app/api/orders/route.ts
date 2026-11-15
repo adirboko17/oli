@@ -13,6 +13,7 @@ import { loadShopShipping, quoteCheckout, storefrontHost, type StoreLine } from 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^05\d{8}$/;
 const STORE_HOST = "oli-eosin.vercel.app";
+const HEARD = new Set(["שמעתי מחברה", "רשתות חברתיות", "גוגל", "דרך הפודקאסט", "דולה/אשת מקצוע", "אחר"]);
 
 type PlacedOrder = { orderNumber: string; total: number; shipping: number; discount: number };
 
@@ -129,6 +130,41 @@ async function placeStorefrontOrder(input: {
   };
 }
 
+async function recordCheckout(input: {
+  orderNumber: string;
+  hostname: string;
+  pregnancyWeek: number | null;
+  babyBirth: string;
+  heard: string;
+  heardDetail: string;
+  marketingConsent: boolean;
+}) {
+  const url = process.env.STORELY_SUPABASE_URL?.trim().replace(/\/$/, "");
+  const key = process.env.STORELY_PUBLISHABLE_KEY?.trim();
+  const trackingKey = process.env.STORELY_TRACKING_KEY?.trim();
+  if (!url || !key || !trackingKey || !input.orderNumber) return;
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/record_storefront_checkout`, {
+      method: "POST",
+      headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        tracking_key: trackingKey,
+        hostname: input.hostname || STORE_HOST,
+        order_number: input.orderNumber,
+        pregnancy_week: input.pregnancyWeek,
+        baby_birth: input.babyBirth || null,
+        heard: input.heard,
+        heard_detail: input.heardDetail,
+        marketing_consent: input.marketingConsent,
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) console.error("checkout answers were not saved", response.status);
+  } catch {
+    console.error("checkout answers were not saved");
+  }
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const shippingName = typeof body?.shippingName === "string" ? body.shippingName.trim() : "";
@@ -175,6 +211,12 @@ export async function POST(request: Request) {
 
   const coupon = typeof body?.coupon === "string" ? body.coupon.trim() : "";
   const giftCode = typeof body?.giftCard === "string" ? body.giftCard.trim() : "";
+  const weekValue = typeof body?.pregnancyWeek === "number" ? body.pregnancyWeek : Number(body?.pregnancyWeek);
+  const pregnancyWeek = Number.isInteger(weekValue) && weekValue >= 1 && weekValue <= 42 ? weekValue : null;
+  const babyBirth = typeof body?.babyBirth === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.babyBirth) ? body.babyBirth : "";
+  const heard = typeof body?.heard === "string" && HEARD.has(body.heard) ? body.heard : "";
+  const heardDetail = heard === "אחר" && typeof body?.heardOther === "string" ? body.heardOther.trim().slice(0, 200) : "";
+  const marketingConsent = body?.newsletter === true;
 
   const digital = lines.every((line) => isGiftLine(line.id));
   if (digital && coupon) {
@@ -268,6 +310,18 @@ export async function POST(request: Request) {
       orderDiscount = gift;
       orderTotal = moneyRound(Math.max(0, subtotal - gift));
     }
+  }
+
+  if (orderNumber) {
+    await recordCheckout({
+      orderNumber,
+      hostname: await storefrontHost(request.headers.get("host")),
+      pregnancyWeek,
+      babyBirth,
+      heard,
+      heardDetail,
+      marketingConsent,
+    });
   }
 
   let emailed = false;
