@@ -9,7 +9,7 @@ import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
-import { FREE_SHIPPING_FROM } from "@/lib/shipping";
+import { FREE_SHIPPING_FROM, isGiftLineId } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import {
   IconBag, IconSearch, IconUser,
@@ -550,12 +550,14 @@ function CartDrawer() {
   const listTotal = site.items.reduce((a, x) => a + x.price * x.qty, 0);
   const bundle = oliminiBundleOffer(site.products, site.collections, site.items);
   const total = Math.max(0, Math.round((listTotal - bundle.amount) * 100) / 100);
-  const gap = Math.max(0, FREE_SHIPPING - total);
-  const companions = shippingCompanions(site.products, site.items, total);
+  const digitalCart = site.items.length > 0 && site.items.every((item) => isGiftLineId(item.id));
+  const physicalTotal = Math.max(0, Math.round((site.items.reduce((sum, item) => isGiftLineId(item.id) ? sum : sum + item.price * item.qty, 0) - bundle.amount) * 100) / 100);
+  const gap = digitalCart ? 0 : Math.max(0, FREE_SHIPPING - physicalTotal);
+  const companions = digitalCart ? [] : shippingCompanions(site.products, site.items, physicalTotal);
   const { present, visible } = useShown(site.cartOpen);
   if (!present) return null;
   const open = visible;
-  const ship = gap === 0 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(gap) + " ומקבלים משלוח חינם";
+  const ship = digitalCart ? "משלוח דיגיטלי · חינם" : gap === 0 ? "✓ מגיע לך משלוח חינם" : "עוד " + fmt(gap) + " ומקבלים משלוח חינם";
   return (
     <>
       <div onClick={site.closeCart} style={backdrop(70, open)} />
@@ -574,7 +576,7 @@ function CartDrawer() {
             <span>{ship}</span>
           </div>
             <div style={{ height: 4, borderRadius: 2, background: "#EBDAD0", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 3, background: "#A85A3A", width: Math.min(100, (total / FREE_SHIPPING) * 100) + "%", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} />
+            <div style={{ height: "100%", borderRadius: 3, background: "#A85A3A", width: Math.min(100, ((digitalCart ? FREE_SHIPPING : physicalTotal) / FREE_SHIPPING) * 100) + "%", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} />
           </div>
         </div>
         {!site.items.length ? (

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { formatMoney, formatShippingPrice, FREE_SHIPPING_FROM, isPickupZone, shippingAfterFreeThreshold, type ShippingChoice } from '@/lib/shipping';
+import { formatMoney, formatShippingPrice, FREE_SHIPPING_FROM, isGiftLineId, isPickupZone, shippingAfterFreeThreshold, type ShippingChoice } from '@/lib/shipping';
 import './CheckoutDetails.css';
 
 /* Oli: details & shipping page (step 2 of 3: cart → details & shipping → payment) */
@@ -224,12 +224,14 @@ export default function CheckoutDetails({
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
   const merchandise = Math.max(0, Math.round((subtotal - bundleSavings) * 100) / 100);
+  const giftMerchandise = items.reduce((sum, item) => isGiftLineId(item.id) ? sum + item.price * item.qty : sum, 0);
+  const physicalMerchandise = Math.max(0, Math.round((merchandise - giftMerchandise) * 100) / 100);
   const locked = quote?.saleLocked === true;
-  const freeShipping = !locked && merchandise >= FREE_SHIPPING_FROM;
-  const digital = items.length > 0 && items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
+  const digital = items.length > 0 && items.every((item) => isGiftLineId(item.id));
+  const freeShipping = !locked && !digital && physicalMerchandise >= FREE_SHIPPING_FROM;
   const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
   const amountDue = quote
-    ? (locked ? quote.total : shippingAfterFreeThreshold(merchandise, quote.shipping ?? selected?.price ?? 0, quote.total).total)
+    ? (locked ? quote.total : shippingAfterFreeThreshold(physicalMerchandise, quote.shipping ?? selected?.price ?? 0, quote.total).total)
     : null;
   const pickup = selected ? isPickupZone(selected.zone) : false;
   const payCurrency = quote?.currency || currency;
@@ -468,6 +470,12 @@ export default function CheckoutDetails({
                     ))}
                   </div>
                 )}
+                {!digital && giftMerchandise > 0 && (
+                  <div className="ck-digital">
+                    <span className="ck-digital__title">כרטיס המתנה נשלח במייל</span>
+                    <span className="ck-digital__sub">דמי המשלוח חלים על המוצר הפיזי, לכתובת שמילאת. הכרטיס נשלח למייל של המקבלת, או למייל שלך אם זו לא מתנה.</span>
+                  </div>
+                )}
 
                 <label className={`ck-gift${gift ? ' is-on' : ''}`}>
                   <input type="checkbox" checked={gift} onChange={e => {
@@ -482,7 +490,7 @@ export default function CheckoutDetails({
                   <span className="ck-gift__icon"><GiftIcon /></span>
                   <span className="ck-gift__copy">
                     <span className="ck-gift__title">האם זו מתנה?</span>
-                    <span className="ck-gift__sub">{digital ? "נשלח אל מישהי אחרת, למייל, עם ברכה" : "נשלח אל מישהי אחרת, למייל ולטלפון, עם ברכה"}</span>
+                    <span className="ck-gift__sub">{digital ? "נשלח אל מישהי אחרת, למייל, עם ברכה" : giftMerchandise > 0 ? "המוצר הפיזי יישלח לכתובת, וכרטיס המתנה למייל שתבחרי" : "נשלח אל מישהי אחרת, למייל ולטלפון, עם ברכה"}</span>
                   </span>
                 </label>
 
@@ -490,7 +498,7 @@ export default function CheckoutDetails({
                   <div className="ck-gift-panel" id="ck-gift-panel">
                     <div className="ck-gift-panel__head">
                       <span className="ck-gift-panel__kicker">למי השמחה</span>
-                      <span className="ck-gift-panel__hint">{digital ? 'הקבלה נשארת אצלך. הכרטיס והברכה נשלחים למייל של המקבלת.' : 'הקבלה נשארת אצלך. הברכה נשלחת למייל ולטלפון, והחבילה יוצאת לכתובת של המקבלת.'}</span>
+                      <span className="ck-gift-panel__hint">{digital ? 'הקבלה נשארת אצלך. הכרטיס והברכה נשלחים למייל של המקבלת.' : giftMerchandise > 0 ? 'המוצר הפיזי יישלח לכתובת שתמלא. כרטיס המתנה והברכה יישלחו למייל של המקבלת.' : 'הקבלה נשארת אצלך. הברכה נשלחת למייל ולטלפון, והחבילה יוצאת לכתובת של המקבלת.'}</span>
                     </div>
                     <div className="ck-row ck-row--auto">
                       <Field label="שם המקבלת" value={to.name} onChange={setGiftField('name')} autoComplete="off" placeholder="שם מלא" />

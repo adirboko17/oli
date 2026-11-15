@@ -11,23 +11,24 @@ export type PopupMedia = "none" | "right" | "left";
 export type PopupMotion = "rise" | "fade" | "scale" | "slide" | "bloom" | "none";
 
 type PopupBlockShape =
-  | { id: string; type: "heading"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan }
-  | { id: string; type: "text"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan }
+  | { id: string; type: "heading"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank" | "playfair"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan; letterSpacing?: number }
+  | { id: string; type: "text"; text: string; color: string; size: number; align: PopupAlign; font: "inherit" | "heebo" | "frank" | "playfair"; weight: "regular" | "medium" | "semibold" | "bold"; span: PopupSpan; letterSpacing?: number }
   | { id: string; type: "image"; src: string; alt: string; radius: number; width: number; fit: "cover" | "contain"; focus: "center" | "top" | "bottom"; frame: number; bleed: boolean; fade: number; fadeSide: number; span: PopupSpan }
   | { id: string; type: "logo"; src: string; width: number; align: PopupAlign; span: PopupSpan }
-  | { id: string; type: "button"; label: string; href: string; action: "link" | "submit"; background: string; color: string; radius: number; span: PopupSpan }
+  | { id: string; type: "button"; label: string; href: string; action: "link" | "submit"; background: string; color: string; radius: number; span: PopupSpan; width?: number }
   | { id: string; type: "field"; fieldType: "text" | "email" | "tel" | "textarea" | "checkbox"; label: string; name: string; placeholder: string; required: boolean; span: PopupSpan }
   | { id: string; type: "spacer"; height: number; span: PopupSpan }
-  | { id: string; type: "row"; span: PopupSpan; columns: PopupColumn[] };
+  | { id: string; type: "row"; span: PopupSpan; columns: PopupColumn[] }
+  | { id: string; type: "overlay"; src: string; alt: string; height: number; fit: "cover" | "contain"; padding: number; gap: number; align: PopupAlign; justify: "start" | "center" | "end"; blocks: PopupLeaf[] };
 
 export type PopupBlock = PopupBlockShape & { phone?: PopupPhoneTune };
-export type PopupLeaf = Exclude<PopupBlockShape, { type: "row" }> & { phone?: PopupPhoneTune };
+export type PopupLeaf = Exclude<PopupBlockShape, { type: "row" } | { type: "overlay" }> & { phone?: PopupPhoneTune };
 export type PopupPhoneTune = {
   span?: PopupSpan;
   size?: number;
   color?: string;
   align?: PopupAlign;
-  font?: "inherit" | "heebo" | "frank";
+  font?: "inherit" | "heebo" | "frank" | "playfair";
   weight?: "regular" | "medium" | "semibold" | "bold";
   width?: number;
   radius?: number;
@@ -247,8 +248,31 @@ function imageRadius(row: Record<string, unknown>) {
   return legacy && radius === 12 ? 0 : radius;
 }
 
-function textFont(value: unknown): "inherit" | "heebo" | "frank" {
-  return value === "heebo" || value === "frank" ? value : "inherit";
+function textFont(value: unknown): "inherit" | "heebo" | "frank" | "playfair" {
+  return value === "heebo" || value === "frank" || value === "playfair" ? value : "inherit";
+}
+
+function styleRecord(row: Record<string, unknown>) {
+  return row.style && typeof row.style === "object" && !Array.isArray(row.style) ? row.style as Record<string, unknown> : null;
+}
+
+function styledSize(row: Record<string, unknown>, style: Record<string, unknown> | null, min: number, max: number, fallback: number) {
+  return num(typeof style?.fontSize === "number" ? style.fontSize : row.size, min, max, fallback);
+}
+
+function styledWeight(row: Record<string, unknown>, style: Record<string, unknown> | null, fallback: "regular" | "medium" | "semibold" | "bold") {
+  const value = style?.fontWeight ?? row.weight;
+  if (value === "bold" || value === 700) return "bold";
+  if (value === "semibold" || value === 600) return "semibold";
+  if (value === "medium" || value === 500) return "medium";
+  if (value === "regular" || value === 400) return "regular";
+  return fallback;
+}
+
+function letterSpacing(style: Record<string, unknown> | null) {
+  if (typeof style?.letterSpacing !== "number" || !Number.isFinite(style.letterSpacing)) return undefined;
+  const value = Math.min(16, Math.max(-2, Math.round(style.letterSpacing * 10) / 10));
+  return value === 0 ? undefined : value;
 }
 
 function textWeight(value: unknown, fallback: "regular" | "medium" | "semibold" | "bold") {
@@ -256,17 +280,41 @@ function textWeight(value: unknown, fallback: "regular" | "medium" | "semibold" 
   return fallback;
 }
 
-function parseShape(value: unknown, index: number): PopupBlock | null {
+function parseShape(value: unknown, index: number, depth = 0): PopupBlock | null {
   const row = record(value);
-  if (!row) return null;
+  if (!row || depth > 3) return null;
   const id = text(row.id, 80) || `block-${index}`;
+  const style = styleRecord(row);
+  if (row.type === "overlay") {
+    const blocks = Array.isArray(row.blocks) ? row.blocks.flatMap((child, childIndex) => {
+      const next = parseBlock(child, childIndex, depth + 1);
+      return next && next.type !== "row" && next.type !== "overlay" ? [next] : [];
+    }).slice(0, 12) : [];
+    const src = safeImage(text(row.src, 500));
+    if (!src && !blocks.length) return null;
+    const align: PopupAlign = style?.align === "left" || style?.align === "right" || row.align === "left" || row.align === "right" ? (style?.align === "left" || row.align === "left" ? "left" : "right") : "center";
+    const justify = style?.justify === "start" || style?.justify === "end" ? style.justify : "center";
+    return {
+      id,
+      type: "overlay",
+      src,
+      alt: text(row.alt, 120),
+      height: num(style?.height, 160, 760, 420),
+      fit: style?.fit === "contain" ? "contain" : "cover",
+      padding: num(style?.padding, 0, 64, 16),
+      gap: num(style?.gap, 0, 40, 8),
+      align,
+      justify,
+      blocks,
+    };
+  }
   if (row.type === "row" && Array.isArray(row.columns)) {
     const columns = row.columns.flatMap((entry) => {
       const column = record(entry);
       if (!column) return [];
       const blocks = Array.isArray(column.blocks) ? column.blocks.flatMap((child, childIndex) => {
-        const next = parseBlock(child, childIndex);
-        return next && next.type !== "row" ? [next] : [];
+        const next = parseBlock(child, childIndex, depth + 1);
+        return next && next.type !== "row" && next.type !== "overlay" ? [next] : [];
       }).slice(0, 8) : [];
       const phoneWidth = typeof column.phoneWidth === "number" ? num(column.phoneWidth, 15, 100, 0) : 0;
       return [{ id: text(column.id, 80) || `column-${index}`, width: num(column.width, 15, 100, 0), blocks, ...(phoneWidth > 0 ? { phoneWidth } : {}) }];
@@ -275,10 +323,11 @@ function parseShape(value: unknown, index: number): PopupBlock | null {
     return { id, type: "row", span: "full", columns: fitColumnWidths(columns) };
   }
   const align: PopupAlign = row.align === "center" || row.align === "left" ? row.align : "right";
+  const tracking = letterSpacing(style);
   if (row.type === "heading") {
-    return { id, type: "heading", text: text(row.text, 160), color: hex(row.color, "#1a1a1a"), size: num(row.size, 16, 48, 28), align, font: textFont(row.font), weight: row.weight === "regular" ? "medium" : textWeight(row.weight, "bold"), span: spanOf(row.span) };
+    return { id, type: "heading", text: text(row.text, 160), color: hex(style?.color ?? row.color, "#1a1a1a"), size: styledSize(row, style, 16, 80, 28), align, font: textFont(style?.fontFamily ?? row.font), weight: styledWeight(row, style, "bold"), span: spanOf(row.span), ...(tracking != null ? { letterSpacing: tracking } : {}) };
   }
-  if (row.type === "text") return { id, type: "text", text: text(row.text, 800), color: hex(row.color, "#4a4a4a"), size: num(row.size, 12, 24, 15), align, font: textFont(row.font), weight: textWeight(row.weight, "regular"), span: spanOf(row.span) };
+  if (row.type === "text") return { id, type: "text", text: text(row.text, 800), color: hex(style?.color ?? row.color, "#4a4a4a"), size: styledSize(row, style, 12, 32, 15), align, font: textFont(style?.fontFamily ?? row.font), weight: styledWeight(row, style, "regular"), span: spanOf(row.span), ...(tracking != null ? { letterSpacing: tracking } : {}) };
   if (row.type === "image") return { id, type: "image", src: safeImage(text(row.src, 500)), alt: text(row.alt, 120), radius: imageRadius(row), width: num(row.width, 30, 100, 100), fit: row.fit === "contain" ? "contain" : "cover", focus: row.focus === "top" || row.focus === "bottom" ? row.focus : "center", frame: num(row.frame, 0, 480, 0), bleed: row.bleed === true, fade: num(row.fade, 0, 80, 0), fadeSide: num(row.fadeSide, 0, 80, 0), span: spanOf(row.span) };
   if (row.type === "logo") return { id, type: "logo", src: safeImage(text(row.src, 500)), width: num(row.width, 48, 220, 112), align: row.align === "left" || row.align === "right" || row.align === "center" ? row.align : "center", span: spanOf(row.span) };
   if (row.type === "button") {
@@ -288,10 +337,11 @@ function parseShape(value: unknown, index: number): PopupBlock | null {
       label: text(row.label, 40) || "לחצו כאן",
       href: safeHref(text(row.href, 300)),
       action: row.action === "submit" ? "submit" : "link",
-      background: hex(row.background, "#1a1a1a"),
-      color: hex(row.color, "#ffffff"),
-      radius: row.radius === 999 ? 999 : num(row.radius, 0, 28, 12),
+      background: hex(style?.background ?? row.background, "#1a1a1a"),
+      color: hex(style?.color ?? row.color, "#ffffff"),
+      radius: style?.radius === 999 || row.radius === 999 ? 999 : num(style?.radius ?? row.radius, 0, 28, 12),
       span: spanOf(row.span),
+      ...(typeof style?.width === "number" ? { width: num(style.width, 80, 480, 0) } : {}),
     };
   }
   if (row.type === "field") {
@@ -313,7 +363,7 @@ function parsePhone(value: unknown): PopupPhoneTune | undefined {
   const color = hex(row.color, "");
   if (color) tune.color = color;
   if (row.align === "right" || row.align === "center" || row.align === "left") tune.align = row.align;
-  if (row.font === "inherit" || row.font === "heebo" || row.font === "frank") tune.font = row.font;
+  if (row.font === "inherit" || row.font === "heebo" || row.font === "frank" || row.font === "playfair") tune.font = row.font;
   if (row.weight === "regular" || row.weight === "medium" || row.weight === "semibold" || row.weight === "bold") tune.weight = row.weight;
   if (typeof row.width === "number") tune.width = num(row.width, 10, 220, 100);
   if (typeof row.radius === "number") tune.radius = row.radius === 999 ? 999 : num(row.radius, 0, 40, 0);
@@ -329,15 +379,18 @@ function parsePhone(value: unknown): PopupPhoneTune | undefined {
   return Object.keys(tune).length ? tune : undefined;
 }
 
-function parseBlock(value: unknown, index: number): PopupBlock | null {
+function parseBlock(value: unknown, index: number, depth = 0): PopupBlock | null {
   const row = record(value);
-  const block = parseShape(value, index);
+  const block = parseShape(value, index, depth);
   if (!block || !row) return block;
   const phone = parsePhone(row.phone);
   return phone ? { ...block, phone } : block;
 }
 
 export function blockOnDevice(block: PopupBlock, device: "desktop" | "mobile"): PopupBlock {
+  if (block.type === "overlay") {
+    return { ...block, blocks: block.blocks.map((child) => blockOnDevice(child, device)).filter((child): child is PopupLeaf => child.type !== "row" && child.type !== "overlay") };
+  }
   if (block.type === "row") {
     return { ...block, columns: block.columns.map((column) => ({ ...column, width: device === "mobile" && column.phoneWidth ? column.phoneWidth : column.width, blocks: column.blocks.map((child) => blockOnDevice(child, device)).filter((child): child is PopupLeaf => child.type !== "row") })) };
   }

@@ -75,10 +75,19 @@ export async function POST(request: Request) {
     giftCode,
   });
   if (!quoted.ok) return NextResponse.json({ ok: false, message: quoted.reason }, { status: 400 });
-  const merchandise = moneyRound(items.reduce((sum, item) => sum + (resolvePrice(catalog.catalog.products, item.id) ?? 0) * item.qty, 0));
+  let giftMerchandise = 0;
+  let physicalMerchandise = 0;
+  for (const item of items) {
+    const price = resolvePrice(catalog.catalog.products, item.id);
+    if (price == null || price < 0) return NextResponse.json({ ok: false, message: "המוצר לא זמין להזמנה" }, { status: 400 });
+    if (isGiftLine(item.id)) giftMerchandise += price * item.qty;
+    else physicalMerchandise += price * item.qty;
+  }
+  giftMerchandise = moneyRound(giftMerchandise);
+  physicalMerchandise = moneyRound(physicalMerchandise);
   const bundle = oliminiBundleOffer(catalog.catalog.products, catalog.catalog.collections, items);
   const waived = totalAfterOliminiBundle({
-    merchandise,
+    merchandise: physicalMerchandise,
     shipping: quoted.shipping,
     total: quoted.total,
     savings: bundle.amount,
@@ -89,7 +98,7 @@ export async function POST(request: Request) {
     : null;
   return NextResponse.json({
     ok: true,
-    total: waived.total,
+    total: moneyRound(waived.total + giftMerchandise),
     discount: moneyRound(quoted.discount + bundle.amount),
     discountCode: quoted.discountCode || bundle.label,
     shipping: waived.shipping,

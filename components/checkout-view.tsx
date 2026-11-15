@@ -7,7 +7,7 @@ import { useSite } from "@/components/site";
 import { readUser, saveOrder, useOliUser } from "@/lib/account-session";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
-import { isPickupZone, type ShippingChoice } from "@/lib/shipping";
+import { isGiftLineId, isPickupZone, type ShippingChoice } from "@/lib/shipping";
 import { trackPurchase } from "@/lib/storely-actions";
 
 export type RecoveredCheckout = {
@@ -24,6 +24,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
   const [orderNumber, setOrderNumber] = useState("");
   const [issued, setIssued] = useState<{ code: string; amount: number }[]>([]);
   const [sentTo, setSentTo] = useState("");
+  const [shippedPhysical, setShippedPhysical] = useState(false);
 
   const items = useMemo(() => {
     const source = site.items.length ? site.items : (recovered?.lines ?? []);
@@ -104,10 +105,11 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
       const recorded = await trackPurchase(body.total);
       if (!recorded) throw new Error("track");
     }
+    const digitalOrder = items.every((item) => isGiftLineId(item.id));
+    const physicalOrder = items.some((item) => !isGiftLineId(item.id));
     const account = readUser();
     if (account) {
       const prices = new Map((body.lines ?? []).map((line) => [line.id, line.price]));
-      const digitalOrder = items.every((item) => item.id.startsWith("oli-gift:") || item.id.includes(":gift:"));
       const place = digitalOrder
         ? "משלוח דיגיטלי"
         : [
@@ -132,7 +134,8 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
     setPaid(body.total);
     setOrderNumber(number);
     setIssued(body.issued ?? []);
-    setSentTo(body.emailed && data.gift ? data.gift.name : "");
+    setSentTo(body.emailed ? (data.gift?.name || data.email) : "");
+    setShippedPhysical(physicalOrder && !digitalOrder);
     setDone(true);
     site.clearCart();
   }
@@ -146,6 +149,7 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: "#5E4844" }}>קיבלנו את ההזמנה. מספר ההזמנה הוא {orderNumber}. הסכום שנרשם הוא {fmt(paid)}.</p>
+          {shippedPhysical && <p style={{ fontSize: 16, lineHeight: 1.5, color: "#3A2826" }}>המוצר הפיזי יישלח לכתובת שמילאת בקופה.</p>}
           {issued.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <p style={{ fontSize: 16, lineHeight: 1.5, color: "#3A2826" }}>{sentTo ? `שלחנו את כרטיס המתנה למייל של ${sentTo}.` : "הקוד של כרטיס המתנה מוכן. אפשר להעתיק אותו ולשלוח למי שמקבלת."}</p>

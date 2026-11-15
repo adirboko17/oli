@@ -15,6 +15,7 @@ import {
   safeHref,
   type PopupBlock,
   type PopupDesign,
+  type PopupLeaf,
   type StorefrontPopup,
 } from "@/lib/store-popups";
 
@@ -233,7 +234,7 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const fields: Record<string, string> = {};
-    const fieldsBlocks = design.blocks.flatMap((block) => block.type === "row" ? block.columns.flatMap((column) => column.blocks) : [block]);
+    const fieldsBlocks = design.blocks.flatMap((block) => block.type === "row" ? block.columns.flatMap((column) => column.blocks) : block.type === "overlay" ? block.blocks : [block]);
     for (const block of fieldsBlocks) {
       if (block.type !== "field") continue;
       if (block.fieldType === "checkbox") {
@@ -322,6 +323,10 @@ export function StorePopups({ popups }: { popups: StorefrontPopup[] }) {
                     );
                   })}
                 </div>
+              ) : block.type === "overlay" ? (
+                <div key={block.id} style={{ gridColumn: "1 / -1", width: look.padding ? `calc(100% + ${look.padding * 2}px)` : "100%", margin: -look.padding }}>
+                  <OverlayBlock block={block} busy={sending} titleId={titleId} />
+                </div>
               ) : (
                 <div key={block.id} style={{ gridColumn: !look.stackColumns && block.span === "half" ? "span 1" : "1 / -1" }}>
                   <BlockView block={block} busy={sending} titleId={index === 0 ? titleId : undefined} pad={look.padding} flushTop={index === 0} surface={design.background} />
@@ -345,9 +350,10 @@ function richCopy(value: string) {
   ));
 }
 
-function textFontStack(font: "inherit" | "heebo" | "frank") {
+function textFontStack(font: "inherit" | "heebo" | "frank" | "playfair") {
   if (font === "heebo") return '"Heebo","Assistant",sans-serif';
   if (font === "frank") return '"Frank Ruhl Libre","Times New Roman",serif';
+  if (font === "playfair") return '"Playfair Display","Frank Ruhl Libre",serif';
   return undefined;
 }
 
@@ -368,10 +374,25 @@ function ImageVeil({ fade, fadeSide, edges, surface }: { fade: number; fadeSide:
   );
 }
 
-function BlockView({ block, titleId, pad = 0, flushTop = false, edges, fill = false, surface = "#ffffff", busy = false }: { block: Exclude<PopupBlock, { type: "row" }>; titleId?: string; pad?: number; flushTop?: boolean; edges?: { start: boolean; end: boolean }; fill?: boolean; surface?: string; busy?: boolean }) {
+function OverlayBlock({ block, busy, titleId }: { block: Extract<PopupBlock, { type: "overlay" }>; busy: boolean; titleId: string }) {
+  const justify = block.justify === "start" ? "flex-start" : block.justify === "end" ? "flex-end" : "center";
+  const align = block.align === "left" ? "flex-start" : block.align === "right" ? "flex-end" : "center";
+  return (
+    <div style={{ position: "relative", overflow: "hidden", minHeight: block.height, maxHeight: "86dvh" }}>
+      {block.src ? <img src={block.src} alt={block.alt} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: block.fit, objectPosition: "center" }} /> : null}
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent, rgba(58,40,38,.45))" }} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: justify, alignItems: align, gap: block.gap, minHeight: block.height, maxHeight: "86dvh", overflow: "auto", padding: block.padding, textAlign: block.align }}>
+        {block.blocks.map((child, index) => <BlockView key={child.id} block={child} busy={busy} titleId={index === 0 ? titleId : undefined} />)}
+      </div>
+    </div>
+  );
+}
+
+function BlockView({ block, titleId, pad = 0, flushTop = false, edges, fill = false, surface = "#ffffff", busy = false }: { block: PopupLeaf; titleId?: string; pad?: number; flushTop?: boolean; edges?: { start: boolean; end: boolean }; fill?: boolean; surface?: string; busy?: boolean }) {
   const align = block.type === "heading" || block.type === "text" ? block.align : "right";
-  if (block.type === "heading") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.25, whiteSpace: "pre-wrap" }}>{richCopy(block.text)}</div>;
-  if (block.type === "text") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{richCopy(block.text)}</div>;
+  const copyStyle = block.type === "heading" || block.type === "text" ? { letterSpacing: block.letterSpacing ? `${block.letterSpacing}px` : undefined } : undefined;
+  if (block.type === "heading") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.05, whiteSpace: "pre-wrap", ...copyStyle }}>{richCopy(block.text)}</div>;
+  if (block.type === "text") return <div id={titleId} style={{ color: block.color, fontFamily: textFontStack(block.font), fontSize: block.size, fontWeight: textWeightValue(block.weight), textAlign: align, lineHeight: 1.55, whiteSpace: "pre-wrap", ...copyStyle }}>{richCopy(block.text)}</div>;
   if (block.type === "image" && block.src) {
     const fit = block.fit === "contain" ? "contain" : "cover";
     const bleed = block.bleed && pad > 0;
@@ -400,7 +421,7 @@ function BlockView({ block, titleId, pad = 0, flushTop = false, edges, fill = fa
   }
   if (block.type === "logo" && block.src) return <div style={{ width: "100%", textAlign: block.align }}><img src={block.src} alt="" style={{ display: "inline-block", width: block.width, maxWidth: "100%", height: "auto", objectFit: "contain" }} /></div>;
   if (block.type === "button") {
-    const buttonStyle = { display: "grid", width: "100%", height: 44, placeItems: "center", background: block.background, color: block.color, borderRadius: block.radius, fontWeight: 700, textDecoration: "none", border: 0, cursor: "pointer", font: "inherit" } as const;
+    const buttonStyle = { display: "grid", width: block.width ? block.width : "100%", maxWidth: "100%", height: 44, placeItems: "center", background: block.background, color: block.color, borderRadius: block.radius, fontWeight: 700, textDecoration: "none", border: 0, cursor: "pointer", font: "inherit" } as const;
     if (block.action === "submit") return <button type="submit" id={titleId} disabled={busy} style={buttonStyle}>{busy ? "שולחים…" : block.label}</button>;
     if (block.href) return <a id={titleId} href={block.href} style={buttonStyle}>{block.label}</a>;
     return <span style={buttonStyle}>{block.label}</span>;

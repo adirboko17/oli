@@ -6,6 +6,10 @@ export type ShippingChoice = {
 
 export const FREE_SHIPPING_FROM = 250;
 
+export function isGiftLineId(id: string) {
+  return id.startsWith("oli-gift:") || id.includes(":gift:");
+}
+
 export function shippingAfterFreeThreshold(subtotal: number, shipping: number | null, total: number) {
   if (subtotal < FREE_SHIPPING_FROM || shipping == null || shipping <= 0) return { shipping, total };
   return { shipping: 0, total: Math.round((total - shipping) * 100) / 100 };

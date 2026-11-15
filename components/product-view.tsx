@@ -11,7 +11,7 @@ import ProductFAQ from "@/components/contact/ProductFAQ";
 import InciList from "@/components/product/InciList";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
-import { FREE_SHIPPING_FROM } from "@/lib/shipping";
+import { FREE_SHIPPING_FROM, isGiftLineId } from "@/lib/shipping";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
 import { FirstOrderLine } from "@/components/final/FooterAndPromo";
@@ -48,7 +48,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const isGift = giftAmounts.length > 0 || giftMax != null;
   const thumbFit = isGift ? "contain" : "cover";
   const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
-  const cartTotal = Math.max(0, items.reduce((sum, item) => sum + item.price * item.qty, 0) - oliminiBundleOffer(products, collections, items).amount);
+  const cartTotal = Math.max(0, items.reduce((sum, item) => isGiftLineId(item.id) ? sum : sum + item.price * item.qty, 0) - oliminiBundleOffer(products, collections, items).amount);
   const stockCap = product.tracked ? product.stock : null;
   const soldOut = productSoldOut(product);
   const unitsWanted = bundle ? bundle.qty : qty;

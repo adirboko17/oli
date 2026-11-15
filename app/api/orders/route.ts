@@ -207,6 +207,7 @@ export async function POST(request: Request) {
     }
   }
   subtotal = moneyRound(subtotal);
+  const giftPurchases = moneyRound(purchases.reduce((sum, amount) => sum + amount, 0));
   const bundle = oliminiBundleOffer(catalog.catalog.products, catalog.catalog.collections, [...qtyById].map(([id, qty]) => ({ id, qty })));
 
   const coupon = typeof body?.coupon === "string" ? body.coupon.trim() : "";
@@ -253,7 +254,7 @@ export async function POST(request: Request) {
     placedProducts = quoted.lines.length > 0;
     orderShipping = quoted.shipping ?? 0;
     orderDiscount = quoted.discount;
-    orderTotal = payable;
+    orderTotal = moneyRound(payable + giftPurchases);
     if (placedProducts) {
     const placed = await placeStorefrontOrder({
       lines: quoted.lines,
@@ -271,7 +272,7 @@ export async function POST(request: Request) {
     if (!placed.ok) return NextResponse.json({ ok: false, error: "order", message: placed.reason }, { status: 400 });
     orderNumber = placed.order.orderNumber;
     const waived = totalAfterOliminiBundle({
-      merchandise: subtotal,
+      merchandise: moneyRound(subtotal - giftPurchases),
       shipping: placed.order.shipping,
       total: placed.order.total,
       savings: bundle.amount,
@@ -279,8 +280,8 @@ export async function POST(request: Request) {
     });
     orderShipping = waived.shipping ?? placed.order.shipping;
     orderDiscount = moneyRound(placed.order.discount + bundle.amount);
-    orderTotal = waived.total;
-    subtotal = waived.merchandise;
+    orderTotal = moneyRound(waived.total + giftPurchases);
+    subtotal = moneyRound(waived.merchandise + giftPurchases);
     try {
       await trackPurchase(orderTotal);
     } catch (error) {
@@ -325,12 +326,12 @@ export async function POST(request: Request) {
   }
 
   let emailed = false;
-  if (recipient && issued.length) {
+  if (issued.length) {
     emailed = await sendGiftCardEmail({
-      to: recipient.email,
-      recipientName: recipient.name,
-      senderName: name,
-      message: recipient.message,
+      to: recipient?.email || email,
+      recipientName: recipient?.name || name,
+      senderName: recipient ? name : "",
+      message: recipient?.message ?? "",
       cards: issued,
     });
   }
