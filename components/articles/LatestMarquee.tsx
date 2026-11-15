@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { articlePublicPath } from '@/lib/article-paths';
-import { ARTICLES, CATEGORIES, CATEGORY_TINT, articleNumber } from './articles';
+import { FramedPhoto } from './FramedPhoto';
+import { ARTICLES, CATEGORIES, CATEGORY_TINT, articleNumber, type Article } from './articles';
 import './Articles.css';
 
+type Shot = { image?: string; imageX?: number; imageY?: number; imageScale?: number };
+
 // "Latest articles" marquee: the first 10 articles, duplicated for a seamless loop. Pauses on hover.
-export function LatestMarquee({ count = 10 }: { count?: number }) {
-  const latest = ARTICLES.slice(0, count);
+export function LatestMarquee({ count = 10, media = {} }: { count?: number; media?: Record<string, Shot> }) {
+  const latest = ARTICLES.slice(0, count).map((article) => {
+    const shot = media[article.slug];
+    return shot?.image ? { ...article, image: shot.image, imageX: shot.imageX, imageY: shot.imageY, imageScale: shot.imageScale } : article;
+  });
   const items = [...latest, ...latest];
   return (
     <div className="oa-marquee">
@@ -14,9 +20,7 @@ export function LatestMarquee({ count = 10 }: { count?: number }) {
         <div className="oa-marquee__track">
           {items.map((a, i) => (
             <Link key={i} href={articlePublicPath(a.slug)} className="oa-pill" dir="rtl" aria-hidden={i >= latest.length || undefined} tabIndex={i >= latest.length ? -1 : undefined}>
-              {a.image
-                ? <span className={"oa-pill__thumb" + (a.image === "/assets/logo-brown.png" ? " is-logo" : "")} style={{ backgroundImage: `url("${a.image}")` }} />
-                : <span className="oa-pill__thumb oa-pill__thumb--num" style={{ background: CATEGORY_TINT[a.category] }}>{articleNumber(a)}</span>}
+              <MarqueeThumb article={a} />
               <span className="oa-pill__text">
                 <span className="oa-pill__cat">{CATEGORIES[a.category]}</span>
                 <span className="oa-pill__title">{a.title}</span>
@@ -26,5 +30,19 @@ export function LatestMarquee({ count = 10 }: { count?: number }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function MarqueeThumb({ article }: { article: Article }) {
+  if (!article.image) {
+    return <span className="oa-pill__thumb oa-pill__thumb--num" style={{ background: CATEGORY_TINT[article.category] }}>{articleNumber(article)}</span>;
+  }
+  if (article.image === "/assets/logo-brown.png") {
+    return <span className="oa-pill__thumb is-logo" style={{ backgroundImage: `url("${article.image}")` }} />;
+  }
+  return (
+    <span className="oa-pill__thumb">
+      <FramedPhoto src={article.image} alt="" x={article.imageX} y={article.imageY} scale={article.imageScale} />
+    </span>
   );
 }

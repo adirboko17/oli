@@ -38,7 +38,7 @@ export default function ArticlesIndex({ initialCategory = 'all', media = {} }: {
           <p className="oa-index__intro">בעמוד המאמרים שלנו תמצאי מידע מקצועי ועדכני על הריון, לידה ותינוקות. אנו משתפות מדריכים להריון, טיפים להכנת הגוף ללידה, טיפים להריון, מידע על בדיקות בהריון, טיפול בעור בתקופת ההריון ולאחר הלידה ועוד. כל התכנים נכתבים בליווי אנשי מקצוע, במטרה להעניק ידע אמין שיסייע לך לעבור את תקופת ההריון והלידה בצורה רגועה.</p>
         </header>
 
-        <LatestMarquee />
+        <LatestMarquee media={media} />
 
         <div className="oa-index__list">
           <div className="oa-toolbar">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useLayoutEffect, useRef, useState, type SyntheticEvent } from "react";
 
 function placeImage(frameW: number, frameH: number, natW: number, natH: number, x: number, y: number, scale: number) {
   if (!frameW || !frameH || !natW || !natH) return null;
@@ -19,34 +19,50 @@ function clampOffset(offset: number, frame: number, size: number) {
   return Math.min(Math.max(0, frame - size), Math.max(0, offset));
 }
 
+function rememberSize(image: HTMLImageElement) {
+  if (!image.complete || !image.naturalWidth) return null;
+  return { w: image.naturalWidth, h: image.naturalHeight };
+}
+
 export function FramedPhoto({ src, alt, x = 50, y = 50, scale = 1, logo = false }: { src: string; alt: string; x?: number; y?: number; scale?: number; logo?: boolean }) {
-  const ref = useRef<HTMLSpanElement>(null);
+  const frameRef = useRef<HTMLSpanElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [frame, setFrame] = useState({ w: 0, h: 0 });
   const [natural, setNatural] = useState({ w: 0, h: 0 });
 
-  useEffect(() => {
-    const node = ref.current;
+  useLayoutEffect(() => {
+    const node = frameRef.current;
     if (!node) return;
-    const measure = () => setFrame({ w: node.clientWidth, h: node.clientHeight });
+    const measure = () => {
+      const next = { w: node.clientWidth, h: node.clientHeight };
+      setFrame((current) => (current.w === next.w && current.h === next.h ? current : next));
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
+    setNatural(imageRef.current ? rememberSize(imageRef.current) ?? { w: 0, h: 0 } : { w: 0, h: 0 });
     return () => observer.disconnect();
-  }, []);
+  }, [src]);
+
+  function onLoad(event: SyntheticEvent<HTMLImageElement>) {
+    const ready = rememberSize(event.currentTarget);
+    if (ready) setNatural(ready);
+  }
 
   if (logo) return <img src={src} alt={alt} className="is-logo" />;
 
   const placed = placeImage(frame.w, frame.h, natural.w, natural.h, x, y, scale);
   return (
-    <span ref={ref} style={{ position: "absolute", inset: 0, display: "block", overflow: "hidden" }}>
+    <span ref={frameRef} style={{ position: "absolute", inset: 0, display: "block", overflow: "hidden" }}>
       <img
+        ref={imageRef}
+        className="oa-frame__img"
         src={src}
         alt={alt}
-        loading="lazy"
-        onLoad={(event: SyntheticEvent<HTMLImageElement>) => setNatural({ w: event.currentTarget.naturalWidth, h: event.currentTarget.naturalHeight })}
+        onLoad={onLoad}
         style={placed
           ? { position: "absolute", width: placed.width, height: placed.height, left: placed.left, top: placed.top, maxWidth: "none" }
-          : { width: "100%", height: "100%", objectFit: "cover" }}
+          : { position: "absolute", width: 0, height: 0, opacity: 0 }}
       />
     </span>
   );
