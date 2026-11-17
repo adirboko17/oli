@@ -19,7 +19,8 @@ import { usePromoGate } from "@/components/promo/promo-gate";
 import { useOliUser } from "@/lib/account-session";
 
 export function ProductView({ product, related, initialGiftAmount }: { product: CatalogProduct; related: CatalogProduct[]; initialGiftAmount?: string }) {
-  const { mobile, wide, headerH, add, items, products, collections } = useSite();
+  const { wide, headerH, add, items, products, collections } = useSite();
+  const phone = usePhoneLayout();
   const user = useOliUser();
   const { openQuiz, finished } = usePromoGate();
   const images = product.media.filter((item) => item.src);
@@ -67,8 +68,8 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const menuCategory = productMenuTarget(product, collections);
   const faq = product.faq;
   const highlights = product.page.highlights.slice(0, 4);
-  const fewStories = !mobile && stories.length > 0 && stories.length <= 3;
-  const visibleReviews = mobile || showAllReviews || more.length <= 6 ? more : more.slice(0, 6);
+  const fewStories = !phone && stories.length > 0 && stories.length <= 3;
+  const visibleReviews = phone || showAllReviews || more.length <= 6 ? more : more.slice(0, 6);
   const hiddenReviews = more.length - visibleReviews.length;
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
         <span style={{ color: "#3A2826" }}>{product.title}</span>
       </div>
 
-      <section className="product-hero" style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(44px,9vw,80px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,480px),1fr))", gap: "clamp(28px,6vw,56px)", alignItems: "start", minWidth: 0 }}>
+      <section className="product-hero" style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px,4.5vw,32px) clamp(44px,9vw,80px)", display: "grid", gap: "clamp(28px,6vw,56px)", alignItems: "start", minWidth: 0 }}>
         <div className="pg">
           <div className="pg-rail">
             <div className="pg-thumbs" ref={thumbsRef}>
@@ -127,6 +128,8 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             )}
           </div>
           <style>{`
+            .product-hero { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+            .product-hero > * { min-width:0; }
             .pg { display:grid; grid-template-columns:72px minmax(0,1fr); gap:14px; position:sticky; top:100px; }
             .pg-main { grid-column:2; grid-row:1; position:relative; aspect-ratio:4/5; border-radius:20px; overflow:hidden; background:#F6EEE8; }
             .pg-rail { grid-column:1; grid-row:1; position:relative; align-self:stretch; min-height:0; }
@@ -136,8 +139,9 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             .pg-nav--prev { right:12px; }
             .pg-nav--next { left:12px; }
             .pg-count { position:absolute; left:14px; bottom:14px; height:28px; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.9); color:#3A2826; font-size:13px; font-weight:600; display:flex; align-items:center; direction:ltr; }
-            @media (max-width:767px) {
-              .product-hero { overflow-x:clip; }
+            @media (max-width:1199px) {
+              .product-hero { grid-template-columns:minmax(0,1fr); overflow-x:clip; }
+              .product-ingredients { flex-direction:column; }
               .pg { grid-template-columns:minmax(0,1fr); position:relative; top:auto; gap:10px; width:100%; min-width:0; max-width:100%; }
               .pg-main { grid-column:1; grid-row:1; width:100%; min-width:0; }
               .pg-rail { grid-column:1; grid-row:2; height:72px; width:100%; min-width:0; overflow:hidden; }
@@ -177,7 +181,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
               {highlights.map((tag, i) => (
                 <span key={tag} style={{ flex: "1 1 auto", padding: "14px 8px", textAlign: "center", borderRight: i ? "1px solid #EFE4DC" : undefined }}>{tag}</span>
               ))}
-              <style>{`@media (max-width: 767px) { .product-highlights > span:nth-child(n + 4) { display: none !important; } }`}</style>
+              <style>{`@media (max-width: 1199px) { .product-highlights > span:nth-child(n + 4) { display: none !important; } }`}</style>
             </div>
           ) : null}
 
@@ -311,7 +315,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
 
       {stories.length > 0 && <section style={{ background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: 32 }}>
-          <div style={{ display: "flex", flexDirection: mobile ? "column" : "row", justifyContent: fewStories ? "center" : "space-between", alignItems: mobile ? "stretch" : "flex-end", gap: mobile ? 8 : 16 }}>
+          <div style={{ display: "flex", flexDirection: phone ? "column" : "row", justifyContent: fewStories ? "center" : "space-between", alignItems: phone ? "stretch" : "flex-end", gap: phone ? 8 : 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: fewStories ? "center" : "flex-start", textAlign: fewStories ? "center" : "right" }}>
               <h2 style={h2}>אמהות משתמשות</h2>
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "#6E5650" }}>סרטונים אמיתיים של אמהות מהקהילה</p>
@@ -358,7 +362,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             .story-x { position:absolute; top:16px; left:16px; z-index:3; width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.16); color:#FFFFFF; font-size:26px; line-height:1; cursor:pointer; }
             .story-top { position:absolute; top:0; left:0; right:0; display:flex; justify-content:flex-end; direction:ltr; padding:16px 16px 28px; font-size:14px; background:linear-gradient(rgba(30,20,18,.5), transparent); pointer-events:none; }
             .story-top span { direction:ltr; unicode-bidi:isolate; }
-            @media (max-width:767px) {
+            @media (max-width:1199px) {
               .story-view { padding:0; gap:0; }
               .story-frame { width:min(100vw, calc((100dvh - 8px) * 9 / 16)); max-height:100dvh; border-radius:0; }
               .story-arrow { position:absolute; top:50%; margin-top:-24px; z-index:3; background:rgba(30,20,18,.42); backdrop-filter:blur(6px); }
@@ -374,10 +378,10 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
       {steps.length > 0 && <section style={{ background: "#F8EFE9" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexDirection: "column", gap: 40 }}>
           <h2 style={h2}>מתי להתחיל?</h2>
-          <div style={mobile ? { display: "flex", flexDirection: "column", borderRight: "2px solid #3A2826", marginRight: 6 } : { display: "grid", gridTemplateColumns: `repeat(${steps.length},minmax(0,1fr))`, borderTop: "2px solid #3A2826" }}>
+          <div style={phone ? { display: "flex", flexDirection: "column", borderRight: "2px solid #3A2826", marginRight: 6 } : { display: "grid", gridTemplateColumns: `repeat(${steps.length},minmax(0,1fr))`, borderTop: "2px solid #3A2826" }}>
             {steps.map((step, index) => (
-              <div key={`${step.title}-${index}`} style={mobile ? { display: "flex", flexDirection: "column", gap: 6, padding: "0 26px 30px 0", position: "relative" } : { display: "flex", flexDirection: "column", gap: 10, padding: "28px 0 0 24px", position: "relative" }}>
-                <span style={mobile ? { position: "absolute", top: 6, right: -9, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" } : { position: "absolute", top: -9, right: 0, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" }} />
+              <div key={`${step.title}-${index}`} style={phone ? { display: "flex", flexDirection: "column", gap: 6, padding: "0 26px 30px 0", position: "relative" } : { display: "flex", flexDirection: "column", gap: 10, padding: "28px 0 0 24px", position: "relative" }}>
+                <span style={phone ? { position: "absolute", top: 6, right: -9, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" } : { position: "absolute", top: -9, right: 0, width: 16, height: 16, borderRadius: "50%", background: "#3A2826", border: "3px solid #F8EFE9" }} />
                 <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(24px,5.5vw,32px)", lineHeight: 1.15 }}>{step.title}</span>
                 <p style={{ fontSize: 16, lineHeight: 1.6, color: "#5E4844", margin: 0, whiteSpace: "pre-line" }}>{step.body}</p>
               </div>
@@ -386,8 +390,8 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
         </div>
       </section>}
 
-      {ingredients.length > 0 && <section style={{ maxWidth: 1320, margin: "0 auto", padding: inci.length ? "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px) 0" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexWrap: "wrap", gap: "clamp(20px,5vw,72px)", alignItems: "flex-start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: "1 1 300px", alignSelf: "flex-start", position: wide ? "sticky" : "relative", top: wide ? (headerH > 20 ? headerH + 16 : 110) : "auto" }}>
+      {ingredients.length > 0 && <section className="product-ingredients" style={{ maxWidth: 1320, margin: "0 auto", padding: inci.length ? "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px) 0" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", display: "flex", flexWrap: "wrap", gap: "clamp(20px,5vw,72px)", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: "1 1 300px", alignSelf: "flex-start", position: !phone && wide ? "sticky" : "relative", top: !phone && wide ? (headerH > 20 ? headerH + 16 : 110) : "auto" }}>
           <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.02em", fontSize: "clamp(32px,6.5vw,52px)", lineHeight: 1.05 }}>רכיבי מפתח</h2>
           {product.page.ingredientsIntro ? <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 380, margin: 0, whiteSpace: "pre-line" }}>{product.page.ingredientsIntro}</p> : null}
         </div>
@@ -421,7 +425,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
               </div>
             </div>
           </div>
-          {mobile ? (
+          {phone ? (
             <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 12, padding: "18px 16px 16px", borderRadius: 18, background: "#FBF6F2", border: "1px solid #EFE4DC" }}>
               <Stars value={featured.rating} size={14} />
               {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: 20, lineHeight: 1.3 }}>{featured.title}</h3> : null}
@@ -440,9 +444,9 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
               </figcaption>
             </figure>
           )}
-          <div className={mobile ? "no-scroll" : undefined} style={mobile ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 20 }}>
+          <div className={phone ? "no-scroll" : undefined} style={phone ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 4px" } : { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 20 }}>
             {visibleReviews.map((review, index) => (
-              <div key={`${review.name}-${index}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: mobile ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(mobile ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
+              <div key={`${review.name}-${index}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: phone ? 20 : 24, borderRadius: 16, background: "#F8EFE9", ...(phone ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null) }}>
                 <Stars value={review.rating} size={13} />
                 {review.title ? <h3 style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(18px,4.4vw,21px)", lineHeight: 1.3, margin: 0 }}>{review.title}</h3> : null}
                 <p style={{ fontSize: 15, lineHeight: 1.65, color: "#5E4844", flex: 1, margin: 0, whiteSpace: "pre-line" }}>{review.body}</p>
@@ -464,17 +468,17 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
       {faq.length > 0 && <ProductFAQ items={faq} />}
 
       {related.length > 0 && (
-        <section style={{ maxWidth: 1320, margin: "0 auto", padding: mobile ? "44px var(--page-pad) 48px" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", ["--page-pad" as string]: "28px" }}>
+        <section style={{ maxWidth: 1320, margin: "0 auto", padding: phone ? "44px var(--page-pad) 48px" : "clamp(44px,9vw,80px) clamp(16px,4.5vw,32px)", ["--page-pad" as string]: "28px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 24 }}>
             <h2 style={h2}>אולי תאהבי גם</h2>
-            {!mobile && (
+            {!phone && (
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" aria-label="הקודם" onClick={() => scrollRel(1)} style={relBtn}>→</button>
                 <button type="button" aria-label="הבא" onClick={() => scrollRel(-1)} style={relBtn}>←</button>
               </div>
             )}
           </div>
-          {mobile ? (
+          {phone ? (
             <BestLoop products={related.slice(0, 8)} onAdd={(item) => add({ id: item.id, name: item.title, sub: productBlurb(item), price: item.price, image: productImage(item) })} />
           ) : (
             <div ref={relRef} className="no-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", scrollSnapType: "x mandatory" }}>
@@ -601,6 +605,18 @@ const giftCustomRow: CSSProperties = {
 
 const qtyBtn: CSSProperties = { width: 46, height: 54, border: 0, background: "transparent", fontSize: 20, color: "#3A2826" };
 const relBtn: CSSProperties = { width: 44, height: 44, borderRadius: 999, border: 0, background: "#F6EEE8", color: "#3A2826", fontSize: 17 };
+
+function usePhoneLayout() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1199px)");
+    const apply = () => setPhone(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+  return phone;
+}
 
 function reviewScore(reviews: { rating: number }[]) {
   if (!reviews.length) return 0;

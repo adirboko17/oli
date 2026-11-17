@@ -142,6 +142,7 @@
 .ck-totals { display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid #EBDAD0; font-size:15px; color:#5E4844; }
 .ck-totals > div { display:flex; justify-content:space-between; }
 .ck-totals__disc { color:#A85A3A; }
+.ck-totals__note { font-size:13px; line-height:1.45; color:#8A6C64; }
 .ck-totals__total { align-items:baseline; padding-top:12px; border-top:1px solid #EBDAD0; color:#3A2826; }
 .ck-totals__total span:first-child { font-size:16px; font-weight:600; }
 .ck-totals__total span:last-child { font-size:28px; font-weight:500; }

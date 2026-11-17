@@ -141,6 +141,7 @@ export default function CheckoutDetails({
   });
   const [shippingName, setShippingName] = useState('');
   const [quote, setQuote] = useState<StoreQuote | null>(null);
+  const [quoteShip, setQuoteShip] = useState('');
   const [quoting, setQuoting] = useState(false);
   const [quoteMsg, setQuoteMsg] = useState('');
   const [gift, setGift] = useState(false);
@@ -230,9 +231,16 @@ export default function CheckoutDetails({
   const digital = items.length > 0 && items.every((item) => isGiftLineId(item.id));
   const freeShipping = !locked && !digital && physicalMerchandise >= FREE_SHIPPING_FROM;
   const selected = shippingMethods.find((method) => method.name === shippingName) ?? null;
-  const amountDue = quote
-    ? (locked ? quote.total : shippingAfterFreeThreshold(physicalMerchandise, quote.shipping ?? selected?.price ?? 0, quote.total).total)
-    : null;
+  const calcShip = selected?.name || shippingMethods[0]?.name || '';
+  const quoteForChoice = !!quote && (digital || (!!selected && quoteShip === selected.name));
+  const beforeShipping = quote
+    ? Math.round(((quote.saleLocked ? quote.total - (quote.shipping ?? 0) : subtotal - quote.discount)) * 100) / 100
+    : merchandise;
+  const amountDue = !quote
+    ? null
+    : quoteForChoice
+      ? (locked ? quote.total : shippingAfterFreeThreshold(physicalMerchandise, quote.shipping ?? selected?.price ?? 0, quote.total).total)
+      : Math.round((beforeShipping + (selected && !freeShipping ? selected.price : 0)) * 100) / 100;
   const pickup = selected ? isPickupZone(selected.zone) : false;
   const payCurrency = quote?.currency || currency;
 
@@ -248,16 +256,17 @@ export default function CheckoutDetails({
   [f, terms, addressReady, giftReady, weekOk, about.heard, canShip, quote, quoting]);
 
   useEffect(() => {
-    if (!digital && !selected) {
+    if (!digital && !calcShip) {
       setQuote(null);
+      setQuoteShip('');
       setQuoting(false);
       setQuoteMsg('');
       return;
     }
     const controller = new AbortController();
     const sent = items;
+    const name = calcShip;
     setQuoting(true);
-    setQuote(null);
     setQuoteMsg('');
     const timer = window.setTimeout(() => {
       fetch('/api/quote', {
@@ -265,7 +274,7 @@ export default function CheckoutDetails({
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          shippingName: selected?.name ?? '',
+          shippingName: digital ? '' : name,
           items: sent.map((item) => ({ id: item.id, qty: item.qty })),
           code: acceptedCode,
           customerEmail: f.email.trim(),
@@ -276,13 +285,16 @@ export default function CheckoutDetails({
         if (controller.signal.aborted) return;
         if (!res.ok || !body?.ok || typeof body.total !== 'number' || !Number.isFinite(body.total)) {
           setQuote(null);
+          setQuoteShip('');
           setQuoteMsg(body?.reason || body?.message || 'לא הצלחנו לחשב את הסכום לתשלום');
           return;
         }
         acceptQuote(body, sent, acceptedCode);
+        setQuoteShip(digital ? '' : name);
       }).catch((error: unknown) => {
         if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
         setQuote(null);
+        setQuoteShip('');
         setQuoteMsg('לא הצלחנו לחשב את הסכום לתשלום');
       }).finally(() => {
         if (!controller.signal.aborted) setQuoting(false);
@@ -292,7 +304,7 @@ export default function CheckoutDetails({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [digital, selected, items, acceptedCode, giftCode, f.email, currency, acceptQuote]);
+  }, [digital, calcShip, items, acceptedCode, giftCode, f.email, currency, acceptQuote]);
 
   const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
@@ -351,6 +363,7 @@ export default function CheckoutDetails({
           setGiftCode(code);
           setCoupon('');
           setQuote(readQuote(giftQuoted));
+          setQuoteShip(selected?.name ?? '');
           setCouponPhase('הקוד אושר');
           await pause(560);
           setCouponMsg({ text: '✓ כרטיס מתנה הופעל', ok: true });
@@ -629,9 +642,10 @@ export default function CheckoutDetails({
               <div className="ck-totals">
                 <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
                 {quote && quote.saleCustom > 0 && <div><span>סכום חופשי</span><span>{formatMoney(quote.saleCustom, payCurrency)}</span></div>}
-                <div><span>משלוח{digital ? ' · דיגיטלי' : selected ? ` · ${selected.name}` : ''}</span><span>{digital ? formatShippingPrice(0, payCurrency) : locked && quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : freeShipping ? formatShippingPrice(0, payCurrency) : quote?.shipping != null ? formatShippingPrice(quote.shipping, payCurrency) : selected ? formatShippingPrice(selected.price, currency) : 'לבחירה'}</span></div>
+                <div><span>משלוח{digital ? ' · דיגיטלי' : selected ? ` · ${selected.name}` : ''}</span><span>{digital ? formatShippingPrice(0, payCurrency) : !selected ? 'לבחירה' : quoteForChoice && quote ? formatShippingPrice(locked && quote.shipping != null ? quote.shipping : freeShipping ? 0 : (quote.shipping ?? selected.price), payCurrency) : formatShippingPrice(freeShipping ? 0 : selected.price, currency)}</span></div>
                 {bundleSavings > 0 && !quote && <div className="ck-totals__disc"><span>הנחת חבילה</span><span>−{fmt(bundleSavings)}</span></div>}
                 {quote && quote.discount > 0 && <div className="ck-totals__disc"><span>הנחה{quote.discountCode ? ` (${quote.discountCode})` : ''}</span><span>−{formatMoney(quote.discount, payCurrency)}</span></div>}
+                {giftMerchandise > 0 && <span className="ck-totals__note">הנחת האתר לא חלה על כרטיס מתנה</span>}
                 <div className="ck-totals__total"><span>סה״כ לתשלום</span><span>{amountDue != null ? formatMoney(amountDue, payCurrency) : fmt(merchandise)}</span></div>
                 <span className="ck-totals__vat">{quoting ? 'מחשבים את הסכום…' : 'כולל מע״מ'}</span>
                 {quoteMsg && <span className="ck-err">{quoteMsg}</span>}
