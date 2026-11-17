@@ -13,7 +13,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import type { OliEvent } from "@/components/events/events";
-import { cappedCartQty, findCartProduct, productSoldOut, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
+import { cappedCartQty, catalogLinePrice, findCartProduct, productSoldOut, type CatalogCollection, type CatalogProduct } from "@/lib/catalog-model";
 import { trackAddToCart } from "@/lib/storely-actions";
 
 export type CartItem = {
@@ -160,9 +160,10 @@ export function SiteProvider({ children, products, collections, events, storeNam
         const product = findCartProduct(products, line.id);
         if (product && productSoldOut(product)) return [];
         const qty = cappedCartQty(product, line.id, line.qty);
-        return qty > 0 ? [{ ...line, qty }] : [];
+        const price = catalogLinePrice(products, line.id) ?? line.price;
+        return qty > 0 ? [{ ...line, qty, price }] : [];
       });
-      if (next.length === prev.length && next.every((line, index) => line.id === prev[index]?.id && line.qty === prev[index]?.qty)) return prev;
+      if (next.length === prev.length && next.every((line, index) => line.id === prev[index]?.id && line.qty === prev[index]?.qty && line.price === prev[index]?.price)) return prev;
       return next;
     });
   }, [products]);

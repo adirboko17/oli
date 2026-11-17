@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { productMenuTarget } from "@/lib/catalog-menu";
-import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, giftPriceLabel, giftQueryAmount, isOfferBadge, OPEN_GIFT_MIN, openGiftMax, paragraphs, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { BestLoop } from "@/components/best-loop";
 import { ProductBadges } from "@/components/cards";
 import ProductFAQ from "@/components/contact/ProductFAQ";
@@ -46,6 +46,10 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
   const compareAt = product.compareAt != null && product.compareAt > unit ? product.compareAt : null;
   const bundles = product.bundles;
   const bundle = bundles.find((item) => item.qty === qty) ?? null;
+  const codeOffer = product.codeOffer;
+  const codePrice = !codeOffer ? null : bundle
+    ? codeOffer.bundles.find((item) => item.qty === bundle.qty)?.price ?? null
+    : (variant ? codeOffer.variants[variant.id] : undefined) ?? codeOffer.price;
   const isGift = giftAmounts.length > 0 || giftMax != null;
   const thumbFit = isGift ? "contain" : "cover";
   const line = isGift ? (giftSelected != null ? giftSelected * qty : 0) : bundle ? bundle.price : unit * qty;
@@ -159,7 +163,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             {productBadges(product).length > 0 && (
               <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {productBadges(product).map((label) => (
-                  <span key={label} style={{ background: label === "מבצע" ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 12px", fontSize: 14, fontWeight: 600 }}>{label}</span>
+                  <span key={label} style={{ background: isOfferBadge(product, label) ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 12px", fontSize: 14, fontWeight: 600 }}>{label}</span>
                 ))}
               </span>
             )}
@@ -225,9 +229,16 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
               <style>{`.gift-amounts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } @media (max-width: 520px) { .gift-amounts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }`}</style>
             </div>
           ) : (
-            <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-              <span style={{ fontWeight: 700, fontSize: "clamp(28px,4vw,36px)", letterSpacing: "-.02em" }}>{fmt(unit)}</span>
-              {compareAt ? <span style={{ fontSize: 18, color: "#9C847C", textDecoration: "line-through" }}>{fmt(compareAt)}</span> : null}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                <span style={{ fontWeight: 700, fontSize: "clamp(28px,4vw,36px)", letterSpacing: "-.02em" }}>{fmt(unit)}</span>
+                {compareAt ? <span style={{ fontSize: 18, color: "#9C847C", textDecoration: "line-through" }}>{fmt(compareAt)}</span> : null}
+              </div>
+              {codeOffer && codePrice != null ? (
+                <span style={{ fontSize: 15, color: "#A85A3A", fontWeight: 600 }}>
+                  {fmt(codePrice)} עם הקוד <span style={{ direction: "ltr", unicodeBidi: "isolate", letterSpacing: ".04em" }}>{codeOffer.code}</span>
+                </span>
+              ) : null}
             </div>
           )}
 

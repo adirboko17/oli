@@ -20,6 +20,7 @@ export type CatalogMedia = {
 
 export type CatalogBundle = { qty: number; price: number; label: string; image?: string; tag?: string };
 export type CatalogFaq = { q: string; a: string; tag: string };
+export type CatalogCodeOffer = { code: string; badge: string; price: number; variants: Record<string, number>; bundles: { qty: number; price: number }[] };
 
 export type CatalogPage = {
   highlights: string[];
@@ -49,6 +50,8 @@ export type CatalogProduct = {
   page: CatalogPage;
   badge: string;
   badgeHidden: boolean;
+  saleBadge: string;
+  codeOffer: CatalogCodeOffer | null;
   headline: { mode: "single" | "split"; subtitle: string };
   seoTitle: string;
   seoDescription: string;
@@ -154,13 +157,31 @@ export function productImage(product: CatalogProduct) {
   return product.media.find((item) => item.src && item.kind !== "video")?.src ?? null;
 }
 
-export function productBadges(product: Pick<CatalogProduct, "badge" | "badgeHidden" | "compareAt" | "price">) {
+export function productBadges(product: Pick<CatalogProduct, "badge" | "badgeHidden" | "compareAt" | "price" | "saleBadge" | "codeOffer">) {
   if (product.badgeHidden) return [];
   const labels: string[] = [];
   const custom = product.badge.trim();
   if (custom) labels.push(custom);
-  if (product.compareAt != null && product.compareAt > product.price && !labels.includes("מבצע")) labels.push("מבצע");
+  const sale = product.saleBadge || (product.compareAt != null && product.compareAt > product.price ? "מבצע" : "");
+  if (sale && !labels.includes(sale)) labels.push(sale);
+  const code = product.codeOffer?.badge ?? "";
+  if (code && !labels.includes(code)) labels.push(code);
   return labels;
+}
+
+export function isOfferBadge(product: Pick<CatalogProduct, "saleBadge" | "codeOffer">, label: string) {
+  return label === "מבצע" || label === product.saleBadge || label === product.codeOffer?.badge;
+}
+
+export function catalogLinePrice(products: CatalogProduct[], lineId: string) {
+  if (lineId.startsWith("oli-gift:") || lineId.includes(":gift:")) return null;
+  const bundle = /^(.+):x(\d+)$/.exec(lineId);
+  const baseId = bundle?.[1] ?? lineId;
+  const product = products.find((item) => item.id === baseId || item.variants.some((variant) => variant.id === baseId));
+  if (!product) return null;
+  if (bundle) return product.bundles.find((item) => item.qty === Number(bundle[2]))?.price ?? null;
+  const variant = product.variants.find((item) => item.id === baseId);
+  return variant?.price ?? product.price;
 }
 
 export function paragraphs(value: string) {

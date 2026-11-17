@@ -4,7 +4,7 @@
 import { ProductLink, ComingSoonMark } from "@/components/product-launch";
 import { productComingSoon } from "@/lib/product-launch";
 import type { CSSProperties } from "react";
-import { giftAmountsFromTags, giftPriceLabel, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
+import { giftAmountsFromTags, giftPriceLabel, isOfferBadge, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { Hx } from "@/components/hx";
 import { useSite } from "@/components/site";
@@ -48,7 +48,7 @@ export function ProductBadges({ product }: { product: CatalogProduct }) {
   return (
     <span style={{ position: "absolute", top: 10, right: 10, zIndex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
       {labels.map((label) => (
-        <span key={label} style={{ background: label === "מבצע" ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "4px 8px", fontSize: 12, fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
+        <span key={label} style={{ background: isOfferBadge(product, label) ? "#A85A3A" : "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "4px 8px", fontSize: 12, fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
       ))}
     </span>
   );

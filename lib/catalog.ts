@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { STORE_ID } from "@/lib/store";
-import { emptyCatalogPage, paragraphs, type CatalogBundle, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
+import { emptyCatalogPage, paragraphs, type CatalogBundle, type CatalogCodeOffer, type CatalogCollection, type CatalogMedia, type CatalogPage, type CatalogProduct, type CatalogVariant, type PublicCatalog } from "@/lib/catalog-model";
 
 export type CatalogLoad =
   | { status: "ready"; catalog: PublicCatalog }
@@ -74,6 +74,10 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
   if (!row || typeof row.id !== "string" || typeof row.title !== "string" || price == null) return null;
   const media = Array.isArray(row.media) ? (await Promise.all(row.media.map(parseMedia))).filter((item): item is CatalogMedia => item !== null) : [];
   const variants = Array.isArray(row.variants) ? row.variants.map(parseVariant).filter((item): item is CatalogVariant => item !== null) : [];
+  const sale = parseOffer(row.sale);
+  const codeOffer = parseOffer(row.codeOffer);
+  const was = money(record(row.sale)?.was);
+  const bundles = parseBundles(row.merch);
   return {
     id: row.id,
     title: row.title,
@@ -81,21 +85,51 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     description: text(row.description),
     vendor: text(row.vendor),
     category: text(row.category),
-    price,
-    compareAt: money(row.compareAt),
+    price: sale?.price ?? price,
+    compareAt: sale ? (was ?? price) : money(row.compareAt),
     tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
-    variants: variants.sort((a, b) => a.position - b.position),
+    variants: variants
+      .map((variant) => (sale && sale.variants[variant.id] != null ? { ...variant, price: sale.variants[variant.id] } : variant))
+      .sort((a, b) => a.position - b.position),
     media: media.sort((a, b) => a.position - b.position),
-    bundles: parseBundles(row.merch),
+    bundles: sale ? bundles.map((item) => ({ ...item, price: sale.bundles.find((pack) => pack.qty === item.qty)?.price ?? item.price })) : bundles,
     faq: parseFaq(row.merch),
     page: parsePage(row.merch),
     badge: badgeLabel(row.merch),
     badgeHidden: badgeHidden(row.merch),
+    saleBadge: sale?.badge ?? "",
+    codeOffer: codeOffer?.code ? codeOffer : null,
     headline: parseHeadline(row.merch),
     seoTitle: seoText(row.merch, "title", 70),
     seoDescription: seoText(row.merch, "description", 160),
     tracked: row.tracked === true,
     stock: whole(row.stock),
+  };
+}
+
+function parseOffer(value: unknown): CatalogCodeOffer | null {
+  const row = record(value);
+  const price = money(row?.price);
+  if (!row || price == null) return null;
+  const variants: Record<string, number> = {};
+  for (const [id, amount] of Object.entries(record(row.variants) ?? {})) {
+    const parsed = money(amount);
+    if (parsed != null) variants[id] = parsed;
+  }
+  const bundles = Array.isArray(row.bundles)
+    ? row.bundles.flatMap((item) => {
+        const pack = record(item);
+        const qty = money(pack?.qty);
+        const packPrice = money(pack?.price);
+        return qty != null && packPrice != null ? [{ qty, price: packPrice }] : [];
+      })
+    : [];
+  return {
+    code: text(row.code).trim(),
+    badge: text(row.badge).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40),
+    price,
+    variants,
+    bundles,
   };
 }
 
