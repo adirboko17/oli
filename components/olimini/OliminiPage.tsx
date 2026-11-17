@@ -49,10 +49,10 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
         <div className="om-hero__text">
           <span className="om-pill">חדש · BABY CARE</span>
           <h1 className="om-wordmark"><img src="/assets/olimini-logo.svg" alt="olimini" /></h1>
-          <p className="om-hero__sub">קו הטיפוח הראשון שלנו לתינוקות</p>
-          <p className="om-hero__lead">על בסיס רכיבים טבעיים, לעור העדין של התינוק מגיל לידה.</p>
+          <p className="om-hero__sub">הטיפוח הראשון שלהם, בידיים טובות.</p>
+          <p className="om-hero__lead">מבוסס על רכיבים טבעיים, עם פורמולות מוקפדות שפותחו במיוחד לצרכים הייחודיים של עור התינוק.</p>
           <div className="om-free">
-            {['בלי סבונים', 'בלי פרפום', 'בלי פתלטים'].map(x => <span key={x}><b>✕</b>{x}</span>)}
+            {['מגיל לידה', 'פותח בשיתוף מומחים', 'ללא פרבנים ושמנים מינרליים'].map(x => <span key={x}>{x}</span>)}
           </div>
         </div>
 
