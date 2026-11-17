@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ProductLink, ComingSoonMark } from "@/components/product-launch";
+import { productComingSoon } from "@/lib/product-launch";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { VALUES } from "@/lib/data";
 import { menuHref, productsForMenu } from "@/lib/catalog-menu";
@@ -234,13 +236,14 @@ export function HomeView() {
               const image = productImage(item) ?? "";
               const hot = miniHover === item.id;
               return (
-                <Link key={item.id} href={productHref(item)} onMouseEnter={() => setMiniHover(item.id)} onMouseLeave={() => setMiniHover(null)} style={{ position: "relative", zIndex: front ? 2 : 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: "clamp(14px,2vw,22px)", color: "#3A2826", marginInline: front ? "clamp(-20px,-1.6vw,-8px)" : 0 }}>
+                <ProductLink comingSoon={productComingSoon(item)} key={item.id} href={productHref(item)} onMouseEnter={() => setMiniHover(item.id)} onMouseLeave={() => setMiniHover(null)} style={{ position: "relative", zIndex: front ? 2 : 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: "clamp(14px,2vw,22px)", color: "#3A2826", marginInline: front ? "clamp(-20px,-1.6vw,-8px)" : 0 }}>
                   <div style={{ position: "relative", width: front ? "100%" : "78%", height: front ? "clamp(230px,26vw,360px)" : "clamp(150px,16vw,230px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
                     <span style={{ position: "absolute", left: "28%", right: "28%", bottom: "4%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.22),transparent)", filter: "blur(4px)" }} />
-                    <span role="img" aria-label={item.title} style={{ position: "relative", width: "100%", height: "100%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom", transformOrigin: "center bottom", transform: hot ? "scale(1.08)" : "scale(1)", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }} />
+                    <span className="launch-photo" role="img" aria-label={item.title} style={{ position: "relative", width: "100%", height: "100%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom", transformOrigin: "center bottom", transform: hot ? "scale(1.08)" : "scale(1)", transition: "transform .6s cubic-bezier(.2,.8,.2,1)" }} />
+                    {productComingSoon(item) ? <ComingSoonMark /> : null}
                   </div>
-                  <BottleCaption name={item.title} sub={productCardSub(item)} price={fmt(item.price)} old={old ? fmt(old) : ""} />
-                </Link>
+                  <BottleCaption name={item.title} sub={productCardSub(item)} price={productComingSoon(item) ? "עוד מעט כאן" : fmt(item.price)} old={!productComingSoon(item) && old ? fmt(old) : ""} />
+                </ProductLink>
               );
             })}
           </div>
@@ -258,17 +261,18 @@ export function HomeView() {
             const hidden = Math.abs(d) > 1;
             const image = productImage(item) ?? "";
             return (
-              <Link key={item.id} href={productHref(item)} style={{ position: "absolute", top: 0, left: "50%", width: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, color: "#3A2826", textAlign: "center", transform: `translateX(calc(-50% + ${-d * 78}%)) scale(${on ? 1 : 0.72})`, transformOrigin: "center 60%", opacity: hidden ? 0 : on ? 1 : 0.5, zIndex: on ? 2 : 1, pointerEvents: on ? "auto" : "none", transition: "transform .8s cubic-bezier(.65,0,.25,1), opacity .6s ease" }}>
+              <ProductLink comingSoon={productComingSoon(item)} key={item.id} href={productHref(item)} style={{ position: "absolute", top: 0, left: "50%", width: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, color: "#3A2826", textAlign: "center", transform: `translateX(calc(-50% + ${-d * 78}%)) scale(${on ? 1 : 0.72})`, transformOrigin: "center 60%", opacity: hidden ? 0 : on ? 1 : 0.5, zIndex: on ? 2 : 1, pointerEvents: on ? "auto" : "none", transition: "transform .8s cubic-bezier(.65,0,.25,1), opacity .6s ease" }}>
                 <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "18px 0 22px" }}>
                   <span style={{ position: "absolute", left: "30%", right: "30%", bottom: 16, height: 14, borderRadius: "50%", background: "radial-gradient(closest-side,rgba(58,40,38,.2),transparent)", filter: "blur(3px)" }} />
-                  <span role="img" aria-label={item.title} style={{ position: "relative", width: "78%", height: "92%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom" }} />
+                  <span className="launch-photo" role="img" aria-label={item.title} style={{ position: "relative", width: "78%", height: "92%", backgroundImage: image ? `url("${image}")` : undefined, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center bottom" }} />
+                  {productComingSoon(item) ? <ComingSoonMark /> : null}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, opacity: on ? 1 : 0, transition: "opacity .4s ease" }}>
                   <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 19, lineHeight: 1.2, direction: "ltr", whiteSpace: "nowrap" }}>{item.title}</span>
                   <span style={{ fontSize: 13, color: "#6E5650" }}>{productCardSub(item)}</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{fmt(item.price)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{productComingSoon(item) ? "עוד מעט כאן" : fmt(item.price)}</span>
                 </div>
-              </Link>
+              </ProductLink>
             );
           })}
         </div>

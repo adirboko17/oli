@@ -1,3 +1,4 @@
+import { productComingSoon } from "@/lib/product-launch";
 import { fmt } from "@/lib/format";
 
 export type CatalogVariant = {
@@ -179,7 +180,8 @@ export function productSoldOut(product: Pick<CatalogProduct, "tracked" | "stock"
   return product.tracked && product.stock <= 0;
 }
 
-export function cappedCartQty(product: Pick<CatalogProduct, "tracked" | "stock"> | null, id: string, qty: number) {
+export function cappedCartQty(product: Pick<CatalogProduct, "tracked" | "stock" | "id"> | null, id: string, qty: number) {
+  if (product && productComingSoon(product)) return 0;
   const wanted = Math.max(0, Math.floor(qty));
   if (!product?.tracked) return wanted;
   const pack = Number(/:x(\d+)$/.exec(id)?.[1] ?? 1);

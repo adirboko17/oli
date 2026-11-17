@@ -1,3 +1,4 @@
+import { productComingSoon } from "@/lib/product-launch";
 import type { CatalogCollection, CatalogProduct } from "@/lib/catalog-model";
 import { shippingAfterFreeThreshold } from "@/lib/shipping";
 
@@ -74,7 +75,7 @@ function unitQty(product: CatalogProduct, items: { id: string; qty: number }[]) 
 }
 
 function setSavings(members: CatalogProduct[], items: { id: string; qty: number }[], dealPrice: number, required: number) {
-  if (members.length !== required) return 0;
+  if (members.some(productComingSoon) || members.length !== required) return 0;
   const sets = Math.min(...members.map((product) => unitQty(product, items)));
   if (!Number.isFinite(sets) || sets < 1) return 0;
   const full = members.reduce((sum, product) => sum + product.price, 0);

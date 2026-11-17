@@ -1,4 +1,5 @@
 import "server-only";
+import { productComingSoon } from "@/lib/product-launch";
 import { giftAmountsFromTags, OPEN_GIFT_MAX, OPEN_GIFT_MIN, openGiftMax, productImage, type CatalogProduct } from "@/lib/catalog-model";
 import type { StoreLine } from "@/lib/storely-shop";
 
@@ -18,7 +19,7 @@ export function resolvePrice(products: CatalogProduct[], id: string) {
   if (gift) {
     const amount = giftAmount(gift[2]);
     const product = products.find((item) => item.id === gift[1]);
-    if (!product || amount == null) return null;
+    if (!product || productComingSoon(product) || amount == null) return null;
     const preset = giftAmountsFromTags(product.tags).includes(amount);
     const max = openGiftMax(product.tags);
     const custom = max != null && amount >= OPEN_GIFT_MIN && amount <= max;
@@ -31,6 +32,7 @@ export function resolvePrice(products: CatalogProduct[], id: string) {
   for (const product of products) {
     const variant = product.variants.find((item) => item.id === baseId);
     if (product.id !== baseId && !variant) continue;
+    if (productComingSoon(product)) return null;
     if (bundleQty) {
       const pack = product.bundles.find((item) => item.qty === bundleQty);
       return pack ? pack.price : null;
@@ -47,10 +49,10 @@ export function skippedStoreLine(id: string) {
 export function variantForLine(products: CatalogProduct[], id: string) {
   for (const product of products) {
     const variant = product.variants.find((item) => item.id === id);
-    if (variant) return variant.id;
+    if (variant) return productComingSoon(product) ? null : variant.id;
   }
   const product = products.find((item) => item.id === id);
-  return product?.variants[0]?.id ?? null;
+  return product && !productComingSoon(product) ? product.variants[0]?.id ?? null : null;
 }
 
 export function isGiftLine(id: string) {
@@ -83,7 +85,7 @@ export function checkoutGiftLine(products: CatalogProduct[], variantId: string, 
   const wanted = variantId.trim().toLowerCase();
   for (const product of products) {
     const variant = product.variants.find((item) => item.id.toLowerCase() === wanted);
-    if (!variant) continue;
+    if (!variant || productComingSoon(product)) continue;
     const price = variant.price ?? product.price;
     if (!Number.isFinite(price) || price < 0) return null;
     const variantTitle = variant.title.trim();

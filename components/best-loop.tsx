@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+
+import { ProductLink, ComingSoonMark } from "@/components/product-launch";
+import { productComingSoon } from "@/lib/product-launch";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ProductBadges } from "@/components/cards";
 import { Hx } from "@/components/hx";
@@ -141,24 +143,25 @@ export function BestLoop({ products, onAdd, perView = 2 }: { products: CatalogPr
 export function ProductTile({ p, onAdd }: { p: CatalogProduct; onAdd: () => void }) {
   const src = productImage(p);
   const soldOut = productSoldOut(p);
+  const comingSoon = productComingSoon(p);
   const giftLabel = giftPriceLabel(p);
   const old = !giftLabel && p.compareAt && p.compareAt > p.price ? p.compareAt : null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <div style={{ position: "relative" }}>
-        <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-          {src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
-          <ProductBadges product={p} />
-          {soldOut ? <span style={{ position: "absolute", left: 10, bottom: 10, zIndex: 1, background: "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 10px", fontSize: 12, fontWeight: 600, lineHeight: 1 }}>אזל מהמלאי</span> : null}
-        </Link>
-        {soldOut ? null : <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>}
+        <ProductLink comingSoon={comingSoon} href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
+          {src ? <img className="launch-photo" src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "darken" }} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: 24 }}>{p.title}</span>}
+          {comingSoon ? <ComingSoonMark /> : <ProductBadges product={p} />}
+          {!comingSoon && soldOut ? <span style={{ position: "absolute", left: 10, bottom: 10, zIndex: 1, background: "#3A2826", color: "#FFFFFF", borderRadius: 999, padding: "6px 10px", fontSize: 12, fontWeight: 600, lineHeight: 1 }}>אזל מהמלאי</span> : null}
+        </ProductLink>
+        {comingSoon || soldOut ? null : <Hx as="button" onClick={onAdd} aria-label="הוספה לסל" style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}><Plus /></Hx>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
         <span style={cardSub(p.headline.mode === "split" && !!p.headline.subtitle.trim())}>{productCardSub(p)}</span>
         <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
-          <span style={{ fontWeight: 600 }}>{giftLabel ?? fmt(p.price)}</span>
-          {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
+          <span style={{ fontWeight: 600 }}>{comingSoon ? "בקרוב" : giftLabel ?? fmt(p.price)}</span>
+          {!comingSoon && old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
         </span>
       </div>
     </div>

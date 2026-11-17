@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isArticleSection } from "@/lib/article-paths";
 import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
+import { productComingSoon } from "@/lib/product-launch";
 import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
@@ -234,7 +235,7 @@ function SearchOverlay() {
 
   const t = site.q.trim().toLowerCase();
   const res = t
-    ? site.products.filter((product) => `${product.title} ${productBlurb(product)} ${customerTags(product.tags).join(" ")}`.toLowerCase().includes(t))
+    ? site.products.filter((product) => !productComingSoon(product) && `${product.title} ${productBlurb(product)} ${customerTags(product.tags).join(" ")}`.toLowerCase().includes(t))
     : [];
 
   if (!present) return null;
@@ -530,7 +531,7 @@ function shippingCompanions(products: CatalogProduct[], items: { id: string }[],
   if (gap <= 0) return [];
   const inCart = new Set(items.map((item) => item.id));
   const categories = new Set(products.flatMap((product) => inCart.has(product.id) && product.category.trim() ? [product.category.trim()] : []));
-  const pool = products.filter((product) => !inCart.has(product.id) && product.price > 0 && !giftPriceLabel(product) && openGiftMax(product.tags) == null && !productSoldOut(product));
+  const pool = products.filter((product) => !productComingSoon(product) && !inCart.has(product.id) && product.price > 0 && !giftPriceLabel(product) && openGiftMax(product.tags) == null && !productSoldOut(product));
   const ranked = pool.map((product) => ({
     product,
     closes: product.price >= gap && product.price <= Math.max(gap * 1.8, gap + 90),

@@ -1,5 +1,6 @@
 "use client";
 
+import { productComingSoon } from "@/lib/product-launch";
 import { CatalogCard } from "@/components/cards";
 import { productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { fmt } from "@/lib/format";
@@ -27,6 +28,7 @@ function toMini(product: CatalogProduct): MiniProduct {
     image: productImage(product) ?? "",
     href: productHref(product),
     soldOut: productSoldOut(product),
+    comingSoon: productComingSoon(product),
   };
 }
 
@@ -39,6 +41,7 @@ function toGoCard(product: CatalogProduct): ToGoProduct {
     image: productImage(product) ?? "",
     href: productHref(product),
     soldOut: productSoldOut(product),
+    comingSoon: productComingSoon(product),
   };
 }
 

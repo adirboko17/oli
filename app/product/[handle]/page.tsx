@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { productComingSoon } from "@/lib/product-launch";
+import { notFound, redirect } from "next/navigation";
 import { ProductView } from "@/components/product-view";
 import { loadPublicCatalog } from "@/lib/catalog";
 import { findCatalogProduct, productHref } from "@/lib/catalog-model";
@@ -10,6 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
   if (result.status !== "ready") return { title: "מוצר" };
   const product = findCatalogProduct(result.catalog.products, handle);
   if (!product) return { title: "מוצר" };
+  if (productComingSoon(product)) return { title: "בקרוב · olimini", robots: { index: false, follow: false } };
   const title = product.seoTitle || product.title;
   const description = (product.seoDescription || product.description).replace(/\s+/g, " ").trim().slice(0, 160);
   const image = product.media.find((item) => item.kind === "image" && item.src)?.src ?? undefined;
@@ -29,6 +31,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   if (result.status !== "ready") notFound();
   const product = findCatalogProduct(result.catalog.products, handle);
   if (!product) notFound();
+  if (productComingSoon(product)) redirect("/olimini");
   const related = result.catalog.products.filter((item) => item.id !== product.id);
   return (
     <div data-cms="product" data-cms-id="product" style={{ display: "contents" }}>

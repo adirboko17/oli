@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
+import { ProductLink, ComingSoonMark } from '@/components/product-launch';
 import type { ReactNode } from 'react';
 import { OLIMINI_KIT_PRICE, OLIMINI_TOGO_PRICE } from '@/lib/olimini-kits';
 import OliminiPromise from './OliminiPromise';
 import OliminiToGo, { type ToGoProduct } from './OliminiToGo';
 import './OliminiPage.css';
 
-export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string; soldOut?: boolean };
+export type MiniProduct = { id: string; name: string; sub: string; price: number; oldPrice?: number; image: string; href: string; soldOut?: boolean; comingSoon?: boolean };
 
 type Props = {
   shelf: MiniProduct[];
@@ -27,9 +28,9 @@ const RISE: [string, number, number, number][] = [['20%', 18, 16, 0], ['62%', 24
 
 // olimini category page: hero with the wordmark and bubbles, the "החבילה של olimini" section (3 steps), and facts
 export default function OliminiPage({ shelf, products, toGo, related, onAdd, onAddToGo, formatPrice = n => '₪' + Math.round(n) }: Props) {
-  const kitReady = products.length === 4 && products.every((product) => !product.soldOut);
+  const kitReady = products.length === 4 && products.every((product) => !product.soldOut && !product.comingSoon);
   const kitFull = products.reduce((sum, product) => sum + product.price, 0);
-  const toGoReady = toGo.length >= 2 && toGo.every((product) => !product.soldOut);
+  const toGoReady = toGo.length >= 2 && toGo.every((product) => !product.soldOut && !product.comingSoon);
   const eyebrow = products.length === 3 ? 'שלושה צעדים, רגע אחד שלכם' : 'הטיפוח של olimini';
 
   return (
@@ -58,10 +59,11 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
 
         <div className="om-shelf">
           {shelf.map((p, i) => (
-            <Link key={p.id} href={p.href} className={`om-shelf__item${i === 1 || i === 2 ? " is-front" : " is-back"}`} aria-label={p.name}>
+            <ProductLink comingSoon={p.comingSoon} key={p.id} href={p.href} className={`om-shelf__item${i === 1 || i === 2 ? " is-front" : " is-back"}`} aria-label={p.name}>
               <span className="om-shadow" />
-              <span className="om-bottle" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
-            </Link>
+              <span className="om-bottle launch-photo" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
+              {p.comingSoon ? <ComingSoonMark /> : null}
+            </ProductLink>
           ))}
         </div>
         <div className="om-fade" />
@@ -79,19 +81,20 @@ export default function OliminiPage({ shelf, products, toGo, related, onAdd, onA
               <div key={p.id} className={`om-step om-step--${(i % 3) + 1}`}>
                 <div className="om-step__top">
                   <span className="om-step__label"><span className="om-step__num">{i + 1}</span></span>
-                  {p.oldPrice && <span className="om-save">חיסכון {Math.round((1 - p.price / p.oldPrice) * 100)}%</span>}
+                  {!p.comingSoon && p.oldPrice && <span className="om-save">חיסכון {Math.round((1 - p.price / p.oldPrice) * 100)}%</span>}
                 </div>
-                <Link href={p.href} className="om-step__img" aria-label={p.name}>
+                <ProductLink comingSoon={p.comingSoon} href={p.href} className="om-step__img" aria-label={p.name}>
                   <span className="om-shadow" />
-                  <span className="om-bottle" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
-                </Link>
+                  <span className="om-bottle launch-photo" style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
+                  {p.comingSoon ? <ComingSoonMark /> : null}
+                </ProductLink>
                 <div className="om-step__text">
                   <span className="om-step__name">{p.name}</span>
                   {p.sub ? <span className="om-step__sub">{p.sub}</span> : null}
                 </div>
                 <div className="om-step__foot">
-                  <span className="om-step__price"><b>{formatPrice(p.price)}</b>{p.oldPrice && <s>{formatPrice(p.oldPrice)}</s>}</span>
-                  <button className="om-btn" disabled={p.soldOut} onClick={() => { if (!p.soldOut) onAdd(p.id); }}>{p.soldOut ? "אזל מהמלאי" : "הוספה לסל"}</button>
+                  <span className="om-step__price">{p.comingSoon ? <span>עוד מעט כאן</span> : <><b>{formatPrice(p.price)}</b>{p.oldPrice && <s>{formatPrice(p.oldPrice)}</s>}</>}</span>
+                  <button className="om-btn" disabled={p.soldOut || p.comingSoon} onClick={() => { if (!p.soldOut && !p.comingSoon) onAdd(p.id); }}>{p.comingSoon ? "בקרוב" : p.soldOut ? "אזל מהמלאי" : "הוספה לסל"}</button>
                 </div>
               </div>
             ))}

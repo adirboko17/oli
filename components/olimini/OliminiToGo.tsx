@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import { ProductLink, ComingSoonMark } from '@/components/product-launch';
 import { useState } from 'react';
 import './OliminiToGo.css';
 
@@ -11,6 +11,7 @@ export interface ToGoProduct {
   image: string;
   href: string;
   soldOut?: boolean;
+  comingSoon?: boolean;
 }
 
 /** olimini To Go strip – placed directly below "החבילה של olimini" on the olimini page. */
@@ -51,16 +52,17 @@ export default function OliminiToGo({ products, kitPrice, onAdd, onAddKit, forma
         <div className="otg__grid">
           {products.map((p, i) => (
             <div key={p.id} className={`otg__card otg__card--${i % 3}`} onMouseEnter={() => setHover(p.id)} onMouseLeave={() => setHover(null)}>
-              <Link href={p.href} className="otg__img" aria-label={p.name}>
-                <span role="img" aria-label={p.name} className={`otg__bottle${hover === p.id ? ' is-hover' : ''}`} style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
-              </Link>
+              <ProductLink comingSoon={p.comingSoon} href={p.href} className="otg__img" aria-label={p.name}>
+                <span role="img" aria-label={p.name} className={`launch-photo otg__bottle${hover === p.id ? ' is-hover' : ''}`} style={p.image ? { backgroundImage: `url("${p.image}")` } : undefined} />
+                {p.comingSoon ? <ComingSoonMark /> : null}
+              </ProductLink>
               <div className="otg__foot">
-                <span className="otg__info">
-                  <Link href={p.href} className="otg__name" style={{ color: "inherit", textDecoration: "none" }}>{p.name}</Link>
-                  <span className="otg__meta">{p.size ? `${p.size} · ` : ""}{ils(p.price)}</span>
-                </span>
-                {p.soldOut ? (
-                  <span className="otg__add" style={{ width: "auto", padding: "0 10px", fontSize: 12 }}>אזל</span>
+                <div className="otg__info">
+                  <ProductLink comingSoon={p.comingSoon} href={p.href} className="otg__name" style={{ color: "inherit", textDecoration: "none" }}>{p.name}</ProductLink>
+                  <span className="otg__meta">{p.size ? `${p.size} · ` : ""}{p.comingSoon ? "בקרוב" : ils(p.price)}</span>
+                </div>
+                {p.comingSoon || p.soldOut ? (
+                  <span className="otg__add" style={{ width: "auto", padding: "0 10px", fontSize: 12 }}>{p.comingSoon ? "בקרוב" : "אזל"}</span>
                 ) : (
                   <button onClick={() => onAdd(p)} aria-label={`הוספת ${p.name} לסל`} className="otg__add">+</button>
                 )}

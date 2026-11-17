@@ -73,6 +73,7 @@
 .om-step__price s { font-size:13px; color:#8A6C64; }
 .om-btn { height:44px; padding:0 20px; border-radius:999px; border:0; background:#3A2826; color:#fff; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:background .25s; }
 .om-btn:hover { background:#A85A3A; }
+.om-btn:disabled { cursor:default; background:#E8D9CD; color:#6E5650; }
 .om-all { align-self:center; display:flex; align-items:center; gap:12px; height:56px; padding:0 28px; border-radius:999px; border:1.5px solid #3A2826; background:transparent; color:#3A2826; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .25s; }
 .om-all s { font-weight:500; opacity:.7; }
 .om-all:hover { background:#3A2826; color:#fff; }

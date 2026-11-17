@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+
+import { ProductLink, ComingSoonMark } from "@/components/product-launch";
+import { productComingSoon } from "@/lib/product-launch";
 import type { CSSProperties } from "react";
 import { giftAmountsFromTags, giftPriceLabel, openGiftMax, productBadges, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
@@ -11,6 +13,7 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
   const { add } = useSite();
   const src = productImage(p);
   const soldOut = productSoldOut(p);
+  const comingSoon = productComingSoon(p);
   const giftAmounts = giftAmountsFromTags(p.tags);
   const giftLabel = giftPriceLabel(p);
   const customOnly = openGiftMax(p.tags) != null && giftAmounts.length === 0;
@@ -18,12 +21,12 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
   return (
     <div data-cms="product" data-cms-id="product" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", minWidth: 0 }}>
       <div style={{ position: "relative" }}>
-        <Link href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
-          {src ? <img src={src} alt="" style={productPhoto} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
-          <ProductBadges product={p} />
-          {soldOut ? <span style={soldOutMark}>אזל מהמלאי</span> : null}
-        </Link>
-        {customOnly || soldOut ? null : <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: giftAmounts[0] ?? p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
+        <ProductLink comingSoon={comingSoon} href={productHref(p)} style={{ position: "relative", display: "block", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", background: "#F6EEE8" }}>
+          {src ? <img className="launch-photo" src={src} alt="" style={productPhoto} /> : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", fontFamily: FF, fontSize: "clamp(24px,6vw,34px)" }}>{p.title}</span>}
+          {comingSoon ? <ComingSoonMark /> : <ProductBadges product={p} />}
+          {!comingSoon && soldOut ? <span style={soldOutMark}>אזל מהמלאי</span> : null}
+        </ProductLink>
+        {comingSoon || customOnly || soldOut ? null : <Hx as="button" aria-label="הוספה לסל" onClick={() => add({ id: p.id, name: p.title, sub: productBlurb(p), price: giftAmounts[0] ?? p.price, image: src })} style={plus} hover={{ background: "#3A2826", color: "#FFFFFF" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </Hx>}
       </div>
@@ -31,8 +34,8 @@ export function CatalogCard({ p }: { p: CatalogProduct }) {
         <span style={{ fontFamily: FF, fontWeight: 500, fontSize: "clamp(16px,4.2vw,19px)", lineHeight: 1.2 }}>{p.title}</span>
         <span style={cardSub(p.headline.mode === "split" && !!p.headline.subtitle.trim())}>{productCardSub(p)}</span>
         <span style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 15, marginTop: 4 }}>
-          <span style={{ fontWeight: 600 }}>{giftLabel ?? fmt(p.price)}</span>
-          {old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
+          <span style={{ fontWeight: 600 }}>{comingSoon ? "בקרוב" : giftLabel ?? fmt(p.price)}</span>
+          {!comingSoon && old ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through" }}>{fmt(old)}</span> : null}
         </span>
       </div>
     </div>

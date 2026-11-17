@@ -117,3 +117,15 @@ input, select, textarea { font-family: inherit; }
   color: #fbf5ef;
   transform: translateX(-4px);
 }
+/* Olimini launch teasers: preserve the bottle silhouette, conceal the label. */
+.product-coming-soon { cursor: default; }
+.product-coming-soon .launch-photo { filter: blur(8px); opacity: .65; user-select: none; }
+.coming-soon-mark { position: absolute; z-index: 3; left: 50%; top: 57%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 112px; padding: 18px 22px; border: 1px solid rgba(255,255,255,.85); border-radius: 22px; background: linear-gradient(145deg,rgba(255,252,248,.87),rgba(246,232,222,.72)); box-shadow: 0 8px 30px rgba(100,64,46,.08), inset 0 1px 0 rgba(255,255,255,.9); color: #594139; text-align: center; pointer-events: none; }
+.coming-soon-mark__eyebrow { font-size: 9px; font-weight: 600; letter-spacing: .19em; white-space: nowrap; }
+.coming-soon-mark__title { font-size: clamp(25px,3vw,34px); font-weight: 400; line-height: 1.1; }
+.coming-soon-mark__line { width: 24px; height: 1px; background: #B88E76; margin-top: 2px; }
+@media (max-width: 767px) {
+  .om-shelf .coming-soon-mark { min-width: 0; width: 72px; padding: 12px 4px; border-radius: 15px; gap: 6px; }
+  .om-shelf .coming-soon-mark__eyebrow { font-size: 6px; letter-spacing: .1em; }
+  .om-shelf .coming-soon-mark__title { font-size: 23px; }
+}
