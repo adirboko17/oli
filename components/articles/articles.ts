@@ -255,6 +255,58 @@ export function authorNames(author?: string) {
     .join(" · ");
 }
 
+const BLOG_KEY: Record<string, CategoryKey> = {
+  "הריון": "preg",
+  "טיפוח העור בהריון": "skin",
+  "לידה והכנה ללידה": "birth",
+  "אחרי לידה": "post",
+  "תינוקות והורות ראשונית": "baby",
+};
+
+export function categoryFromBlog(blog: string): CategoryKey {
+  return BLOG_KEY[blog.trim()] || "preg";
+}
+
+export type ShopArticleFields = {
+  handle: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  updated: string;
+  blog: string;
+  productId: string;
+  productNote: string;
+  video: string;
+  body: string;
+  image: string;
+  imageX: number;
+  imageY: number;
+  imageScale: number;
+};
+
+export function articleFromShop(post: ShopArticleFields): Article | null {
+  const slug = post.handle.trim();
+  const title = post.title.trim();
+  if (!slug || !title) return null;
+  return {
+    id: slug,
+    slug,
+    title,
+    category: categoryFromBlog(post.blog),
+    image: post.image || undefined,
+    imageX: post.imageX,
+    imageY: post.imageY,
+    imageScale: post.imageScale,
+    video: post.video || undefined,
+    author: post.author || undefined,
+    updated: post.updated || undefined,
+    lead: post.excerpt || undefined,
+    productId: post.productId || undefined,
+    productNote: post.productNote || undefined,
+    body: post.body.trim() ? blocksFrom(articleRemainder(post.body)) : undefined,
+  };
+}
+
 export const getArticle = (slug: string) => ARTICLES.find((article) => article.slug === decodeURIComponent(slug));
 export const articleNumber = (article: Article) => String(ARTICLES.indexOf(article) + 1).padStart(2, "0");
 export const relatedArticles = (article: Article, count: number) => ARTICLES.filter((item) => item.category === article.category && item !== article).slice(0, count);

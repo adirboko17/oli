@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ARTICLES, CATEGORIES, CategoryKey } from './articles';
+import { ARTICLES, CATEGORIES, CategoryKey, type Article } from './articles';
 import { ArticleCard } from './ArticleCard';
 import { LatestMarquee } from './LatestMarquee';
 import './Articles.css';
@@ -9,21 +9,21 @@ import './Articles.css';
 const PAGE = 12;
 
 // Articles page: header, latest-articles marquee, category tabs + search, card grid with "show more"
-export default function ArticlesIndex({ initialCategory = 'all', media = {} }: { initialCategory?: 'all' | CategoryKey; media?: Record<string, { image?: string; imageX?: number; imageY?: number; imageScale?: number }> }) {
+export default function ArticlesIndex({ initialCategory = 'all', media = {}, articles = ARTICLES }: { initialCategory?: 'all' | CategoryKey; media?: Record<string, { image?: string; imageX?: number; imageY?: number; imageScale?: number }>; articles?: Article[] }) {
   const [cat, setCat] = useState<'all' | CategoryKey>(initialCategory);
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(PAGE);
 
   const list = useMemo(() => {
     const t = q.trim();
-    return ARTICLES.filter(a => (cat === 'all' || a.category === cat) && (!t || a.title.includes(t)));
-  }, [cat, q]);
+    return articles.filter(a => (cat === 'all' || a.category === cat) && (!t || a.title.includes(t)));
+  }, [articles, cat, q]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: ARTICLES.length };
-    ARTICLES.forEach(a => { c[a.category] = (c[a.category] || 0) + 1; });
+    const c: Record<string, number> = { all: articles.length };
+    articles.forEach(a => { c[a.category] = (c[a.category] || 0) + 1; });
     return c;
-  }, []);
+  }, [articles]);
 
   const remaining = list.length - limit;
 
@@ -38,7 +38,7 @@ export default function ArticlesIndex({ initialCategory = 'all', media = {} }: {
           <p className="oa-index__intro">בעמוד המאמרים שלנו תמצאי מידע מקצועי ועדכני על הריון, לידה ותינוקות. אנו משתפות מדריכים להריון, טיפים להכנת הגוף ללידה, טיפים להריון, מידע על בדיקות בהריון, טיפול בעור בתקופת ההריון ולאחר הלידה ועוד. כל התכנים נכתבים בליווי אנשי מקצוע, במטרה להעניק ידע אמין שיסייע לך לעבור את תקופת ההריון והלידה בצורה רגועה.</p>
         </header>
 
-        <LatestMarquee media={media} />
+        <LatestMarquee media={media} articles={articles} />
 
         <div className="oa-index__list">
           <div className="oa-toolbar">

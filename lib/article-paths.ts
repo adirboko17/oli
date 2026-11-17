@@ -67,6 +67,10 @@ export function articlePublicPath(slug: string) {
   return ARTICLE_PATHS[key] ?? "";
 }
 
+export function articleHref(slug: string) {
+  return articlePublicPath(slug) || "/articles/" + encodeURIComponent(decode(slug));
+}
+
 export function normalizeArticlePath(pathname: string) {
   const path = decode(pathname) || "/";
   if (path.length > 1 && path.endsWith("/")) return path.slice(0, -1);

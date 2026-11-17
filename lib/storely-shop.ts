@@ -341,7 +341,26 @@ export async function quoteCheckout(input: {
   };
 }
 
-export type ShopPostMedia = { handle: string; video: string; body: string; image: string; imageX: number; imageY: number; imageScale: number };
+export type ShopPostMedia = {
+  handle: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  updated: string;
+  blog: string;
+  productId: string;
+  productNote: string;
+  video: string;
+  body: string;
+  image: string;
+  imageX: number;
+  imageY: number;
+  imageScale: number;
+};
+
+function postText(value: unknown, max: number) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
 
 function postVideo(value: unknown) {
   const url = typeof value === "string" ? value.trim() : "";
@@ -476,7 +495,23 @@ export async function loadShopPosts(hostHeader: string | null): Promise<ShopPost
     const video = postVideo(item.video);
     const body = typeof item.body === "string" ? item.body : "";
     const image = postImage(item.image);
-    if (!handle || item.visible === false || (!video && !body.trim() && !image)) return [];
-    return [{ handle, video, body, image, imageX: postFocus(item.imageX), imageY: postFocus(item.imageY), imageScale: postZoom(item.imageScale) }];
+    const title = postText(item.title, 300);
+    if (!handle || item.visible === false || (!title && !video && !body.trim() && !image)) return [];
+    return [{
+      handle,
+      title,
+      excerpt: postText(item.excerpt, 800),
+      author: postText(item.author, 180),
+      updated: postText(item.updated, 40),
+      blog: postText(item.blog, 80),
+      productId: postText(item.productId, 80),
+      productNote: postText(item.productNote, 400),
+      video,
+      body,
+      image,
+      imageX: postFocus(item.imageX),
+      imageY: postFocus(item.imageY),
+      imageScale: postZoom(item.imageScale),
+    }];
   });
 }

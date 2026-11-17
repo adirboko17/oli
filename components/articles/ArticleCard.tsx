@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { articlePublicPath } from '@/lib/article-paths';
+import { articleHref } from '@/lib/article-paths';
 import { FramedPhoto } from './FramedPhoto';
 import { Article, CATEGORIES, CATEGORY_TINT, articleNumber, authorNames } from './articles';
 import './Articles.css';
 
 // With an image: photo card with the title below it. Without an image: a tinted card with the title inside.
 export function ArticleCard({ article }: { article: Article }) {
-  const href = articlePublicPath(article.slug);
+  const href = articleHref(article.slug);
   const cat = CATEGORIES[article.category];
   const author = authorNames(article.author);
 

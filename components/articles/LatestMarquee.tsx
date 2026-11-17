@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { articlePublicPath } from '@/lib/article-paths';
+import { articleHref } from '@/lib/article-paths';
 import { FramedPhoto } from './FramedPhoto';
 import { ARTICLES, CATEGORIES, CATEGORY_TINT, articleNumber, type Article } from './articles';
 import './Articles.css';
@@ -7,8 +7,8 @@ import './Articles.css';
 type Shot = { image?: string; imageX?: number; imageY?: number; imageScale?: number };
 
 // "Latest articles" marquee: the first 10 articles, duplicated for a seamless loop. Pauses on hover.
-export function LatestMarquee({ count = 10, media = {} }: { count?: number; media?: Record<string, Shot> }) {
-  const latest = ARTICLES.slice(0, count).map((article) => {
+export function LatestMarquee({ count = 10, media = {}, articles = ARTICLES }: { count?: number; media?: Record<string, Shot>; articles?: Article[] }) {
+  const latest = articles.slice(0, count).map((article) => {
     const shot = media[article.slug];
     return shot?.image ? { ...article, image: shot.image, imageX: shot.imageX, imageY: shot.imageY, imageScale: shot.imageScale } : article;
   });
@@ -19,7 +19,7 @@ export function LatestMarquee({ count = 10, media = {} }: { count?: number; medi
       <div className="oa-marquee__viewport">
         <div className="oa-marquee__track">
           {items.map((a, i) => (
-            <Link key={i} href={articlePublicPath(a.slug)} className="oa-pill" dir="rtl" aria-hidden={i >= latest.length || undefined} tabIndex={i >= latest.length ? -1 : undefined}>
+            <Link key={i} href={articleHref(a.slug)} className="oa-pill" dir="rtl" aria-hidden={i >= latest.length || undefined} tabIndex={i >= latest.length ? -1 : undefined}>
               <MarqueeThumb article={a} />
               <span className="oa-pill__text">
                 <span className="oa-pill__cat">{CATEGORIES[a.category]}</span>
