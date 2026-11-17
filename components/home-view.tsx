@@ -24,8 +24,8 @@ const OLILASTIC = "https://static.wixstatic.com/media/db159b_c6044a549cea41979a5
 const STAGES = [
   { n: "01", title: "הריון", desc: "מסימני מתיחה ועד רגליים עייפות, טיפוח בטוח לכל טרימסטר.", img: "/assets/stage-preg.png", test: /הריון/ },
   { n: "02", title: "לידה ואחרי", desc: "הכנה ללידה, הנקה והשבועות הראשונים.", img: "/assets/stage-birth.png", test: /לידה|אחרי/ },
-  { n: "03", title: "מתנות ליולדת", desc: "מארזים מפנקים, מוכנים למסירה.", img: "/assets/stage-gift.png", wide: true, test: /מתנ/ },
-  { n: "04", title: "תינוקות", desc: "קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים.", img: "/assets/stage-baby.png", flat: true, test: /תינוק|baby|olimini/i },
+  { n: "03", title: "מתנות ליולדת", desc: "מארזי מתנה שנבחרו באהבה, עם מחשבה גם על האמא וגם על הבייבי.", img: "/assets/stage-gift.png", wide: true, test: /מתנ/ },
+  { n: "04", title: "תינוקות", desc: "הטיפוח הראשון שלהם, עם רכיבים טבעיים ופורמולות שפותחו בשיתוף מומחים.", img: "/assets/stage-baby.png", flat: true, test: /תינוק|baby|olimini/i },
 ];
 
 const PILLARS = [
@@ -146,8 +146,8 @@ export function HomeView() {
           <span style={{ position: "absolute", inset: "auto 0 0 0", height: "62%", background: "linear-gradient(to top,#FFFFFF 0%,rgba(255,255,255,.92) 22%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />
         </div>
         <div style={{ position: "relative", marginTop: -72, padding: "0 var(--page-pad)", display: "flex", flexDirection: "column", gap: 18 }}>
-          <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(40px,10.5vw,56px)", lineHeight: 1.02, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+          <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(40px,10.5vw,56px)", lineHeight: 1.02, textWrap: "balance" }}>טיפוח בטוח, מההריון ועד לבייבי</h1>
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>מוצרי טיפוח להריון, לאחר לידה ולתינוקות, שפותחו בשיתוף רופאים ומומחים, עם רכיבים שנבחרו בקפידה ופורמולות שהוכחו כיעילות.</p>
           <HeroLinks />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", padding: "14px 0", borderTop: "1px solid #EFE4DC", borderBottom: "1px solid #EFE4DC", marginTop: 6 }}>
             {["באישור\nמשרד הבריאות", "מבוסס\nמחקרים מדעיים", "לא נוסה\nעל בעלי חיים"].map((label, i) => (
@@ -158,7 +158,7 @@ export function HomeView() {
       </section>
 
       <section className="stages-desk" style={{ maxWidth: 1320, margin: "0 auto", paddingInline: "var(--page-pad)", paddingBottom: "clamp(64px,10vw,128px)" }}>
-        <SectionHead title="לכל שלב במסע" text="מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב." href="/products" link="לכל המוצרים" />
+        <SectionHead title="לכל שלב במסע" text="מהטרימסטר הראשון ועד לבייבי, טיפוח שמלווה אותך ואת הקטנטנים בכל שלב בדרך." href="/products" link="לכל המוצרים" />
         <div style={{ display: "flex", flexDirection: "column", borderBottom: "1px solid #EFE4DC" }}>
           {stages.map((s) => (
             <Hx key={s.n} as={Link} href={s.href} style={stageRow} hover={{ background: "#F8EFE9" }}>
@@ -179,7 +179,7 @@ export function HomeView() {
       <section className="stages-mob" style={{ background: "#F8EFE9", padding: "44px var(--page-pad) 48px", marginBottom: 56 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
           <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.03em", fontSize: 34, lineHeight: 1.05 }}>לכל שלב במסע</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>מהטרימסטר הראשון ועד השבועות הראשונים עם התינוק, מוצרים שנבחרו לכל שלב.</p>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5E4844" }}>מהטרימסטר הראשון ועד לבייבי, טיפוח שמלווה אותך ואת הקטנטנים בכל שלב בדרך.</p>
         </div>
         <div className="no-scroll bleed-row" style={{ display: "flex", gap: 14, overflowX: "auto", scrollSnapType: "x mandatory", paddingBottom: 4 }}>
           {stages.map((s) => (
@@ -206,7 +206,7 @@ export function HomeView() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "clamp(22px,3vw,32px)" }}>
           <h2 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.03em", fontSize: "clamp(36px,5.4vw,68px)", lineHeight: 1, textWrap: "balance" }}>המומחיות של Oli</h2>
-          <p style={{ fontSize: "clamp(17px,1.8vw,20px)", lineHeight: 1.65, color: "#3A2826", maxWidth: 520 }}>אופיר וליאור, בנותיו של גניקולוג, גדלו לצד רפואת נשים. כשחיפשו מוצרי טיפוח להריון וללידה שיהיו גם בטוחים וגם טבעיים, גילו שכמעט אין כאלה, ולכן יצרו את Oli.</p>
+          <p style={{ fontSize: "clamp(17px,1.8vw,20px)", lineHeight: 1.65, color: "#3A2826", maxWidth: 520 }}>אופיר וליאור, בנותיו של גניקולוג, גדלו לצד רפואת נשים. כשחיפשו מוצרי טיפוח להריון וללידה שיהיו גם בטוחים, גם טבעיים וגם מפנקים, גילו שכמעט אין כאלה, ולכן יצרו את Oli.</p>
           <div className="exp-row no-scroll">
             {PILLARS.map((p) => (
               <div key={p.n} className="exp-item">
@@ -223,7 +223,7 @@ export function HomeView() {
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(48px,7vw,88px) var(--page-pad) 0", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".24em", color: "#A85A3A" }}>חדש</span>
           <h2 style={{ width: "min(92vw,720px)", margin: 0, lineHeight: 0 }}><img src="/assets/olimini-logo.svg" alt="olimini" style={{ display: "block", width: "100%", height: "auto" }} /></h2>
-          <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520 }}>קו הטיפוח הראשון שלנו לתינוקות. רכיבים טבעיים, בלי סבונים, פרפום ופתלטים.</p>
+          <p style={{ fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, color: "#5E4844", maxWidth: 520 }}>הטיפוח הראשון שלהם, עם רכיבים טבעיים ופורמולות שפותחו בשיתוף מומחים.</p>
         </div>
         {miniCount > 0 ? (
         <div className="mini-desk" style={{ position: "relative", maxWidth: 1180, margin: "0 auto", padding: "clamp(8px,2vw,20px) clamp(8px,3vw,32px) clamp(48px,7vw,80px)" }}>
@@ -356,7 +356,7 @@ export function HomeView() {
 
       {giftMain && (
         <section style={{ maxWidth: 1320, margin: "0 auto", padding: "clamp(56px,9vw,112px) var(--page-pad) clamp(64px,10vw,128px)" }}>
-          <SectionHead title={giftCollection?.title.trim() || "מתנות ליולדת"} text="מארזים מפנקים, מוכנים למסירה." href={giftCollection ? "/products?cat=" + encodeURIComponent(giftCollection.title.trim()) : "/products"} link="לכל המארזים" />
+          <SectionHead title={giftCollection?.title.trim() || "מתנות ליולדת"} text="מארזי מתנה שנבחרו באהבה, עם מחשבה גם על האמא וגם על הבייבי." href={giftCollection ? "/products?cat=" + encodeURIComponent(giftCollection.title.trim()) : "/products"} link="לכל המארזים" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "clamp(28px,5vw,64px)", alignItems: "start" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 18, opacity: giftFade ? 0 : 1, transform: giftFade ? "translateY(8px)" : "none", transition: "opacity .45s ease, transform .45s ease" }}>
               <Link href={productHref(giftMain)} style={{ display: "flex", flexDirection: "column", gap: 18, color: "#3A2826" }}>
@@ -428,8 +428,8 @@ export function HomeView() {
 function HeroCopy() {
   return (
     <div style={{ maxWidth: "min(600px,48%)", display: "flex", flexDirection: "column", gap: "clamp(20px,2.6vw,30px)" }}>
-      <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(48px,6vw,92px)", lineHeight: 1, textWrap: "balance" }}>טיפוח בטוח למסע היקר של ההריון ולאחריו</h1>
-      <p style={{ fontSize: "clamp(16px,1.6vw,19px)", lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>פיתחנו סדרה של מוצרים בשיתוף רופאים בכירים וכימאים, שבטוחים לשימוש בהריון ולאחר לידה והוכחו כיעילים.</p>
+      <h1 style={{ fontFamily: FF, fontWeight: 400, letterSpacing: "-.035em", fontSize: "clamp(48px,6vw,92px)", lineHeight: 1, textWrap: "balance" }}>טיפוח בטוח, מההריון ועד לבייבי</h1>
+      <p style={{ fontSize: "clamp(16px,1.6vw,19px)", lineHeight: 1.7, color: "#5E4844", maxWidth: 460 }}>מוצרי טיפוח להריון, לאחר לידה ולתינוקות, שפותחו בשיתוף רופאים ומומחים, עם רכיבים שנבחרו בקפידה ופורמולות שהוכחו כיעילות.</p>
       <HeroLinks />
       <div style={{ display: "flex", gap: "8px 24px", flexWrap: "wrap", paddingTop: 18, borderTop: "1px solid #EFE4DC", fontSize: 14, color: "#6E5650" }}>
         <span>באישור משרד הבריאות</span><span>מבוסס מחקרים מדעיים</span><span>לא נוסה על בעלי חיים</span>

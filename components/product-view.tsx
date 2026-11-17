@@ -434,7 +434,7 @@ export function ProductView({ product, related, initialGiftAmount }: { product: 
             <figure style={{ margin: 0, display: "grid", gap: 20 }}>
               <Stars value={featured.rating} size={18} />
               {featured.title ? <h3 style={{ margin: 0, fontFamily: FF, fontWeight: 500, fontSize: "clamp(20px,3vw,26px)", lineHeight: 1.3 }}>{featured.title}</h3> : null}
-              <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(24px,4.4vw,40px)", lineHeight: 1.3, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
+              <blockquote style={{ margin: 0, fontFamily: FF, fontWeight: 400, fontSize: "clamp(20px,2.4vw,28px)", lineHeight: 1.45, letterSpacing: "-.01em", maxWidth: 980, whiteSpace: "pre-line" }}>״{featured.body}״</blockquote>
               <figcaption>
                 <ReviewByline review={featured} size={40} />
               </figcaption>

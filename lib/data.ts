@@ -135,7 +135,7 @@ export const VALUES = [
 export const STAGES: { title: string; en: string; img: string; desc: string; cat: string; bg: string; count: string; wide?: boolean }[] = [
   { title: "הריון", en: "Pregnancy care", img: "/assets/stage-preg.png", desc: "מסימני מתיחה ועד רגליים עייפות, טיפוח בטוח לכל טרימסטר.", cat: "preg", bg: BG.peach, count: PRODUCTS.filter((p) => p.cat.includes("preg")).length + " מוצרים" },
   { title: "לידה ואחרי", en: "Postpartum care", img: "/assets/stage-birth.png", desc: "הכנה ללידה, הנקה והשבועות הראשונים.", cat: "birth", bg: BG.rose, count: PRODUCTS.filter((p) => p.cat.includes("birth")).length + " מוצרים" },
-  { title: "מתנות ליולדת", en: "Birth gifts", img: "/assets/stage-gift.png", wide: true, desc: "מארזים מפנקים, מוכנים למסירה.", cat: "gift", bg: BG.mist, count: PRODUCTS.filter((p) => p.cat.includes("gift")).length + " מארזים" },
+  { title: "מתנות ליולדת", en: "Birth gifts", img: "/assets/stage-gift.png", wide: true, desc: "מארזי מתנה שנבחרו באהבה, עם מחשבה גם על האמא וגם על הבייבי.", cat: "gift", bg: BG.mist, count: PRODUCTS.filter((p) => p.cat.includes("gift")).length + " מארזים" },
 ];
 
 export const REGIONS: { name: string; stores: [string, string][] }[] = [
