@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "./account-entry.css";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isArticleSection } from "@/lib/article-paths";
@@ -435,30 +436,39 @@ function AccountDrawer() {
   return (
     <>
       <div onClick={site.closeAll} style={backdrop(72, open)} />
-      <aside data-scroll-lock-allow style={box} aria-label="כניסה לחשבון">
+      <aside data-scroll-lock-allow style={box} className="account-entry" role="dialog" aria-modal="true" aria-label="כניסה לחשבון">
         {site.mobile && <div style={{ display: "flex", justifyContent: "center", paddingTop: 10 }}><span style={{ width: 44, height: 4, borderRadius: 2, background: "#D8C3B6" }} /></div>}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 0" }}>
           {step === "code" || step === "name" ? <button type="button" onClick={() => setStep(step === "name" ? "code" : "phone")} style={{ height: 40, padding: "0 14px", borderRadius: 999, border: 0, background: "#F8EFE9", color: "#3A2826", fontSize: 14 }}>→ חזרה</button> : <span />}
-          <Hx as="button" onClick={site.closeAll} aria-label="סגירה" style={closeBtn} hover={{ background: "#3A2826", color: "#FFFFFF", borderColor: "#3A2826" }}>✕</Hx>
+          <button className="account-entry__close" type="button" onClick={site.closeAll} aria-label="סגירה"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 12" /></svg></button>
         </div>
         <div style={{ padding: "8px clamp(24px,6vw,40px) calc(36px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 22, overflowY: "auto" }}>
           {step === "phone" && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26, textAlign: "center", paddingTop: 4 }}>
-              <img src="/assets/logo-brown.png" alt="Oli" style={{ height: 34 }} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-                <span style={{ fontFamily: FF, fontWeight: 400, fontSize: "clamp(28px,6vw,34px)", lineHeight: 1.1 }}>ברוכה הבאה</span>
-                <span style={{ fontSize: 15, lineHeight: 1.6, color: "#6E5650", maxWidth: 300 }}>כניסה או הרשמה עם מספר הנייד. נשלח לך קוד חד־פעמי, בלי סיסמאות.</span>
+            <div className="account-entry__welcome">
+              <div className="account-entry__brand"><img src="/assets/logo-brown.png" alt="Oli safe care" /></div>
+              <div className="account-entry__intro">
+                <span className="account-entry__eyebrow">המקום שלך ב־Oli</span>
+                <h2>ברוכה הבאה</h2>
+                <p>כל מה ששלך, במקום אחד.<br />נשלח לך קוד לנייד לכניסה או להרשמה.</p>
               </div>
-              <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-                <label style={{ display: "flex", alignItems: "center", height: 58, borderRadius: 999, background: "#F8EFE9", direction: "ltr", padding: "0 6px 0 22px", gap: 12 }}>
-                  <span style={{ fontSize: 16, fontWeight: 500, color: "#8A6C64" }}>+972</span>
-                  <span style={{ width: 1, height: 22, background: "#E1CABD" }} />
-                  <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} onKeyDown={(e) => { if (e.key === "Enter") send(); }} type="tel" inputMode="numeric" placeholder="050-000-0000" style={{ flex: 1, height: "100%", border: 0, outline: "none", fontSize: 18, letterSpacing: ".05em", fontFamily: "inherit", color: "#3A2826", background: "transparent", minWidth: 0 }} />
-                </label>
-                <button type="button" disabled={!phoneOk || sending} onClick={send} style={{ height: 56, border: 0, borderRadius: 999, background: phoneOk && !sending ? "#3A2826" : "#E6D2C6", color: "#FFFFFF", fontSize: 16, fontWeight: 600 }}>{sending ? "שולחים קוד..." : "שליחת קוד"}</button>
-                {sendError && <span style={{ fontSize: 14, color: "#A33A2A" }}>{sendError}</span>}
+              <form className="account-entry__form" onSubmit={(event) => { event.preventDefault(); void send(); }}>
+                <label className="account-entry__label" htmlFor="account-phone">מספר הנייד שלך</label>
+                <div className="account-entry__phone">
+                  <span className="account-entry__prefix" aria-hidden="true">+972</span>
+                  <input id="account-phone" name="phone" autoComplete="tel-national" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setSendError(""); }} type="tel" inputMode="numeric" placeholder="050-000-0000" aria-describedby={sendError ? "account-phone-error" : "account-phone-note"} aria-invalid={sendError ? true : undefined} />
+                  <svg className="account-entry__phone-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10 5h4M11 18.5h2" /></svg>
+                </div>
+                {sendError && <span id="account-phone-error" role="alert" className="account-entry__error">{sendError}</span>}
+                <button className="account-entry__submit" type="submit" disabled={!phoneOk || sending} aria-busy={sending}>
+                  <span>{sending ? "שולחים קוד..." : "שלחו לי קוד כניסה"}</span>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+                </button>
+                <span id="account-phone-note" className="account-entry__note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>קוד חד־פעמי, בלי לזכור סיסמה</span>
+              </form>
+              <div className="account-entry__gift">
+                <span className="account-entry__gift-value"><b>5<span>%</span></b><span>מתנת הצטרפות</span></span>
+                <div><strong>נפגשות כאן לראשונה?</strong><p>ניצור לך חשבון ונעניק לך<br />5% הנחה על ההזמנה הראשונה.</p></div>
               </div>
-              <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.6 }}>פעם ראשונה? ניצור לך חשבון ותקבלי <span style={{ color: "#A85A3A", fontWeight: 600 }}>5% הנחה</span> על ההזמנה הראשונה</span>
             </div>
           )}
           {step === "code" && (

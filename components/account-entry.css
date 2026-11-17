@@ -1,0 +1,48 @@
+.account-entry {
+  isolation: isolate;
+  background: radial-gradient(ellipse at 50% 0%, #f3e4da 0%, #fcf8f4 40%, #fffdfb 75%) !important;
+  border: 1px solid rgba(255, 255, 255, .8);
+}
+.account-entry__close {
+  width: 36px; height: 36px; display: grid; place-items: center;
+  border: 1px solid #e9ddd4; border-radius: 50%;
+  background: rgba(255,255,255,.65); color: #6e5650; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.account-entry__close:hover { background: #3a2826; color: #fff; }
+.account-entry__welcome { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
+.account-entry__brand { padding: 0 0 2px; }
+.account-entry__brand img { display: block; height: 54px; width: auto; mix-blend-mode: multiply; }
+.account-entry__intro { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.account-entry__eyebrow { color: #9b6e56; font-size: 11px; letter-spacing: .07em; }
+.account-entry__intro h2 { margin: 0; color: #3a2826; font-size: clamp(32px, 8vw, 39px); font-weight: 400; letter-spacing: -.035em; line-height: 1.15; }
+.account-entry__intro p { margin: 0; color: #7c6258; font-size: 14px; line-height: 1.8; }
+.account-entry__form { display: flex; flex-direction: column; width: 100%; text-align: right; }
+.account-entry__label { margin: 0 4px 9px; color: #5e4844; font-size: 12px; font-weight: 500; }
+.account-entry__phone { display: flex; align-items: center; gap: 14px; height: 58px; padding: 0 17px; direction: ltr; border: 1px solid #e3d5cb; border-radius: 16px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+.account-entry__phone:focus-within { border-color: #a7785d; box-shadow: 0 0 0 3px rgba(167,120,93,.12); }
+.account-entry__prefix { font-size: 14px; color: #91776b; padding-right: 14px; border-right: 1px solid #eaded5; }
+.account-entry__phone input { flex: 1; min-width: 0; width: 100%; height: 100%; border: 0; outline: none; background: transparent; font: inherit; font-size: 18px; letter-spacing: .035em; color: #3a2826; }
+.account-entry__phone input::placeholder { color: #ad9c92; opacity: 1; }
+.account-entry__phone-icon { flex-shrink: 0; color: #a18a7c; }
+.account-entry__submit { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; height: 54px; margin-top: 12px; border: 0; border-radius: 16px; background: #3a2826; color: #fffaf5; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; box-shadow: 0 5px 14px rgba(58,40,38,.12); transition: background .2s, box-shadow .2s; }
+.account-entry__submit:hover:not(:disabled) { background: #5b4035; box-shadow: 0 7px 18px rgba(58,40,38,.18); }
+.account-entry__submit:disabled { background: #e4d5c9; color: #776154; box-shadow: none; cursor: default; }
+.account-entry__note { display: flex; align-items: center; justify-content: center; gap: 6px; color: #8c786d; font-size: 11px; margin-top: 13px; }
+.account-entry__error { margin: 8px 4px 0; color: #a33a2a; font-size: 13px; }
+.account-entry__gift { display: flex; align-items: center; gap: 18px; width: 100%; padding: 17px 18px; border: 1px solid #ebddd1; border-radius: 18px; background: linear-gradient(120deg,#f8f0e8,#f3e7db); text-align: right; }
+.account-entry__gift-value { display: flex; flex: 0 0 85px; flex-direction: column; align-items: center; gap: 3px; padding-left: 17px; border-left: 1px solid #dcc7b5; color: #9a684a; }
+.account-entry__gift-value b { direction: ltr; font-size: 36px; font-weight: 400; line-height: 1; letter-spacing: -.05em; }
+.account-entry__gift-value b span { font-size: 20px; margin-left: 2px; }
+.account-entry__gift-value > span { font-size: 9px; white-space: nowrap; }
+.account-entry__gift strong { font-size: 13px; font-weight: 500; color: #5c4437; }
+.account-entry__gift p { margin: 5px 0 0; color: #876e5c; font-size: 11px; line-height: 1.7; }
+.account-entry button:focus-visible { outline: 2px solid #a7785d; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .account-entry__welcome { gap: 20px; }
+  .account-entry__brand img { height: 44px; }
+  .account-entry__gift { padding: 15px; gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-entry, .account-entry button, .account-entry__phone { transition: none !important; }
+}
