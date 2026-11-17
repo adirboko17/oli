@@ -109,6 +109,10 @@
 .ck-item__sub { font-size:12px; color:#6E5650; line-height:1.45; }
 .ck-item__meta { font-size:12px; color:#6E5650; }
 .ck-item__price { font-size:15px; font-weight:600; white-space:nowrap; }
+.ck-item__price.is-sale { color:#A85A3A; }
+.ck-item__prices { display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+.ck-item__was { font-size:12px; color:#9C847C; text-decoration:line-through; white-space:nowrap; }
+.ck-item__sale { align-self:flex-start; margin:2px 0; background:#A85A3A; color:#fff; border-radius:999px; padding:2px 8px; font-size:11px; font-weight:600; line-height:1.4; }
 
 .ck-coupon { display:flex; gap:8px; }
 .ck-coupon input { flex:1; min-width:0; height:48px; border:1.5px solid #E6D2C6; border-radius:999px; padding:0 18px; font-size:15px; font-family:inherit; color:#3A2826; outline:none; background:#fff; direction:ltr; text-align:right; transition:border-color .2s, background-position .2s; }

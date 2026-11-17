@@ -9,6 +9,7 @@ export type CatalogVariant = {
   position: number;
   stock: number;
   tracked: boolean;
+  was?: number;
 };
 
 export type CatalogMedia = {
@@ -18,7 +19,7 @@ export type CatalogMedia = {
   kind: "image" | "video";
 };
 
-export type CatalogBundle = { qty: number; price: number; label: string; image?: string; tag?: string };
+export type CatalogBundle = { qty: number; price: number; label: string; image?: string; tag?: string; was?: number };
 export type CatalogFaq = { q: string; a: string; tag: string };
 export type CatalogCodeOffer = { code: string; badge: string; price: number; variants: Record<string, number>; bundles: { qty: number; price: number }[] };
 
@@ -182,6 +183,19 @@ export function catalogLinePrice(products: CatalogProduct[], lineId: string) {
   if (bundle) return product.bundles.find((item) => item.qty === Number(bundle[2]))?.price ?? null;
   const variant = product.variants.find((item) => item.id === baseId);
   return variant?.price ?? product.price;
+}
+
+export function catalogLineSale(products: CatalogProduct[], lineId: string) {
+  if (lineId.startsWith("oli-gift:") || lineId.includes(":gift:")) return null;
+  const bundle = /^(.+):x(\d+)$/.exec(lineId);
+  const baseId = bundle?.[1] ?? lineId;
+  const product = products.find((item) => item.id === baseId || item.variants.some((variant) => variant.id === baseId));
+  if (!product?.saleBadge) return null;
+  const pack = bundle ? product.bundles.find((item) => item.qty === Number(bundle[2])) : null;
+  const variant = product.variants.find((item) => item.id === baseId);
+  const price = bundle ? pack?.price : variant?.price ?? product.price;
+  const was = bundle ? pack?.was : variant?.was ?? product.compareAt;
+  return price != null && was != null && was > price ? { was, badge: product.saleBadge } : null;
 }
 
 export function paragraphs(value: string) {

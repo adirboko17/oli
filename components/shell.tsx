@@ -7,7 +7,7 @@ import { isArticleSection } from "@/lib/article-paths";
 import { findUser, formatPhone, saveUser, useAccountGreeting, useOliUser } from "@/lib/account-session";
 import { catalogMenu, menuHref } from "@/lib/catalog-menu";
 import { productComingSoon } from "@/lib/product-launch";
-import { customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
+import { catalogLineSale, customerTags, giftPriceLabel, openGiftMax, productBlurb, productCardSub, productHref, productImage, productSoldOut, type CatalogProduct } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { FREE_SHIPPING_FROM, isGiftLineId } from "@/lib/shipping";
@@ -555,6 +555,12 @@ function CartDrawer() {
   const physicalTotal = Math.max(0, Math.round((site.items.reduce((sum, item) => isGiftLineId(item.id) ? sum : sum + item.price * item.qty, 0) - bundle.amount) * 100) / 100);
   const gap = digitalCart ? 0 : Math.max(0, FREE_SHIPPING - physicalTotal);
   const companions = digitalCart ? [] : shippingCompanions(site.products, site.items, physicalTotal);
+  const sales = new Map(site.items.map((item) => [item.id, catalogLineSale(site.products, item.id)]));
+  const saleSavings = Math.round(site.items.reduce((sum, item) => {
+    const sale = sales.get(item.id);
+    return sale ? sum + (sale.was - item.price) * item.qty : sum;
+  }, 0) * 100) / 100;
+  const saleBadge = [...sales.values()].find((sale) => sale)?.badge ?? "";
   const { present, visible } = useShown(site.cartOpen);
   if (!present) return null;
   const open = visible;
@@ -599,13 +605,17 @@ function CartDrawer() {
                       <button type="button" onClick={() => site.setQty(x.id, -x.qty)} aria-label="הסרה" style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", border: 0, background: "transparent", color: "#8A6C64", fontSize: 12 }}>✕</button>
                     </div>
                     <span style={{ fontSize: 13, color: "#6E5650", lineHeight: 1.45 }}>{x.sub}</span>
+                    {sales.get(x.id) ? <span style={saleChip}>{sales.get(x.id)?.badge}</span> : null}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", background: "#F8EFE9", borderRadius: 999, height: 34, padding: "0 2px" }}>
                         <button type="button" onClick={() => site.setQty(x.id, 1)} aria-label="הוספה" style={qtyBtn}>+</button>
                         <span style={{ minWidth: 22, textAlign: "center", fontSize: 14, fontWeight: 600 }}>{x.qty}</span>
                         <button type="button" onClick={() => site.setQty(x.id, -1)} aria-label="הפחתה" style={qtyBtn}>−</button>
                       </div>
-                      <span style={{ fontWeight: 600, fontSize: 16, whiteSpace: "nowrap" }}>{fmt(x.price * x.qty)}</span>
+                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", lineHeight: 1.2 }}>
+                        {sales.get(x.id) ? <span style={{ fontSize: 13, color: "#9C847C", textDecoration: "line-through", whiteSpace: "nowrap" }}>{fmt((sales.get(x.id)?.was ?? 0) * x.qty)}</span> : null}
+                        <span style={{ fontWeight: 600, fontSize: 16, whiteSpace: "nowrap", color: sales.get(x.id) ? "#A85A3A" : undefined }}>{fmt(x.price * x.qty)}</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -648,6 +658,12 @@ function CartDrawer() {
                   <span>−{fmt(part.amount)}</span>
                 </div>
               ))}
+              {saleSavings > 0 ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "#F8EFE9", fontSize: 14, color: "#A85A3A", fontWeight: 600 }}>
+                  <span>✓ מבצע {saleBadge} מופעל על הסל</span>
+                  <span style={{ whiteSpace: "nowrap" }}>חסכת {fmt(saleSavings)}</span>
+                </div>
+              ) : null}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 15, color: "#5E4844" }}>סכום ביניים</span>
                 <span style={{ fontFamily: FF, fontWeight: 500, fontSize: 24 }}>{fmt(total)}</span>
@@ -664,6 +680,8 @@ function CartDrawer() {
     </>
   );
 }
+
+const saleChip = { alignSelf: "flex-start", marginTop: 4, background: "#A85A3A", color: "#FFFFFF", borderRadius: 999, padding: "3px 9px", fontSize: 12, fontWeight: 600, lineHeight: 1.3 } as const;
 
 const qtyBtn = { width: 32, height: 32, border: 0, borderRadius: "50%", background: "transparent", color: "#3A2826", fontSize: 16 } as const;
 

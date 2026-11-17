@@ -6,7 +6,7 @@ import './CheckoutDetails.css';
 
 /* Oli: details & shipping page (step 2 of 3: cart → details & shipping → payment) */
 
-export type CheckoutItem = { id: string; name: string; sub: string; price: number; qty: number; image: string };
+export type CheckoutItem = { id: string; name: string; sub: string; price: number; qty: number; image: string; was?: number; saleBadge?: string };
 
 export type GiftDetails = { name: string; phone: string; email: string; message: string };
 
@@ -224,6 +224,8 @@ export default function CheckoutDetails({
   const setAboutField = (k: 'pregnancyWeek' | 'heardOther') => (e: React.ChangeEvent<HTMLInputElement>) => { setAbout({ ...about, [k]: e.target.value }); setErr(''); };
 
   const subtotal = items.reduce((a, x) => a + x.price * x.qty, 0);
+  const saleSavings = Math.round(items.reduce((sum, item) => item.was != null && item.was > item.price ? sum + (item.was - item.price) * item.qty : sum, 0) * 100) / 100;
+  const saleBadge = items.find((item) => item.saleBadge)?.saleBadge ?? '';
   const merchandise = Math.max(0, Math.round((subtotal - bundleSavings) * 100) / 100);
   const giftMerchandise = items.reduce((sum, item) => isGiftLineId(item.id) ? sum + item.price * item.qty : sum, 0);
   const physicalMerchandise = Math.max(0, Math.round((merchandise - giftMerchandise) * 100) / 100);
@@ -620,9 +622,13 @@ export default function CheckoutDetails({
                     <div className="ck-item__text">
                       <span className="ck-item__name">{it.name}</span>
                       {it.sub ? <span className="ck-item__sub">{it.sub}</span> : null}
+                      {it.saleBadge ? <span className="ck-item__sale">{it.saleBadge}</span> : null}
                       <span className="ck-item__meta">{fmt(it.price)} × {it.qty}</span>
                     </div>
-                    <span className="ck-item__price">{fmt(it.price * it.qty)}</span>
+                    <span className="ck-item__prices">
+                      {it.was != null && it.was > it.price ? <span className="ck-item__was">{fmt(it.was * it.qty)}</span> : null}
+                      <span className={`ck-item__price${it.saleBadge ? ' is-sale' : ''}`}>{fmt(it.price * it.qty)}</span>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -640,7 +646,8 @@ export default function CheckoutDetails({
               )}
               {!couponPhase && couponMsg && <span className={`ck-coupon__msg${couponMsg.ok ? ' is-ok' : ''}`}>{couponMsg.text}</span>}
               <div className="ck-totals">
-                <div><span>סכום ביניים</span><span>{fmt(subtotal)}</span></div>
+                <div><span>סכום ביניים</span><span>{fmt(Math.round((subtotal + saleSavings) * 100) / 100)}</span></div>
+                {saleSavings > 0 && <div className="ck-totals__disc"><span>מבצע {saleBadge}</span><span>−{fmt(saleSavings)}</span></div>}
                 {quote && quote.saleCustom > 0 && <div><span>סכום חופשי</span><span>{formatMoney(quote.saleCustom, payCurrency)}</span></div>}
                 <div><span>משלוח{digital ? ' · דיגיטלי' : selected ? ` · ${selected.name}` : ''}</span><span>{digital ? formatShippingPrice(0, payCurrency) : !selected ? 'לבחירה' : quoteForChoice && quote ? formatShippingPrice(locked && quote.shipping != null ? quote.shipping : freeShipping ? 0 : (quote.shipping ?? selected.price), payCurrency) : formatShippingPrice(freeShipping ? 0 : selected.price, currency)}</span></div>
                 {bundleSavings > 0 && !quote && <div className="ck-totals__disc"><span>הנחת חבילה</span><span>−{fmt(bundleSavings)}</span></div>}

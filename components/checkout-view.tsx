@@ -5,6 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import CheckoutDetails, { type CheckoutPayload } from "@/components/CheckoutDetails";
 import { useSite } from "@/components/site";
 import { readUser, saveOrder, useOliUser } from "@/lib/account-session";
+import { catalogLineSale } from "@/lib/catalog-model";
 import { FF, fmt } from "@/lib/format";
 import { oliminiBundleOffer } from "@/lib/olimini-kits";
 import { isGiftLineId, isPickupZone, type ShippingChoice } from "@/lib/shipping";
@@ -28,15 +29,19 @@ export function CheckoutView({ shippingMethods, currency, recovered = null }: { 
 
   const items = useMemo(() => {
     const source = site.items.length ? site.items : (recovered?.lines ?? []);
-    return source.map((item) => ({
-      id: item.id,
-      name: item.name,
-      sub: item.sub,
-      price: item.price,
-      qty: item.qty,
-      image: item.image || "",
-    }));
-  }, [site.items, recovered]);
+    return source.map((item) => {
+      const sale = catalogLineSale(site.products, item.id);
+      return {
+        id: item.id,
+        name: item.name,
+        sub: item.sub,
+        price: item.price,
+        qty: item.qty,
+        image: item.image || "",
+        ...(sale ? { was: sale.was, saleBadge: sale.badge } : {}),
+      };
+    });
+  }, [site.items, site.products, recovered]);
 
   useLayoutEffect(() => {
     if (restored.current || !recovered?.lines.length) return;

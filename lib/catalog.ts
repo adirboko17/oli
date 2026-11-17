@@ -89,10 +89,10 @@ async function parseProduct(value: unknown): Promise<CatalogProduct | null> {
     compareAt: sale ? (was ?? price) : money(row.compareAt),
     tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
     variants: variants
-      .map((variant) => (sale && sale.variants[variant.id] != null ? { ...variant, price: sale.variants[variant.id] } : variant))
+      .map((variant) => (sale && sale.variants[variant.id] != null ? { ...variant, price: sale.variants[variant.id], was: variant.price ?? price } : variant))
       .sort((a, b) => a.position - b.position),
     media: media.sort((a, b) => a.position - b.position),
-    bundles: sale ? bundles.map((item) => ({ ...item, price: sale.bundles.find((pack) => pack.qty === item.qty)?.price ?? item.price })) : bundles,
+    bundles: sale ? bundles.map((item) => ({ ...item, price: sale.bundles.find((pack) => pack.qty === item.qty)?.price ?? item.price, was: item.price })) : bundles,
     faq: parseFaq(row.merch),
     page: parsePage(row.merch),
     badge: badgeLabel(row.merch),
