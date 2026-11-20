@@ -58,6 +58,25 @@ export function weekToTrimester(week: number) {
   return week <= 13 ? 't1' : week <= 27 ? 't2' : 't3';
 }
 
+// Recommendations by path: "<answer to Q1>:<answer to Q3>" overrides RECOMMEND.
+// So a woman who isn't pregnant doesn't get pregnancy products (Oli 4 Pregnancy, Olimini, Olineum).
+export const RECOMMEND_BY_PATH: Record<string, string[]> = {
+  // Planning a pregnancy
+  'plan:belly': ['olilastic', 'olineum'],
+  'plan:self': ['oliglow', 'facioli', 'olicalm', 'olilastic'],
+  // After birth
+  'post:belly': ['olilastic', 'olilax', 'olicalm'],
+  'post:self': ['olilax', 'olicalm', 'oliglow', 'olilastic'],
+  // Skincare for myself
+  'self:legs': ['olilax', 'olilastic', 'olicalm'],
+  'self:belly': ['olilastic', 'olilax', 'olicalm'],
+  'self:self': ['oliglow', 'facioli', 'olicalm', 'olilastic'],
+};
+
+export function recommendFor(a1: string, k3: string): string[] {
+  return [...(RECOMMEND_BY_PATH[`${a1}:${k3}`] ?? RECOMMEND[k3] ?? [])].slice(0, 4);
+}
+
 // Paths that end after question 2 (no question 3): products straight from the question-2 answer.
 // Gift: the giver doesn't know the products, so we go straight to fitting options.
 export const Q2_FINAL: Record<string, Record<string, string[]>> = {

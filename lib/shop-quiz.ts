@@ -1,4 +1,4 @@
-import { Q1, Q1_TITLE, Q2, Q3_TITLE, Q3_TITLES, Q2_FINAL, RECOMMEND, q3Options } from "@/components/promo/quiz";
+import { Q1, Q1_TITLE, Q2, Q3_TITLE, Q3_TITLES, Q2_FINAL, q3Options, recommendFor } from "@/components/promo/quiz";
 
 export type QuizChoice = { id: string; label: string; next: string; products: string[] };
 export type QuizQuestion = { id: string; title: string; choices: QuizChoice[]; week?: boolean };
@@ -181,7 +181,7 @@ export function builtinQuizFlow(): QuizFlow {
           id: item.k,
           label: item.label,
           next: FORM,
-          products: [...(RECOMMEND[item.k] ?? [])].slice(0, 4),
+          products: recommendFor(first.k, item.k),
         })),
       });
     }
