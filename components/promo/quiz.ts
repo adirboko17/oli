@@ -84,20 +84,21 @@ export function q3Options(a1?: string, a2?: string): Opt[] {
 
 // Recommended products (product ids from the catalog) for each answer to question 3
 export const RECOMMEND: Record<string, string[]> = {
-  belly: ['olilastic', 'olineum'],
-  legs: ['olilax', 'olilastic'],
+  belly: ['olilastic', 'olineum', 'olimini', 'oli4'],
+  legs: ['olilax', 'olilastic', 'oli4'],
   face: ['facioli', 'oliglow'],
-  birth: ['olineum', 'olilastic', 'bottle'],
-  post: ['nippoli', 'olineum'],
-  baby: ['babyspa', 'after-shower-ritual'],
-  // Baby path (Olimini). Pudding = pre--shower-ritual, cream = after-shower-ritual, diaper spray = spray--away
-  bdaily: ['pre--shower-ritual', 'after-shower-ritual'],
-  bdiaper: ['spray--away', 'after-shower-ritual'],
-  bdry: ['pre--shower-ritual', 'after-shower-ritual'],
-  batopic: ['pre--shower-ritual', 'after-shower-ritual'],
-  bscalp: ['pre--shower-ritual', 'after-shower-ritual'],
-  bsens: ['pre--shower-ritual', 'after-shower-ritual'],
+  birth: ['olineum', 'olilastic', 'bottle', 'nippoli'],
+  post: ['nippoli', 'olineum', 'olibox', 'olilastic'],
+  baby: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
+  self: ['bestof', 'oliglow', 'facioli', 'olilastic'],
+  // Baby path. babyspa = baby massage oil (in stock), pudding = pre--shower-ritual,
+  // cream = after-shower-ritual, diaper spray = spray--away, olilastic = stretch-mark butter
+  bdaily: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
+  bdiaper: ['spray--away', 'after-shower-ritual', 'pre--shower-ritual', 'babyspa'],
+  bdry: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'olilastic'],
+  batopic: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'olilastic'],
+  bscalp: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual'],
+  bsens: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual'],
   // All four of the Olimini kit: with all four in the cart it automatically drops to the kit price
   bkit: ['spray--away', 'pre--shower-ritual', 'after-shower-ritual', 'babyspa'],
-  self: ['bestof', 'oliglow'],
 };
