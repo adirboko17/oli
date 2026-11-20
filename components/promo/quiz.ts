@@ -92,8 +92,8 @@ export const RECOMMEND: Record<string, string[]> = {
   birth: ['olineum', 'nippoli', 'bottle', 'f90106f2-4367-4117-b860-e26fc5853799'],
   post: ['nippoli', 'bottle', 'olilastic'],
   baby: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
-  // Oli 4 Pregnancy, Oliglow, Olilax, handmade ceramic oil burner
-  self: ['oli4', 'oliglow', 'olilax', 'a1daf013-8283-4394-b0dc-c5215b5bd4d1'],
+  // Oli 4 Pregnancy, Oliglow, Olilax, Olicalm (aromatic candle)
+  self: ['oli4', 'oliglow', 'olilax', 'olicalm'],
   // Baby path. babyspa = baby massage oil (in stock), pudding = pre--shower-ritual,
   // cream = after-shower-ritual, diaper spray = spray--away, olilastic = stretch-mark butter
   bdaily: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
