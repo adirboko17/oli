@@ -86,11 +86,14 @@ export function q3Options(a1?: string, a2?: string): Opt[] {
 export const RECOMMEND: Record<string, string[]> = {
   belly: ['olilastic', 'olineum', 'olimini', 'oli4'],
   legs: ['olilax', 'olilastic', 'oli4'],
-  face: ['facioli', 'oliglow'],
-  birth: ['olineum', 'olilastic', 'bottle', 'nippoli'],
-  post: ['nippoli', 'olineum', 'olibox', 'olilastic'],
+  // FaciOli, Oliglow, OliveOli olive-oil & lavender soap, OliveOli lemongrass & sweet orange soap
+  face: ['facioli', 'oliglow', '4d324bad-ba94-402c-8ce8-ad664fd08804', 'b5fa495d-7d8b-4b34-adeb-85842063d128'],
+  // Olineum, NippOli, fruit bottle, lavender essential oil
+  birth: ['olineum', 'nippoli', 'bottle', 'f90106f2-4367-4117-b860-e26fc5853799'],
+  post: ['nippoli', 'bottle', 'olilastic'],
   baby: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
-  self: ['bestof', 'oliglow', 'facioli', 'olilastic'],
+  // Oli 4 Pregnancy, Oliglow, Olilax, handmade ceramic oil burner
+  self: ['oli4', 'oliglow', 'olilax', 'a1daf013-8283-4394-b0dc-c5215b5bd4d1'],
   // Baby path. babyspa = baby massage oil (in stock), pudding = pre--shower-ritual,
   // cream = after-shower-ritual, diaper spray = spray--away, olilastic = stretch-mark butter
   bdaily: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
