@@ -48,6 +48,8 @@ export async function POST(request: Request) {
   const phone = text(body?.phone, 20).replace(/\D/g, "");
   const email = text(body?.email, 120).toLowerCase();
   const answers = answersOf(body?.answers);
+  const weekValue = Number(body?.pregnancyWeek);
+  const pregnancyWeek = Number.isInteger(weekValue) && weekValue >= 1 && weekValue <= 42 ? weekValue : null;
   const flow = (await loadShopQuiz(request.headers.get("host"))) ?? builtinQuizFlow();
   const recommended = quizRecommendation(flow, answers);
   if (!name || !PHONE_RE.test(phone) || !EMAIL_RE.test(email) || !recommended) {
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     a2: answers[1]?.choiceId ?? "",
     a3: answers[2]?.choiceId ?? "",
     path: answers,
+    pregnancyWeek,
     recommended,
   });
   if (!code) return NextResponse.json({ ok: false, error: "used" }, { status: 409 });

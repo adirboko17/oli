@@ -11,6 +11,7 @@ export type PromoLead = {
   a3: string;
   path?: { questionId: string; choiceId: string }[];
   recommended: string[];
+  pregnancyWeek?: number | null;
   used: boolean;
   createdAt: string;
 };

@@ -117,3 +117,10 @@
 .pq-reco__add:hover { background:#A85A3A; }
 .pq-shop { height:52px; border-radius:999px; border:1px solid #3A2826; background:transparent; color:#3A2826; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .2s; }
 .pq-shop:hover { background:#3A2826; color:#fff; }
+
+/* Pregnancy-week slider */
+.pq-week { display:flex; flex-direction:column; gap:10px; }
+.pq-week__val { text-align:center; font-size:18px; color:#3A2826; }
+.pq-week__val b { font-size:40px; font-weight:600; margin-inline-start:6px; }
+.pq-week__range { width:100%; accent-color:#3A2826; height:28px; direction:ltr; cursor:pointer; }
+.pq-week__ends { display:flex; justify-content:space-between; direction:ltr; font-size:12px; color:#8a7a74; }

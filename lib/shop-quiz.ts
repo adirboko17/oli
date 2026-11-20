@@ -1,7 +1,7 @@
-import { Q1, Q1_TITLE, Q2, Q3_TITLE, RECOMMEND, q3Options } from "@/components/promo/quiz";
+import { Q1, Q1_TITLE, Q2, Q3_TITLE, Q3_TITLES, Q2_FINAL, RECOMMEND, q3Options } from "@/components/promo/quiz";
 
 export type QuizChoice = { id: string; label: string; next: string; products: string[] };
-export type QuizQuestion = { id: string; title: string; choices: QuizChoice[] };
+export type QuizQuestion = { id: string; title: string; choices: QuizChoice[]; week?: boolean };
 
 export type QuizFlow = {
   introEyebrow: string;
@@ -158,15 +158,25 @@ export function builtinQuizFlow(): QuizFlow {
   for (const first of Q1) {
     const second = Q2[first.k];
     if (!second) continue;
+    const final = Q2_FINAL[first.k];
+    if (final) {
+      questions.push({
+        id: `q2_${first.k}`,
+        title: second.title,
+        choices: second.opts.map((opt) => ({ id: opt.k, label: opt.label, next: FORM, products: [...(final[opt.k] ?? [])].slice(0, 4) })),
+      });
+      continue;
+    }
     questions.push({
       id: `q2_${first.k}`,
       title: second.title,
+      ...(second.week ? { week: true } : {}),
       choices: second.opts.map((opt) => ({ id: opt.k, label: opt.label, next: `q3_${first.k}_${opt.k}`, products: [] })),
     });
     for (const opt of second.opts) {
       questions.push({
         id: `q3_${first.k}_${opt.k}`,
-        title: Q3_TITLE,
+        title: Q3_TITLES[first.k] ?? Q3_TITLE,
         choices: q3Options(first.k, opt.k).map((item) => ({
           id: item.k,
           label: item.label,

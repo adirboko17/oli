@@ -1,10 +1,11 @@
 'use client';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { builtinQuizFlow, type QuizAnswer, type QuizFlow } from '@/lib/shop-quiz';
+import { WEEK_MAX, WEEK_MIN, weekToTrimester } from './quiz';
 import './PromoQuiz.css';
 
 export type QuizProduct = { id: string; name: string; sub: string; priceLabel: string; image: string; href: string };
-export type QuizLead = { name: string; phone: string; email: string; answers: QuizAnswer[]; recommended: string[] };
+export type QuizLead = { name: string; phone: string; email: string; answers: QuizAnswer[]; recommended: string[]; pregnancyWeek?: number | null };
 
 type Props = {
   open: boolean;
@@ -34,6 +35,18 @@ function Options({ opts, value, onPick }: { opts: { id: string; label: string }[
   );
 }
 
+function WeekSlider({ value, onChange, onNext }: { value: number; onChange: (week: number) => void; onNext: () => void }) {
+  return (
+    <div className="pq-week">
+      <div className="pq-week__val">שבוע <b>{value}</b></div>
+      <input className="pq-week__range" type="range" min={WEEK_MIN} max={WEEK_MAX} step={1} value={value}
+        onChange={event => onChange(Number(event.target.value))} aria-label="שבוע הריון" />
+      <div className="pq-week__ends"><span>{WEEK_MIN}</span><span>{WEEK_MAX}</span></div>
+      <button className="pq-cta" onClick={onNext}>המשך</button>
+    </div>
+  );
+}
+
 function lines(value: string) {
   const parts = value.split('\n');
   return parts.map((line, index) => <Fragment key={index}>{index > 0 ? <br /> : null}{line}</Fragment>);
@@ -43,6 +56,8 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
   const quiz = flow ?? builtinQuizFlow();
   const [stack, setStack] = useState<string[]>(['welcome']);
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [week, setWeek] = useState(20);
+  const [weekSet, setWeekSet] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -87,7 +102,8 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
     const answers = stack.filter(id => quiz.questions.some(item => item.id === id)).map(id => ({ questionId: id, choiceId: picked[id] || '' }));
     setBusy(true);
     try {
-      const result = await onSubmit({ name: form.name, phone: form.phone.replace(/\D/g, ''), email: form.email, answers, recommended: recIds });
+      const usedWeek = weekSet && stack.some(id => quiz.questions.find(item => item.id === id)?.week);
+      const result = await onSubmit({ name: form.name, phone: form.phone.replace(/\D/g, ''), email: form.email, answers, recommended: recIds, pregnancyWeek: usedWeek ? week : null });
       setCode(result.code);
       setStack(prev => [...prev.filter(id => id !== 'done'), 'done']);
     } catch { setErr('משהו השתבש, נסי שוב'); }
@@ -136,10 +152,19 @@ export default function PromoQuiz({ open, onClose, onSubmit, getProduct, onAddTo
                 {question && (
                   <div key={question.id} className="pq-step">
                     <h3 className="pq-q">{question.title}</h3>
-                    <Options opts={question.choices} value={picked[question.id]} onPick={(id) => {
-                      const choice = question.choices.find(item => item.id === id);
-                      if (choice) pick(question.id, choice.id, choice.next);
-                    }} />
+                    {question.week ? (
+                      <WeekSlider value={week} onChange={setWeek} onNext={() => {
+                        const choice = question.choices.find(item => item.id === weekToTrimester(week));
+                        if (!choice) return;
+                        setWeekSet(true);
+                        pick(question.id, choice.id, choice.next);
+                      }} />
+                    ) : (
+                      <Options opts={question.choices} value={picked[question.id]} onPick={(id) => {
+                        const choice = question.choices.find(item => item.id === id);
+                        if (choice) pick(question.id, choice.id, choice.next);
+                      }} />
+                    )}
                   </div>
                 )}
                 {node === 'form' && (
