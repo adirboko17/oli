@@ -90,7 +90,7 @@ export const RECOMMEND: Record<string, string[]> = {
   face: ['facioli', 'oliglow', '4d324bad-ba94-402c-8ce8-ad664fd08804', 'b5fa495d-7d8b-4b34-adeb-85842063d128'],
   // Olineum, NippOli, fruit bottle, lavender essential oil
   birth: ['olineum', 'nippoli', 'bottle', 'f90106f2-4367-4117-b860-e26fc5853799'],
-  post: ['nippoli', 'bottle', 'olilastic'],
+  post: ['nippoli', 'bottle', 'olilastic', 'spray--away'],
   baby: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
   // Oli 4 Pregnancy, Oliglow, Olilax, Olicalm (aromatic candle)
   self: ['oli4', 'oliglow', 'olilax', 'olicalm'],
