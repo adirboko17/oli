@@ -12,8 +12,8 @@ export const Q1: Opt[] = [
 ];
 
 // Question 2 changes based on the answer to question 1
-export const Q2: Record<string, { title: string; opts: Opt[] }> = {
-  preg: { title: 'באיזה שלב את נמצאת?', opts: [
+export const Q2: Record<string, { title: string; week?: boolean; opts: Opt[] }> = {
+  preg: { title: 'באיזה שבוע הריון את?', week: true, opts: [
     { k: 't1', label: 'שליש ראשון – שבועות 1–13' },
     { k: 't2', label: 'שליש שני – שבועות 14–27' },
     { k: 't3', label: 'שליש שלישי – שבוע 28 ומעלה' } ] },
@@ -30,7 +30,18 @@ export const Q2: Record<string, { title: string; opts: Opt[] }> = {
 };
 
 export const Q3_TITLE = 'מה הכי חשוב לך כרגע?';
+// A different question-3 title for a specific path (otherwise Q3_TITLE)
+export const Q3_TITLES: Record<string, string> = {
+  baby: 'מה הכי מעסיק אותך בעור של התינוק?',
+};
 const L3: Record<string, string> = {
+  bdaily: 'אין בעיה מיוחדת, רוצה שגרת רחצה וטיפוח יומית',
+  bdiaper: 'אדמומיות או תפרחת באזור החיתול',
+  bdry: 'עור יבש או מתקלף',
+  batopic: 'אקזמה או עור אטופי',
+  bscalp: 'קשקשים בקרקפת (סבוריאה)',
+  bsens: 'עור רגיש שמגיב בקלות',
+  bkit: 'סט טיפוח מלא לתינוק',
   belly: 'טיפוח עור הבטן וסימני מתיחה',
   legs: 'הקלה על תחושת כבדות ברגליים',
   face: 'טיפוח עור הפנים',
@@ -40,25 +51,76 @@ const L3: Record<string, string> = {
   self: 'פינוק וטיפוח עצמי',
 };
 
+// Week slider (1–42): the week is converted to a trimester behind the scenes, so the rest of the questionnaire stays the same
+export const WEEK_MIN = 1;
+export const WEEK_MAX = 42;
+export function weekToTrimester(week: number) {
+  return week <= 13 ? 't1' : week <= 27 ? 't2' : 't3';
+}
+
+// Recommendations by path: "<answer to Q1>:<answer to Q3>" overrides RECOMMEND.
+// So a woman who isn't pregnant doesn't get pregnancy products (Oli 4 Pregnancy, Olimini, Olineum).
+export const RECOMMEND_BY_PATH: Record<string, string[]> = {
+  // Planning a pregnancy
+  'plan:belly': ['olilastic', 'olineum'],
+  'plan:self': ['oliglow', 'facioli', 'olicalm', 'olilastic'],
+  // After birth
+  'post:belly': ['olilastic', 'olilax', 'olicalm'],
+  'post:self': ['olilax', 'olicalm', 'oliglow', 'olilastic'],
+  // Skincare for myself
+  'self:legs': ['olilax', 'olilastic', 'olicalm'],
+  'self:belly': ['olilastic', 'olilax', 'olicalm'],
+  'self:self': ['oliglow', 'facioli', 'olicalm', 'olilastic'],
+};
+
+export function recommendFor(a1: string, k3: string): string[] {
+  return [...(RECOMMEND_BY_PATH[`${a1}:${k3}`] ?? RECOMMEND[k3] ?? [])].slice(0, 4);
+}
+
+// Paths that end after question 2 (no question 3): products straight from the question-2 answer.
+// Gift: the giver doesn't know the products, so we go straight to fitting options.
+export const Q2_FINAL: Record<string, Record<string, string[]>> = {
+  gift: {
+    // Oli 4 Pregnancy, Olimini (pregnancy mini kit), Best of Oli, gift card
+    gpreg: ['oli4', 'olimini', 'bestof', '928fa1b0-0db6-4574-8883-a870c0c1471c'],
+    // Olibox, home oils-and-atmosphere set, NippOli, gift card
+    gpost: ['olibox', 'e1d029d6-71a9-4228-af5c-ab9cb34f269c', 'nippoli', '928fa1b0-0db6-4574-8883-a870c0c1471c'],
+    // All four of the Olimini kit (kit price in the cart)
+    gbaby: ['spray--away', 'pre--shower-ritual', 'after-shower-ritual', 'babyspa'],
+  },
+};
+
 // The options for question 3 change based on the previous answers
 export function q3Options(a1?: string, a2?: string): Opt[] {
   let keys: string[];
   if (a1 === 'preg') keys = a2 === 't3' ? ['belly', 'birth', 'legs', 'face', 'self'] : ['belly', 'legs', 'face', 'self'];
   else if (a1 === 'post') keys = ['post', 'belly', 'face', 'baby', 'self'];
   else if (a1 === 'plan') keys = ['belly', 'face', 'self'];
-  else if (a1 === 'baby') keys = ['baby', 'post', 'self'];
-  else if (a1 === 'gift') keys = a2 === 'gpreg' ? ['belly', 'legs', 'self'] : a2 === 'gpost' ? ['post', 'baby', 'self'] : ['baby', 'self'];
+  else if (a1 === 'baby') keys = ['bdaily', 'bdiaper', 'bdry', 'batopic', 'bscalp', 'bsens', 'bkit']; // same for every age
   else keys = ['face', 'legs', 'belly', 'self'];
   return keys.map(k => ({ k, label: L3[k] }));
 }
 
 // Recommended products (product ids from the catalog) for each answer to question 3
 export const RECOMMEND: Record<string, string[]> = {
-  belly: ['olilastic', 'olineum'],
-  legs: ['olilax', 'olilastic'],
-  face: ['facioli', 'oliglow'],
-  birth: ['olineum', 'olilastic'],
-  post: ['nippoli', 'olineum'],
-  baby: ['babyspa', 'babyafter'],
-  self: ['bestof', 'oliglow'],
+  belly: ['olilastic', 'olineum', 'olimini', 'oli4'],
+  legs: ['olilax', 'olilastic', 'oli4'],
+  // FaciOli, Oliglow, OliveOli olive-oil & lavender soap, OliveOli lemongrass & sweet orange soap
+  face: ['facioli', 'oliglow', '4d324bad-ba94-402c-8ce8-ad664fd08804', 'b5fa495d-7d8b-4b34-adeb-85842063d128'],
+  // Olineum, NippOli, fruit bottle, lavender essential oil
+  birth: ['olineum', 'nippoli', 'bottle', 'f90106f2-4367-4117-b860-e26fc5853799'],
+  post: ['nippoli', 'bottle', 'olilastic', 'spray--away'],
+  baby: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
+  // Oli 4 Pregnancy, Oliglow, Olilax, Olicalm (aromatic candle)
+  self: ['oli4', 'oliglow', 'olilax', 'olicalm'],
+  // Baby path. babyspa = baby massage oil (in stock), pudding = pre--shower-ritual,
+  // cream = after-shower-ritual, diaper spray = spray--away, olilastic = stretch-mark butter
+  bdaily: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'spray--away'],
+  bdiaper: ['spray--away', 'after-shower-ritual', 'pre--shower-ritual', 'babyspa'],
+  bdry: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'olilastic'],
+  batopic: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual', 'olilastic'],
+  bscalp: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual'],
+  bsens: ['babyspa', 'pre--shower-ritual', 'after-shower-ritual'],
+  // All four of the Olimini kit: with all four in the cart it automatically drops to the kit price
+  bkit: ['spray--away', 'pre--shower-ritual', 'after-shower-ritual', 'babyspa'],
 };
